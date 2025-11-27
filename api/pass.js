@@ -1,4 +1,6 @@
-// src/api/pass.js
+// api/pass.js
+// Generate a simple "generic" Apple Wallet pass using passkit-generator
+
 import { PKPass } from "passkit-generator";
 
 export default async function handler(req, res) {
@@ -13,7 +15,7 @@ export default async function handler(req, res) {
       APPLE_ORG_NAME,
     } = process.env;
 
-    // 1) Basic env-var check (keeps debugging sane)
+    // 1) Hard guard: if any required env var is missing, bail out early
     const missing = [];
     if (!WWDR_PEM) missing.push("WWDR_PEM");
     if (!SIGNER_CERT_PEM) missing.push("SIGNER_CERT_PEM");
@@ -23,7 +25,7 @@ export default async function handler(req, res) {
     if (!APPLE_TEAM_ID) missing.push("APPLE_TEAM_ID");
     if (!APPLE_ORG_NAME) missing.push("APPLE_ORG_NAME");
 
-    if (missing.length) {
+    if (missing.length > 0) {
       return res.status(500).json({
         ok: false,
         message: "Missing one or more required environment variables.",
@@ -31,7 +33,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2) Decode certs from base64 env vars → Buffers
+    // 2) Build the certificates object in the shape passkit-generator expects
     const certificates = {
       wwdr: Buffer.from(WWDR_PEM, "base64"),
       signerCert: Buffer.from(SIGNER_CERT_PEM, "base64"),
@@ -39,64 +41,61 @@ export default async function handler(req, res) {
       signerKeyPassphrase: PASS_P12_PASSWORD,
     };
 
-    // 3) Define a minimal *generic* pass body
-    const passBody = {
-      description: "Demo generic pass",
+    // 3) Define a minimal generic pass payload
+    const passJSON = {
       formatVersion: 1,
-      organizationName: APPLE_ORG_NAME,
       passTypeIdentifier: APPLE_PASS_TYPE_ID,
       teamIdentifier: APPLE_TEAM_ID,
-      serialNumber: `demo-${Date.now()}`, // unique id
-      logoText: "Demo Pass",
-      foregroundColor: "rgb(255,255,255)",
-      backgroundColor: "rgb(0,0,0)",
-      labelColor: "rgb(255,255,255)",
+      organizationName: APPLE_ORG_NAME,
+      description: "Test Wallet Pass",
+      serialNumber: `SER-${Date.now()}`,
 
-      // This `generic` block is what gives the pass its *type*
+      // "generic" style pass (we can swap to eventTicket/boardingPass later)
       generic: {
         primaryFields: [
           {
             key: "title",
-            label: "EVENT",
-            value: "Demo Event",
+            label: "Demo",
+            value: "Demo Wallet Pass",
           },
         ],
         secondaryFields: [
           {
             key: "subtitle",
-            label: "TICKET",
-            value: "Demo ticket",
+            label: "Powered by BAD Marketing",
+            value: "apple-wallet-pass-six.vercel.app",
           },
         ],
       },
+
+      backgroundColor: "rgb(32,32,32)",
+      foregroundColor: "rgb(255,255,255)",
+      labelColor: "rgb(255,255,255)",
     };
 
-    // 4) Create the PKPass instance
-    const pass = new PKPass(
-      {
-        // logical model name – keeps passkit-generator happy
-        model: "generic",
-        certificates,
-      },
-      passBody
-    );
+    // 4) Create the pass (certificates first, then pass JSON)
+    const pass = new PKPass(certificates, passJSON);
 
-    // 5) Render and stream the .pkpass file to the browser
-    const stream = await pass.render();
+    // 5) Get the .pkpass buffer and send it as a download
+    const pkpassBuffer = pass.getAsBuffer();
 
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader(
       "Content-Disposition",
-      'attachment; filename="demo.pkpass"'
+      'attachment; filename="demo-wallet-pass.pkpass"'
     );
 
-    stream.pipe(res);
+    return res.status(200).send(pkpassBuffer);
   } catch (err) {
     console.error("PASS GENERATION ERROR:", err);
     return res.status(500).json({
       ok: false,
       message: "Failed to generate pass",
-      error: err?.message || String(err),
+      error: String(
+        err?.message ||
+          err ||
+          "Unknown error while calling passkit-generator."
+      ),
     });
   }
 }
