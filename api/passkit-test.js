@@ -1,19 +1,14 @@
 // api/passkit-test.js
 // Verify that `passkit-generator` can be imported on Vercel.
 
+import Pass from "passkit-generator";
+
 export default async function handler(req, res) {
   try {
-    // Dynamically import the CommonJS module
-    const mod = await import("passkit-generator");
-
-    // Handle different export styles just in case
-    const Pass = mod.default || mod.Pass || mod;
-
     const info = {
       imported: !!Pass,
-      typeofDefault: typeof mod.default,
-      typeofPassNamed: typeof mod.Pass,
-      keys: Object.keys(mod),
+      type: typeof Pass,
+      name: Pass?.name,
     };
 
     return res.status(200).json({
