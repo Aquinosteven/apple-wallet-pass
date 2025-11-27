@@ -1,19 +1,18 @@
 // api/passkit-test.js
-// Simple endpoint to verify that `passkit-generator` can be imported on Vercel.
+// Verify that `passkit-generator` can be imported on Vercel.
 
-import passkit from "passkit-generator";
+import { Pass } from "passkit-generator";
 
 export default async function handler(req, res) {
   try {
     const info = {
-      hasDefault: !!passkit,
-      keys: Object.keys(passkit || {}),
-      passType: typeof (passkit && passkit.Pass),
+      imported: !!Pass,
+      type: typeof Pass,
     };
 
     return res.status(200).json({
       ok: true,
-      message: "Imported passkit-generator successfully (or at least Node thinks so) ✅",
+      message: "passkit-generator import looks good ✅",
       info,
     });
   } catch (err) {
