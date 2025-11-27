@@ -1,123 +1,80 @@
 // api/pass.js
 
-// ESM import (works with "type": "module" in package.json)
-import { PKPass } from "passkit-generator";
-
-/**
- * Required environment variables (set in Vercel → Settings → Environment Variables)
- *
- * - WWDR_PEM                → Apple WWDR certificate, Base64 of the PEM file
- * - SIGNER_CERT_PEM         → Your pass certificate (developer cert), Base64 of PEM
- * - SIGNER_KEY_PEM          → Your pass private key, Base64 of PEM
- * - SIGNER_KEY_PASSPHRASE   → Password for the private key (string)
- * - APPLE_PASS_TYPE_ID      → e.g. "pass.com.stevenaquino.walletpass"
- * - APPLE_TEAM_ID           → Your 10-char Apple Team ID
- * - APPLE_ORG_NAME          → "BAD Marketing LLC"
- *
- * NOTE: if you previously created PASS_P12 / PASS_P12_PASSWORD etc,
- * you’ll want to regenerate/export the cert + key as PEMs and map them
- * to the variables above.
- */
+import { Pass } from "passkit-generator";
 
 export default async function handler(req, res) {
   try {
-    if (req.method !== "GET") {
-      res.setHeader("Allow", "GET");
-      return res.status(405).json({ ok: false, message: "Use GET /api/pass" });
-    }
-
+    // 1) Read env vars
     const {
+      PASS_P12,
+      PASS_P12_PASSWORD,
       WWDR_PEM,
-      SIGNER_CERT_PEM,
-      SIGNER_KEY_PEM,
-      SIGNER_KEY_PASSPHRASE,
       APPLE_PASS_TYPE_ID,
       APPLE_TEAM_ID,
       APPLE_ORG_NAME,
     } = process.env;
 
-    // Basic env check so we get a clean JSON error instead of a crash
-    if (
-      !WWDR_PEM ||
-      !SIGNER_CERT_PEM ||
-      !SIGNER_KEY_PEM ||
-      !SIGNER_KEY_PASSPHRASE ||
-      !APPLE_PASS_TYPE_ID ||
-      !APPLE_TEAM_ID ||
-      !APPLE_ORG_NAME
-    ) {
+    // 2) Check that they are all present – and TELL US which ones are missing
+    const present = {
+      PASS_P12: !!PASS_P12,
+      PASS_P12_PASSWORD: !!PASS_P12_PASSWORD,
+      WWDR_PEM: !!WWDR_PEM,
+      APPLE_PASS_TYPE_ID: !!APPLE_PASS_TYPE_ID,
+      APPLE_TEAM_ID: !!APPLE_TEAM_ID,
+      APPLE_ORG_NAME: !!APPLE_ORG_NAME,
+    };
+
+    const allPresent = Object.values(present).every(Boolean);
+
+    if (!allPresent) {
       return res.status(500).json({
         ok: false,
         message: "Missing one or more required environment variables.",
+        present,
       });
     }
 
-    // Decode Base64 → Buffers (PEM text inside the buffers)
-    const wwdr = Buffer.from(WWDR_PEM, "base64");
-    const signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
-    const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
-    const signerKeyPassphrase = SIGNER_KEY_PASSPHRASE;
+    // 3) Decode base64 certificates
+    const signerP12 = Buffer.from(PASS_P12, "base64");
+    const wwdrCert = Buffer.from(WWDR_PEM, "base64");
 
-    // Tiny 1×1 PNG icon (transparent) – enough to make the pass valid
-    const iconPngBase64 =
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jkOcAAAAASUVORK5CYII=";
-    const iconBuffer = Buffer.from(iconPngBase64, "base64");
-
-    // Minimal pass.json – you can customize later
-    const passJson = {
-      formatVersion: 1,
+    // 4) Build a very simple test pass
+    const pass = await Pass.from({
+      model: "generic",
+      certificates: {
+        wwdr: wwdrCert,
+        signerCert: signerP12,
+        signerKey: signerP12, // p12 contains cert+key
+        signerKeyPassphrase: PASS_P12_PASSWORD,
+      },
+      organizationName: APPLE_ORG_NAME,
       passTypeIdentifier: APPLE_PASS_TYPE_ID,
       teamIdentifier: APPLE_TEAM_ID,
-      organizationName: APPLE_ORG_NAME,
-      description: "Demo Wallet Pass",
-      generic: {
-        primaryFields: [
-          {
-            key: "title",
-            label: APPLE_ORG_NAME,
-            value: "Demo Pass",
-          },
-        ],
-      },
-      labelColor: "rgb(255,255,255)",
+      serialNumber: `test-${Date.now()}`,
+      description: "Test pass from Vercel",
       foregroundColor: "rgb(255,255,255)",
       backgroundColor: "rgb(0,0,0)",
-    };
+      labelColor: "rgb(255,255,255)",
+      barcodes: [
+        {
+          format: "PKBarcodeFormatQR",
+          message: "Hello from Vercel",
+          messageEncoding: "iso-8859-1",
+        },
+      ],
+    });
 
-    // Create the PKPass using a buffer model
-    const pass = new PKPass(
-      {
-        "icon.png": iconBuffer,
-        "pass.json": Buffer.from(JSON.stringify(passJson)),
-      },
-      {
-        wwdr,
-        signerCert,
-        signerKey,
-        signerKeyPassphrase,
-      },
-      {
-        serialNumber: `demo-${Date.now()}`,
-      }
-    );
-
-    // Optional: barcode so it looks more “real”
-    pass.setBarcodes(String(Date.now()));
-
-    const pkpassBuffer = await pass.getAsBuffer();
+    const buffer = await pass.asBuffer();
 
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
-    res.setHeader(
-      "Content-Disposition",
-      'attachment; filename="demo-wallet-pass.pkpass"'
-    );
-    return res.status(200).send(pkpassBuffer);
+    res.setHeader("Content-Disposition", 'attachment; filename="test.pkpass"');
+    return res.status(200).send(buffer);
   } catch (err) {
     console.error("Error generating pass:", err);
     return res.status(500).json({
       ok: false,
-      message: "Failed to generate pass",
-      error: err?.message || String(err),
+      message: "Server error generating pass",
+      error: err.message,
     });
   }
 }
