@@ -41,47 +41,52 @@ export default async function handler(req, res) {
     const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
     const signerKeyPassphrase = PASS_P12_PASSWORD;
 
-    // 3) Define a simple in-memory model for a generic pass
+    // 3) Generate a serial number
     const serialNumber = `SER-${Date.now()}`;
 
-    const model = {
-      formatVersion: 1,
-      passTypeIdentifier: APPLE_PASS_TYPE_ID,
-      teamIdentifier: APPLE_TEAM_ID,
-      organizationName: APPLE_ORG_NAME,
-      description: "Test Wallet Pass",
-      serialNumber,
-      generic: {
-        primaryFields: [
-          {
-            key: "title",
-            label: "Your Ticket",
-            value: "Demo Pass",
-          },
-        ],
-        secondaryFields: [
-          {
-            key: "detail",
-            label: "Powered by",
-            value: "PassKit + Vercel",
-          },
-        ],
+    // 4) Create the PKPass instance using the built-in "generic" model
+    const pass = await PKPass.from(
+      {
+        // model MUST be a string (built-in template name or path)
+        model: "generic",
+        certificates: {
+          wwdr,
+          signerCert,
+          signerKey,
+          signerKeyPassphrase,
+        },
       },
-      backgroundColor: "rgb(32,32,32)",
-      foregroundColor: "rgb(255,255,255)",
-      labelColor: "rgb(255,255,255)",
-    };
+      {
+        // pass data
+        formatVersion: 1,
+        passTypeIdentifier: APPLE_PASS_TYPE_ID,
+        teamIdentifier: APPLE_TEAM_ID,
+        organizationName: APPLE_ORG_NAME,
+        description: "Test Wallet Pass",
+        serialNumber,
 
-    // 4) Create the PKPass instance with certificates + model
-    const pass = await PKPass.from({
-      model,
-      certificates: {
-        wwdr,
-        signerCert,
-        signerKey,
-        signerKeyPassphrase,
-      },
-    });
+        generic: {
+          primaryFields: [
+            {
+              key: "title",
+              label: "Your Ticket",
+              value: "Demo Pass",
+            },
+          ],
+          secondaryFields: [
+            {
+              key: "detail",
+              label: "Powered by",
+              value: "PassKit + Vercel",
+            },
+          ],
+        },
+
+        backgroundColor: "rgb(32,32,32)",
+        foregroundColor: "rgb(255,255,255)",
+        labelColor: "rgb(255,255,255)",
+      }
+    );
 
     // 5) Get the .pkpass file as a Buffer and send it
     const pkpassBuffer = pass.getAsBuffer();
