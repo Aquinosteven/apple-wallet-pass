@@ -1,99 +1,85 @@
 // api/pass.js
-// Generates a working Generic Apple Wallet Pass using passkit-generator on Vercel
+// Generate a simple "generic" Apple Wallet pass
 
-import { PKPass } from "passkit-generator";
+import PKPass from "passkit-generator";
 
 export default async function handler(req, res) {
   try {
-    // ----- ENV VARS -----
     const {
-      PASS_P12,
-      PASS_P12_PASSWORD,
       WWDR_PEM,
-      APPLE_TEAM_ID,
+      SIGNER_CERT_PEM,
+      SIGNER_KEY_PEM,
       APPLE_PASS_TYPE_ID,
+      APPLE_TEAM_ID,
       APPLE_ORG_NAME,
     } = process.env;
 
-    if (!PASS_P12 || !PASS_P12_PASSWORD || !WWDR_PEM) {
+    const missing = [];
+    if (!WWDR_PEM) missing.push("WWDR_PEM");
+    if (!SIGNER_CERT_PEM) missing.push("SIGNER_CERT_PEM");
+    if (!SIGNER_KEY_PEM) missing.push("SIGNER_KEY_PEM");
+    if (!APPLE_PASS_TYPE_ID) missing.push("APPLE_PASS_TYPE_ID");
+    if (!APPLE_TEAM_ID) missing.push("APPLE_TEAM_ID");
+    if (!APPLE_ORG_NAME) missing.push("APPLE_ORG_NAME");
+
+    if (missing.length > 0) {
       return res.status(500).json({
         ok: false,
-        message: "Missing required certificates (P12, password, WWDR)",
+        message: "Missing one or more required environment variables.",
+        missing,
       });
     }
 
-    // ----- DECODE BASE64 CERTIFICATES -----
-    const p12Buffer = Buffer.from(PASS_P12, "base64");
-    const wwdrBuffer = Buffer.from(WWDR_PEM, "base64");
+    // Decode the Base64-encoded certificates/keys
+    const wwdrCertificate = Buffer.from(WWDR_PEM, "base64");
+    const signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
+    const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
 
-    // ----- CREATE THE PASS -----
-    const pass = new PKPass(
-      {
-        passTypeIdentifier: APPLE_PASS_TYPE_ID,
-        teamIdentifier: APPLE_TEAM_ID,
-        organizationName: APPLE_ORG_NAME,
-        description: "Generic Wallet Pass",
-        serialNumber: "AQUINO-" + Date.now(),
-        formatVersion: 1,
-        generic: {
-          primaryFields: [
-            {
-              key: "title",
-              label: "WELCOME",
-              value: "Your Wallet Pass",
-            },
-          ],
-          auxiliaryFields: [
-            {
-              key: "subtitle",
-              label: "Powered By",
-              value: "Your Company",
-            },
-          ],
-        },
-
-        // Example barcode
-        barcodes: [
+    // Create a very simple generic pass
+    const pass = await PKPass.from({
+      model: "generic", // simple built-in model
+      certificates: {
+        wwdr: wwdrCertificate,
+        signerCert,
+        signerKey,
+        // signerKeyPassphrase is NOT needed because signerKey.pem is already decrypted
+      },
+      // Basic pass metadata
+      passTypeIdentifier: APPLE_PASS_TYPE_ID,
+      teamIdentifier: APPLE_TEAM_ID,
+      organizationName: APPLE_ORG_NAME,
+      description: "Test Generic Pass",
+      serialNumber: Date.now().toString(),
+      logoText: "Demo Pass",
+      foregroundColor: "rgb(255, 255, 255)",
+      backgroundColor: "rgb(0, 122, 255)", // iOS blue
+      generic: {
+        primaryFields: [
           {
-            message: "Hello from your API!",
-            format: "PKBarcodeFormatQR",
+            key: "title",
+            label: "Demo",
+            value: "Sample Generic Pass",
           },
         ],
       },
-      {
-        wwdr: wwdrBuffer,
-        signerCert: p12Buffer,
-        signerKeyPassphrase: PASS_P12_PASSWORD,
-      }
-    );
+    });
 
-    // Optional — add your icon images (same image reused here for now)
-    // You can replace these with images in /public later
-    const placeholder = Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgYF41DoAAAAASUVORK5CYII=",
-      "base64"
-    );
-
-    pass.addBuffer("icon.png", placeholder);
-    pass.addBuffer("icon@2x.png", placeholder);
-    pass.addBuffer("logo.png", placeholder);
-
+    // Get the pass as a Buffer and return it
     const pkpassBuffer = await pass.getAsBuffer();
 
-    // ----- RESPONSE -----
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader(
       "Content-Disposition",
-      'attachment; filename="generic-pass.pkpass"'
+      "attachment; filename=\"demo.pkpass\""
     );
 
     return res.status(200).send(pkpassBuffer);
   } catch (err) {
-    console.error("PASS GENERATION ERROR:", err);
+    console.error("API /api/pass error:", err);
     return res.status(500).json({
       ok: false,
       message: "Failed to generate pass",
-      error: String(err),
+      error: err?.message || String(err),
     });
   }
 }
