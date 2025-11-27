@@ -1,7 +1,8 @@
 // api/pass.js
-// Generate a simple "generic" Apple Wallet pass
 
-import PKPass from "passkit-generator";
+import passkitModule from "passkit-generator";
+
+const { PKPass } = passkitModule;
 
 export default async function handler(req, res) {
   try {
@@ -9,77 +10,85 @@ export default async function handler(req, res) {
       WWDR_PEM,
       SIGNER_CERT_PEM,
       SIGNER_KEY_PEM,
+      PASS_P12_PASSWORD,
       APPLE_PASS_TYPE_ID,
       APPLE_TEAM_ID,
       APPLE_ORG_NAME,
     } = process.env;
 
-    const missing = [];
-    if (!WWDR_PEM) missing.push("WWDR_PEM");
-    if (!SIGNER_CERT_PEM) missing.push("SIGNER_CERT_PEM");
-    if (!SIGNER_KEY_PEM) missing.push("SIGNER_KEY_PEM");
-    if (!APPLE_PASS_TYPE_ID) missing.push("APPLE_PASS_TYPE_ID");
-    if (!APPLE_TEAM_ID) missing.push("APPLE_TEAM_ID");
-    if (!APPLE_ORG_NAME) missing.push("APPLE_ORG_NAME");
-
-    if (missing.length > 0) {
+    // Quick sanity check so we don't go crazy later
+    if (!WWDR_PEM || !SIGNER_CERT_PEM || !SIGNER_KEY_PEM || !PASS_P12_PASSWORD) {
       return res.status(500).json({
         ok: false,
-        message: "Missing one or more required environment variables.",
-        missing,
+        message: "Missing one or more certificate env vars",
+        have: {
+          WWDR_PEM: !!WWDR_PEM,
+          SIGNER_CERT_PEM: !!SIGNER_CERT_PEM,
+          SIGNER_KEY_PEM: !!SIGNER_KEY_PEM,
+          PASS_P12_PASSWORD: !!PASS_P12_PASSWORD,
+        },
       });
     }
 
-    // Decode the Base64-encoded certificates/keys
-    const wwdrCertificate = Buffer.from(WWDR_PEM, "base64");
+    // Decode Base64 → Buffers
+    const wwdr = Buffer.from(WWDR_PEM, "base64");
     const signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
     const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
 
-    // Create a very simple generic pass
-    const pass = await PKPass.from({
-      model: "generic", // simple built-in model
+    // Build a very simple generic pass
+    const pass = new PKPass({
+      model: "generic",
       certificates: {
-        wwdr: wwdrCertificate,
+        wwdr,
         signerCert,
-        signerKey,
-        // signerKeyPassphrase is NOT needed because signerKey.pem is already decrypted
+        signerKey, // 👈 THIS is what was missing
+        signerKeyPassphrase: PASS_P12_PASSWORD,
       },
-      // Basic pass metadata
+
+      // Required top-level fields
+      description: "Demo generic pass",
+      formatVersion: 1,
+      organizationName: APPLE_ORG_NAME || "BAD Marketing LLC",
       passTypeIdentifier: APPLE_PASS_TYPE_ID,
       teamIdentifier: APPLE_TEAM_ID,
-      organizationName: APPLE_ORG_NAME,
-      description: "Test Generic Pass",
-      serialNumber: Date.now().toString(),
-      logoText: "Demo Pass",
-      foregroundColor: "rgb(255, 255, 255)",
-      backgroundColor: "rgb(0, 122, 255)", // iOS blue
+      serialNumber: "demo-" + Date.now(),
+
+      // Minimal generic content
       generic: {
         primaryFields: [
           {
             key: "title",
             label: "Demo",
-            value: "Sample Generic Pass",
+            value: "Wallet Pass OK",
+          },
+        ],
+        secondaryFields: [
+          {
+            key: "timestamp",
+            label: "Generated",
+            value: new Date().toISOString(),
           },
         ],
       },
     });
 
-    // Get the pass as a Buffer and return it
-    const pkpassBuffer = await pass.getAsBuffer();
+    // Get .pkpass as a Buffer and send it
+    const buffer = await pass.getAsBuffer();
 
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader(
       "Content-Disposition",
-      "attachment; filename=\"demo.pkpass\""
+      'attachment; filename="demo-pass.pkpass"'
     );
 
-    return res.status(200).send(pkpassBuffer);
+    return res.status(200).send(buffer);
   } catch (err) {
-    console.error("API /api/pass error:", err);
+    console.error("PASS GENERATION ERROR:", err);
+
     return res.status(500).json({
       ok: false,
       message: "Failed to generate pass",
-      error: err?.message || String(err),
+      error: String(err?.message || err),
     });
   }
 }
