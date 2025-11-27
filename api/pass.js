@@ -1,5 +1,7 @@
 // api/pass.js
-import { Pass } from "passkit-generator";
+
+import Passkit from "passkit-generator";
+const { Pass } = Passkit;
 
 export default async function handler(req, res) {
   try {
@@ -9,7 +11,7 @@ export default async function handler(req, res) {
       WWDR_PEM,
       APPLE_PASS_TYPE_ID,
       APPLE_TEAM_ID,
-      APPLE_ORG_NAME
+      APPLE_ORG_NAME,
     } = process.env;
 
     if (!PASS_P12 || !PASS_P12_PASSWORD || !WWDR_PEM) {
@@ -21,33 +23,31 @@ export default async function handler(req, res) {
 
     // Decode Base64 certificates
     const passCertificate = Buffer.from(PASS_P12, "base64");
-    const wwdrCertificate = Buffer.from(WWDR_PEM, "base64");
+    const wwdrcert = Buffer.from(WWDR_PEM, "base64");
 
-    // Create a boarding pass template (simple test)
-    const pass = await Pass.from({
-      model: "generic", // default test model
+    // Create pass instance
+    const pass = await Pass.create({
+      model: "generic",
       certificates: {
-        wwdr: wwdrCertificate,
+        wwdr: wwdrcert,
         signerCert: passCertificate,
         signerKey: passCertificate,
         signerKeyPassphrase: PASS_P12_PASSWORD,
       },
     });
 
-    pass.headerFields.push({
-      key: "header",
-      label: "Demo",
-      value: "Wallet Pass Working!",
-    });
+    const file = await pass.asBuffer();
 
-    // Finalize & send
-    const stream = pass.getAsStream();
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
-    res.setHeader("Content-Disposition", "attachment; filename=demo.pkpass");
+    res.setHeader("Content-Disposition", "attachment; filename=pass.pkpass");
+    return res.send(file);
 
-    stream.pipe(res);
   } catch (err) {
-    console.error("Pass generation error:", err);
-    res.status(500).json({ ok: false, error: err.toString() });
+    console.error(err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to generate pass",
+      error: err.toString(),
+    });
   }
 }
