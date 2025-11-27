@@ -1,7 +1,7 @@
 // api/pass.js
 // Generate a simple generic Apple Wallet pass using passkit-generator on Vercel
 
-import passkitModule from "passkit-generator";
+import * as passkitModule from "passkit-generator";
 
 const { PKPass } = passkitModule;
 
@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const {
       SIGNER_CERT_PEM,
       SIGNER_KEY_PEM,
-      PASS_P12_PASSWORD, // we reuse this as the signer key passphrase
+      PASS_P12_PASSWORD, // used as signer key passphrase
       WWDR_PEM,
       APPLE_PASS_TYPE_ID,
       APPLE_TEAM_ID,
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
     const signerKeyPassphrase = PASS_P12_PASSWORD;
 
-    // 3) Define a simple in-memory "model" for a generic pass
+    // 3) Define a simple in-memory model for a generic pass
     const serialNumber = `SER-${Date.now()}`;
 
     const model = {
