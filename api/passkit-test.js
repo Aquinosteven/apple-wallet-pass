@@ -1,14 +1,13 @@
 // api/passkit-test.js
-// Verify that `passkit-generator` can be imported on Vercel.
-
-import Pass from "passkit-generator";
+import PKPass from "passkit-generator";
 
 export default async function handler(req, res) {
   try {
     const info = {
-      imported: !!Pass,
-      type: typeof Pass,
-      name: Pass?.name,
+      imported: !!PKPass,
+      type: typeof PKPass,
+      name: PKPass?.name,
+      keys: Object.keys(PKPass || {}),
     };
 
     return res.status(200).json({
