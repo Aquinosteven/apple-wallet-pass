@@ -1,13 +1,21 @@
 // api/passkit-test.js
-import PKPass from "passkit-generator";
+// Verify that `passkit-generator` can be imported on Vercel.
+
+import * as Passkit from "passkit-generator";
+
+// Try to find PKPass in a way that works for CJS or ESM builds
+const PKPass =
+  Passkit.PKPass ||        // named export
+  Passkit.default ||       // default export
+  Passkit;                 // fallback (module itself)
 
 export default async function handler(req, res) {
   try {
     const info = {
       imported: !!PKPass,
-      type: typeof PKPass,
-      name: PKPass?.name,
-      keys: Object.keys(PKPass || {}),
+      typeOfModule: typeof Passkit,
+      typeOfPKPass: typeof PKPass,
+      moduleKeys: Object.keys(Passkit || {}),
     };
 
     return res.status(200).json({
