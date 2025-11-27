@@ -1,5 +1,5 @@
 // api/pass.js
-// Generate a simple "generic" Apple Wallet pass using passkit-generator
+// Generate a simple generic .pkpass using passkit-generator on Vercel
 
 import { PKPass } from "passkit-generator";
 
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       APPLE_ORG_NAME,
     } = process.env;
 
-    // 1) Hard guard: if any required env var is missing, bail out early
+    // Basic env sanity check (these are the base64 strings you pasted)
     const missing = [];
     if (!WWDR_PEM) missing.push("WWDR_PEM");
     if (!SIGNER_CERT_PEM) missing.push("SIGNER_CERT_PEM");
@@ -28,12 +28,13 @@ export default async function handler(req, res) {
     if (missing.length > 0) {
       return res.status(500).json({
         ok: false,
-        message: "Missing one or more required environment variables.",
+        message:
+          "Missing one or more required environment variables for pass generation.",
         missing,
       });
     }
 
-    // 2) Build the certificates object in the shape passkit-generator expects
+    // --- Certificates: decode base64 into Buffers ---
     const certificates = {
       wwdr: Buffer.from(WWDR_PEM, "base64"),
       signerCert: Buffer.from(SIGNER_CERT_PEM, "base64"),
@@ -41,29 +42,31 @@ export default async function handler(req, res) {
       signerKeyPassphrase: PASS_P12_PASSWORD,
     };
 
-    // 3) Define a minimal generic pass payload
-    const passJSON = {
+    // --- Minimal generic pass definition ---
+    const now = Date.now().toString();
+
+    const passDefinition = {
       formatVersion: 1,
       passTypeIdentifier: APPLE_PASS_TYPE_ID,
       teamIdentifier: APPLE_TEAM_ID,
       organizationName: APPLE_ORG_NAME,
       description: "Test Wallet Pass",
-      serialNumber: `SER-${Date.now()}`,
+      serialNumber: `SER-${now}`,
+      logoText: "Test Wallet Pass",
 
-      // "generic" style pass (we can swap to eventTicket/boardingPass later)
       generic: {
         primaryFields: [
           {
             key: "title",
-            label: "Demo",
-            value: "Demo Wallet Pass",
+            label: "Ticket",
+            value: "Demo Pass",
           },
         ],
         secondaryFields: [
           {
             key: "subtitle",
-            label: "Powered by BAD Marketing",
-            value: "apple-wallet-pass-six.vercel.app",
+            label: "Issued",
+            value: new Date().toISOString().substring(0, 10),
           },
         ],
       },
@@ -71,31 +74,31 @@ export default async function handler(req, res) {
       backgroundColor: "rgb(32,32,32)",
       foregroundColor: "rgb(255,255,255)",
       labelColor: "rgb(255,255,255)",
+
+      // 🔴 IMPORTANT: certificates must be passed here
+      certificates,
     };
 
-    // 4) Create the pass (certificates first, then pass JSON)
-    const pass = new PKPass(certificates, passJSON);
+    // --- Build pass in memory ---
+    const pass = new PKPass(passDefinition);
 
-    // 5) Get the .pkpass buffer and send it as a download
-    const pkpassBuffer = pass.getAsBuffer();
+    const pkpassBuffer = await pass.generate();
 
+    // --- Send .pkpass file back ---
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader(
       "Content-Disposition",
-      'attachment; filename="demo-wallet-pass.pkpass"'
+      'attachment; filename="test-wallet-pass.pkpass"'
     );
 
     return res.status(200).send(pkpassBuffer);
   } catch (err) {
     console.error("PASS GENERATION ERROR:", err);
+
     return res.status(500).json({
       ok: false,
       message: "Failed to generate pass",
-      error: String(
-        err?.message ||
-          err ||
-          "Unknown error while calling passkit-generator."
-      ),
+      error: String(err?.message || err),
     });
   }
 }
