@@ -1,22 +1,12 @@
 // api/pass.js
-// Dynamic Apple Wallet pass using passkit-generator's built-in "generic" model
-// Uses form fields on POST and safe defaults on GET. Includes CORS for v0 frontend.
+// Simple, known-good Demo pass using passkit-generator on Vercel
 
 import * as passkitModule from "passkit-generator";
 const { PKPass } = passkitModule;
 
 export default async function handler(req, res) {
-  // --- CORS ---
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
   try {
-    // Env vars (same ones that worked for the original Demo Pass)
+    // 1) Load env vars
     const {
       SIGNER_CERT_PEM,
       SIGNER_KEY_PEM,
@@ -44,33 +34,18 @@ export default async function handler(req, res) {
       });
     }
 
-    // --- Read fields from body, with defaults so GET still works ---
-    let name = "Guest";
-    let eventName = "DEBUG EVENT";
-    let ticketType = "General Admission";
-    let seat = "Unassigned";
-    let barcodeValue;
-
-    if (req.method === "POST" && req.body) {
-      name = req.body.name || name;
-      eventName = req.body.eventName || eventName;
-      ticketType = req.body.ticketType || ticketType;
-      seat = req.body.seat || seat;
-      barcodeValue = req.body.barcodeValue || barcodeValue;
-    }
-
+    // 2) Decode base64-encoded certs/keys from env
     const wwdr = Buffer.from(WWDR_PEM, "base64");
     const signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
     const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
     const signerKeyPassphrase = PASS_P12_PASSWORD;
 
+    // 3) Generate a serial number
     const serialNumber = `SER-${Date.now()}`;
-    const barcode = barcodeValue || serialNumber;
 
-    // --- This is the ORIGINAL working pattern, just with dynamic values ---
+    // 4) Create the PKPass instance using the built-in "generic" model
     const pass = await PKPass.from(
       {
-        // ✅ Use the built-in "generic" model (this is what produced Demo Pass originally)
         model: "generic",
         certificates: {
           wwdr,
@@ -84,36 +59,32 @@ export default async function handler(req, res) {
         passTypeIdentifier: APPLE_PASS_TYPE_ID,
         teamIdentifier: APPLE_TEAM_ID,
         organizationName: APPLE_ORG_NAME,
-        description: `DYNAMIC: ${eventName}`,
+        description: "Test Wallet Pass",
         serialNumber,
         generic: {
-          // 👇 This is the big front-of-card text that used to be "Demo Pass"
           primaryFields: [
-            { key: "title", label: "Ticket", value: eventName },
+            { key: "title", label: "Your Ticket", value: "Demo Pass" },
           ],
           secondaryFields: [
-            { key: "name", label: "Name", value: name },
-            { key: "ticketType", label: "Ticket Type", value: ticketType },
-            { key: "seat", label: "Seat", value: seat },
+            {
+              key: "detail",
+              label: "Powered by",
+              value: "PassKit + Vercel",
+            },
           ],
         },
-        // Loud colors so we can keep visually debugging
-        backgroundColor: "rgb(0,0,255)",     // blue
-        foregroundColor: "rgb(255,255,0)",   // yellow text
-        labelColor: "rgb(255,0,0)",          // red labels
-        barcode: {
-          message: barcode,
-          format: "PKBarcodeFormatQR",
-          messageEncoding: "iso-8859-1",
-        },
+        backgroundColor: "rgb(32,32,32)",
+        foregroundColor: "rgb(255,255,255)",
+        labelColor: "rgb(255,255,255)",
       }
     );
 
+    // 5) Get the .pkpass file as a Buffer and send it
     const pkpassBuffer = pass.getAsBuffer();
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="debug-${eventName.replace(/\s+/g, "-")}-${serialNumber}.pkpass"`
+      `attachment; filename="test-${serialNumber}.pkpass"`
     );
     return res.status(200).send(pkpassBuffer);
   } catch (err) {
