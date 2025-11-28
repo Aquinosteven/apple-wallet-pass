@@ -1,6 +1,5 @@
 // api/pass.js
-// Dynamic Apple Wallet pass using passkit-generator + CORS
-// Uses form fields on POST (from your frontend) and falls back to demo values on GET.
+// Dynamic DEBUG Apple Wallet pass using PKPass.from + CORS
 
 import * as passkitModule from "passkit-generator";
 const { PKPass } = passkitModule;
@@ -16,7 +15,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // --- Load env vars (same ones as your working demo) ---
     const {
       SIGNER_CERT_PEM,
       SIGNER_KEY_PEM,
@@ -35,9 +33,9 @@ export default async function handler(req, res) {
     const signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
     const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
 
-    // --- Read form fields with safe defaults ---
+    // Defaults + POST body
     let name = "Guest";
-    let eventName = "Demo Event";
+    let eventName = "DEBUG EVENT";
     let ticketType = "General Admission";
     let seat = "Unassigned";
     let barcodeValue;
@@ -53,7 +51,7 @@ export default async function handler(req, res) {
     const serialNumber = `SER-${Date.now()}`;
     const barcodeMessage = barcodeValue || serialNumber;
 
-    // --- Generate the pass using PKPass.from + "generic" model ---
+    // DEBUG: obvious colors & labels so we KNOW this code is running
     const pass = await PKPass.from(
       {
         model: "generic",
@@ -68,20 +66,22 @@ export default async function handler(req, res) {
         formatVersion: 1,
         passTypeIdentifier: APPLE_PASS_TYPE_ID,
         teamIdentifier: APPLE_TEAM_ID,
-        organizationName: APPLE_ORG_NAME,
-        description: eventName,
+        organizationName: APPLE_ORG_NAME || "Dynamic Debug Org",
+        description: "DYNAMIC DEBUG PASS",
         serialNumber,
         generic: {
           primaryFields: [
-            // Big main text on the pass
-            { key: "event", label: "Event", value: eventName },
+            { key: "event", label: "ZZ_EVENT", value: eventName },
           ],
           secondaryFields: [
-            { key: "name", label: "Name", value: name },
-            { key: "ticketType", label: "Ticket Type", value: ticketType },
-            { key: "seat", label: "Seat", value: seat },
+            { key: "name", label: "ZZ_NAME", value: name },
+            { key: "ticketType", label: "ZZ_TICKET_TYPE", value: ticketType },
+            { key: "seat", label: "ZZ_SEAT", value: seat },
           ],
         },
+        backgroundColor: "rgb(0,0,255)",     // bright blue
+        foregroundColor: "rgb(255,255,0)",   // yellow text
+        labelColor: "rgb(255,0,0)",          // red labels
         barcode: {
           message: barcodeMessage,
           format: "PKBarcodeFormatQR",
@@ -94,7 +94,7 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${eventName.replace(/\s+/g, "-")}-${serialNumber}.pkpass"`
+      `attachment; filename="debug-${eventName.replace(/\s+/g, "-")}-${serialNumber}.pkpass"`
     );
     return res.status(200).send(buffer);
 
