@@ -1,82 +1,18 @@
 // api/pass.js
-// Apple Wallet pass generation endpoint using passkit-generator + dynamic fields + CORS
+// Temporary health-check endpoint to debug Vercel 500s
 
-import fs from "fs"
-import path from "path"
-import Passkit from "passkit-generator"
-
-export default async function handler(req, res) {
-  // CORS SETUP
-  res.setHeader("Access-Control-Allow-Origin", "*")
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+export default function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
-    return res.status(200).end()
+    return res.status(200).end();
   }
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" })
-  }
-
-  try {
-    const {
-      name,
-      email,
-      eventName,
-      ticketType,
-      seat,
-      barcodeValue
-    } = req.body || {}
-
-    if (!name || !eventName) {
-      return res.status(400).json({ error: "Missing required fields" })
-    }
-
-    const p12 = Buffer.from(process.env.PASS_P12, "base64")
-    const wwdrPem = Buffer.from(process.env.WWDR_PEM, "base64").toString("utf8")
-
-    const modelPath = path.join(process.cwd(), "generic.pass")
-    const pass = await Passkit.createPass({
-      model: modelPath,
-      certificates: {
-        wwdr: wwdrPem,
-        signerCert: p12,
-        signerKey: p12,
-        signerKeyPassphrase: process.env.PASS_P12_PASSWORD
-      }
-    })
-
-    // MAIN TOP FIELD
-    pass.primaryFields.add("event", eventName)
-
-    // HEADER + OTHER FIELDS
-    pass.headerFields.add("eventHeader", eventName)
-    pass.secondaryFields.add("name", name)
-    pass.secondaryFields.add("ticketType", ticketType || "General Admission")
-    pass.secondaryFields.add("seat", seat || "Unassigned")
-
-    // BARCODE
-    const barcode = barcodeValue || `AUTO-${Date.now()}`
-    pass.barcodes.push({
-      message: barcode,
-      format: "PKBarcodeFormatQR",
-      messageEncoding: "iso-8859-1"
-    })
-
-    const buffer = await pass.asBuffer()
-    res.setHeader("Content-Type", "application/vnd.apple.pkpass")
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${eventName.replace(/\s+/g, "-")}.pkpass"`
-    )
-    return res.status(200).send(buffer)
-
-  } catch (error) {
-    console.error("Pass generation error:", error)
-    return res.status(500).json({
-      error: "Pass generation failed",
-      details: error?.message || String(error)
-    })
-  }
+  return res.status(200).json({
+    ok: true,
+    method: req.method,
+    message: "api/pass health check is working",
+  });
 }
