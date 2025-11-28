@@ -1,6 +1,6 @@
 // api/pass.js
-// SAFE MINIMAL PASS GENERATOR — proven working
-// Uses PKPass.from() with the built-in "generic" model
+// Dynamic Apple Wallet pass using passkit-generator + CORS
+// Uses form fields on POST (from your frontend) and falls back to demo values on GET.
 
 import * as passkitModule from "passkit-generator";
 const { PKPass } = passkitModule;
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // --- Load env vars ---
+    // --- Load env vars (same ones as your working demo) ---
     const {
       SIGNER_CERT_PEM,
       SIGNER_KEY_PEM,
@@ -31,15 +31,29 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Missing cert environment variables" });
     }
 
-    // Decode PEMs
     const wwdr = Buffer.from(WWDR_PEM, "base64");
     const signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
     const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
 
-    // Serial and basic fields
-    const serialNumber = `SER-${Date.now()}`;
+    // --- Read form fields with safe defaults ---
+    let name = "Guest";
+    let eventName = "Demo Event";
+    let ticketType = "General Admission";
+    let seat = "Unassigned";
+    let barcodeValue;
 
-    // --- Generate the pass ---
+    if (req.method === "POST" && req.body) {
+      name = req.body.name || name;
+      eventName = req.body.eventName || eventName;
+      ticketType = req.body.ticketType || ticketType;
+      seat = req.body.seat || seat;
+      barcodeValue = req.body.barcodeValue || barcodeValue;
+    }
+
+    const serialNumber = `SER-${Date.now()}`;
+    const barcodeMessage = barcodeValue || serialNumber;
+
+    // --- Generate the pass using PKPass.from + "generic" model ---
     const pass = await PKPass.from(
       {
         model: "generic",
@@ -55,15 +69,21 @@ export default async function handler(req, res) {
         passTypeIdentifier: APPLE_PASS_TYPE_ID,
         teamIdentifier: APPLE_TEAM_ID,
         organizationName: APPLE_ORG_NAME,
-        description: "Demo Wallet Pass",
+        description: eventName,
         serialNumber,
         generic: {
           primaryFields: [
-            { key: "title", label: "Ticket", value: "Demo Pass" },
+            // Big main text on the pass
+            { key: "event", label: "Event", value: eventName },
+          ],
+          secondaryFields: [
+            { key: "name", label: "Name", value: name },
+            { key: "ticketType", label: "Ticket Type", value: ticketType },
+            { key: "seat", label: "Seat", value: seat },
           ],
         },
         barcode: {
-          message: serialNumber,
+          message: barcodeMessage,
           format: "PKBarcodeFormatQR",
           messageEncoding: "iso-8859-1",
         },
@@ -72,7 +92,10 @@ export default async function handler(req, res) {
 
     const buffer = pass.getAsBuffer();
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
-    res.setHeader("Content-Disposition", `attachment; filename="test-${serialNumber}.pkpass"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${eventName.replace(/\s+/g, "-")}-${serialNumber}.pkpass"`
+    );
     return res.status(200).send(buffer);
 
   } catch (err) {
