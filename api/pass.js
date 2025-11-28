@@ -1,7 +1,7 @@
 // api/pass.js
-// Dynamic Apple Wallet pass using PKPass.from + CORS
-// Uses form fields on POST, and debug defaults on GET.
+// Dynamic Apple Wallet pass using PKPass.from + your own generic.pass model
 
+import path from "path";
 import * as passkitModule from "passkit-generator";
 const { PKPass } = passkitModule;
 
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
     // Defaults + POST body
     let name = "Guest";
-    let eventName = "DEBUG EVENT";        // default so we can see it change even on GET
+    let eventName = "DEBUG EVENT";
     let ticketType = "General Admission";
     let seat = "Unassigned";
     let barcodeValue;
@@ -52,9 +52,12 @@ export default async function handler(req, res) {
     const serialNumber = `SER-${Date.now()}`;
     const barcodeMessage = barcodeValue || serialNumber;
 
+    // 🔑 IMPORTANT: use your own generic.pass folder as the model
+    const modelPath = path.join(process.cwd(), "generic.pass");
+
     const pass = await PKPass.from(
       {
-        model: "generic",
+        model: modelPath,
         certificates: {
           wwdr,
           signerCert,
@@ -70,9 +73,8 @@ export default async function handler(req, res) {
         description: "DYNAMIC DEBUG PASS",
         serialNumber,
         generic: {
+          // These should now fully control the visible fields
           primaryFields: [
-            // 👇 IMPORTANT: use the SAME key as the original demo ("title")
-            // This should replace "Demo Pass" on the front of the card.
             { key: "title", label: "Ticket", value: eventName },
           ],
           secondaryFields: [
@@ -81,9 +83,9 @@ export default async function handler(req, res) {
             { key: "seat", label: "Seat", value: seat },
           ],
         },
-        backgroundColor: "rgb(0,0,255)",     // debug: bright blue
-        foregroundColor: "rgb(255,255,0)",   // yellow text
-        labelColor: "rgb(255,0,0)",          // red labels
+        backgroundColor: "rgb(0,0,255)",     // keep debug colors for now
+        foregroundColor: "rgb(255,255,0)",
+        labelColor: "rgb(255,0,0)",
         barcode: {
           message: barcodeMessage,
           format: "PKBarcodeFormatQR",
