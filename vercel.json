@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/pass.js": {
+      "includeFiles": "generic.pass/**"
+    }
+  }
+}
