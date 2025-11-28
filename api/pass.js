@@ -1,5 +1,6 @@
 // api/pass.js
-// Dynamic DEBUG Apple Wallet pass using PKPass.from + CORS
+// Dynamic Apple Wallet pass using PKPass.from + CORS
+// Uses form fields on POST, and debug defaults on GET.
 
 import * as passkitModule from "passkit-generator";
 const { PKPass } = passkitModule;
@@ -35,7 +36,7 @@ export default async function handler(req, res) {
 
     // Defaults + POST body
     let name = "Guest";
-    let eventName = "DEBUG EVENT";
+    let eventName = "DEBUG EVENT";        // default so we can see it change even on GET
     let ticketType = "General Admission";
     let seat = "Unassigned";
     let barcodeValue;
@@ -51,7 +52,6 @@ export default async function handler(req, res) {
     const serialNumber = `SER-${Date.now()}`;
     const barcodeMessage = barcodeValue || serialNumber;
 
-    // DEBUG: obvious colors & labels so we KNOW this code is running
     const pass = await PKPass.from(
       {
         model: "generic",
@@ -71,15 +71,17 @@ export default async function handler(req, res) {
         serialNumber,
         generic: {
           primaryFields: [
-            { key: "event", label: "ZZ_EVENT", value: eventName },
+            // 👇 IMPORTANT: use the SAME key as the original demo ("title")
+            // This should replace "Demo Pass" on the front of the card.
+            { key: "title", label: "Ticket", value: eventName },
           ],
           secondaryFields: [
-            { key: "name", label: "ZZ_NAME", value: name },
-            { key: "ticketType", label: "ZZ_TICKET_TYPE", value: ticketType },
-            { key: "seat", label: "ZZ_SEAT", value: seat },
+            { key: "name", label: "Name", value: name },
+            { key: "ticketType", label: "Ticket Type", value: ticketType },
+            { key: "seat", label: "Seat", value: seat },
           ],
         },
-        backgroundColor: "rgb(0,0,255)",     // bright blue
+        backgroundColor: "rgb(0,0,255)",     // debug: bright blue
         foregroundColor: "rgb(255,255,0)",   // yellow text
         labelColor: "rgb(255,0,0)",          // red labels
         barcode: {
