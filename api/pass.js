@@ -1,131 +1,119 @@
 // api/pass.js
-// Generate a dynamic Apple Wallet pass using passkit-generator on Vercel
-// Reads form fields from req.body and builds the pass accordingly.
+// Apple Wallet pass generation endpoint using passkit-generator + dynamic fields + CORS
 
-import * as passkitModule from "passkit-generator";
-const { PKPass } = passkitModule;
+import fs from "fs"
+import path from "path"
+import Passkit from "passkit-generator"
 
 export default async function handler(req, res) {
-  // --- CORS SETUP ---
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  //
+  // ---------------------------
+  // 🟢 CORS SETUP (required)
+  // ---------------------------
+  //
+  res.setHeader("Access-Control-Allow-Origin", "*")
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
+  // Handle preflight requests
   if (req.method === "OPTIONS") {
-    return res.status(200).end();
+    return res.status(200).end()
+  }
+
+  //
+  // ---------------------------
+  // 🟢 Only allow POST
+  // ---------------------------
+  //
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" })
   }
 
   try {
-    // 1) Load env vars
+    //
+    // ---------------------------
+    // 🟢 Parse request body
+    // ---------------------------
+    //
     const {
-      SIGNER_CERT_PEM,
-      SIGNER_KEY_PEM,
-      PASS_P12_PASSWORD,
-      WWDR_PEM,
-      APPLE_PASS_TYPE_ID,
-      APPLE_TEAM_ID,
-      APPLE_ORG_NAME,
-    } = process.env;
+      name,
+      email,
+      eventName,
+      ticketType,
+      seat,
+      barcodeValue
+    } = req.body || {}
 
-    const missing = [];
-    if (!SIGNER_CERT_PEM) missing.push("SIGNER_CERT_PEM");
-    if (!SIGNER_KEY_PEM) missing.push("SIGNER_KEY_PEM");
-    if (!PASS_P12_PASSWORD) missing.push("PASS_P12_PASSWORD");
-    if (!WWDR_PEM) missing.push("WWDR_PEM");
-    if (!APPLE_PASS_TYPE_ID) missing.push("APPLE_PASS_TYPE_ID");
-    if (!APPLE_TEAM_ID) missing.push("APPLE_TEAM_ID");
-    if (!APPLE_ORG_NAME) missing.push("APPLE_ORG_NAME");
-
-    if (missing.length > 0) {
-      return res.status(500).json({
-        ok: false,
-        message: "Missing one or more required environment variables.",
-        missing,
-      });
+    // Basic validation
+    if (!name || !eventName) {
+      return res.status(400).json({ error: "Missing required fields" })
     }
 
-    // 2) Read form fields from request body
-    const {
-      name = "Guest",
-      eventName = "Event",
-      ticketType = "General Admission",
-      seat = "Unassigned",
-      barcodeValue,
-    } = req.body || {};
+    //
+    // ---------------------------
+    // 🟢 Load certificates
+    // ---------------------------
+    //
+    const p12 = Buffer.from(process.env.PASS_P12, "base64")
+    const wwdrPem = Buffer.from(process.env.WWDR_PEM, "base64").toString("utf8")
 
-    // 3) Decode base64-encoded certs/keys from env
-    const wwdr = Buffer.from(WWDR_PEM, "base64");
-    const signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
-    const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
-    const signerKeyPassphrase = PASS_P12_PASSWORD;
-
-    // 4) Generate a serial number
-    const serialNumber = `SER-${Date.now()}`;
-
-    // 5) Generate barcode value (use provided or auto-generate)
-    const barcode = barcodeValue || `AUTO-${Date.now()}`;
-
-    // 6) Create the PKPass instance
-    const pass = await PKPass.from(
-      {
-        model: "generic",
-        certificates: {
-          wwdr,
-          signerCert,
-          signerKey,
-          signerKeyPassphrase,
-        },
-      },
-      {
-        formatVersion: 1,
-        passTypeIdentifier: APPLE_PASS_TYPE_ID,
-        teamIdentifier: APPLE_TEAM_ID,
-        organizationName: APPLE_ORG_NAME,
-        description: eventName,
-        serialNumber,
-        generic: {
-          primaryFields: [
-            { key: "event", label: "Event", value: eventName },
-          ],
-          secondaryFields: [
-            { key: "name", label: "Name", value: name },
-            { key: "ticketType", label: "Ticket Type", value: ticketType },
-            { key: "seat", label: "Seat", value: seat },
-          ],
-        },
-        barcode: {
-          message: barcode,
-          format: "PKBarcodeFormatQR",
-          messageEncoding: "iso-8859-1",
-        },
-        barcodes: [
-          {
-            message: barcode,
-            format: "PKBarcodeFormatQR",
-            messageEncoding: "iso-8859-1",
-          },
-        ],
-        backgroundColor: "rgb(32,32,32)",
-        foregroundColor: "rgb(255,255,255)",
-        labelColor: "rgb(255,255,255)",
+    //
+    // ---------------------------
+    // 🟢 Setup pass generator
+    // ---------------------------
+    //
+    const modelPath = path.join(process.cwd(), "generic.pass")
+    const pass = await Passkit.createPass({
+      model: modelPath,
+      certificates: {
+        wwdr: wwdrPem,
+        signerCert: p12,
+        signerKey: p12,
+        signerKeyPassphrase: process.env.PASS_P12_PASSWORD
       }
-    );
+    })
 
-    // 7) Get the .pkpass file as a Buffer and send it
-    const pkpassBuffer = pass.getAsBuffer();
-    res.setHeader("Content-Type", "application/vnd.apple.pkpass");
+    //
+    // ---------------------------
+    // 🟢 Build pass contents
+    // ---------------------------
+    //
+
+    // PRIMARY FIELD: main big text on the pass
+    pass.primaryFields.add("event", "Event", eventName)
+
+    // Header and secondary fields
+    pass.headerFields.add("eventHeader", "Event", eventName)
+    pass.secondaryFields.add("name", "Name", name)
+    pass.secondaryFields.add("ticketType", "Ticket Type", ticketType || "General Admission")
+    pass.secondaryFields.add("seat", "Seat", seat || "Unassigned")
+
+    // Barcode
+    const barcode = barcodeValue || `AUTO-${Date.now()}`
+    pass.barcodes.push({
+      message: barcode,
+      format: "PKBarcodeFormatQR",
+      messageEncoding: "iso-8859-1"
+    })
+
+    //
+    // ---------------------------
+    // 🟢 Generate the pass
+    // ---------------------------
+    //
+    const buffer = await pass.asBuffer()
+    res.setHeader("Content-Type", "application/vnd.apple.pkpass")
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${eventName.replace(/\s+/g, "-")}-${serialNumber}.pkpass"`
-    );
-    return res.status(200).send(pkpassBuffer);
+      `attachment; filename="${eventName.replace(/\s+/g, "-")}.pkpass"`
+    )
+    return res.status(200).send(buffer)
 
-  } catch (err) {
-    console.error("API /api/pass error:", err);
+  } catch (error) {
+    console.error("Pass generation error:", error)
     return res.status(500).json({
-      ok: false,
-      message: "Failed to generate pass",
-      error: err?.message || String(err),
-    });
+      error: "Pass generation failed",
+      details: error?.message || String(error)
+    })
   }
 }
