@@ -1,16 +1,17 @@
 {
   "formatVersion": 1,
-  "passTypeIdentifier": "pass.com.stevenaquino.walletpass",
-  "teamIdentifier": "56BYQTVZMT",
-  "organizationName": "BAD Marketing LLC",
-  "description": "Test Wallet Pass",
-  "serialNumber": "SER-001",
+  "passTypeIdentifier": "PLACEHOLDER.PASS.TYPE",
+  "teamIdentifier": "TEAMID",
+  "organizationName": "Template Org",
+  "description": "Wallet Pass Template",
+  "serialNumber": "TEMPLATE-SERIAL",
   "generic": {
-    "primaryFields": [
-      { "key": "title", "label": "Ticket", "value": "Demo Pass" }
-    ]
+    "primaryFields": [],
+    "secondaryFields": [],
+    "auxiliaryFields": [],
+    "backFields": []
   },
-  "backgroundColor": "rgb(32,32,32)",
+  "backgroundColor": "rgb(0,0,0)",
   "foregroundColor": "rgb(255,255,255)",
   "labelColor": "rgb(255,255,255)"
 }
