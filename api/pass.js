@@ -6,35 +6,20 @@ import path from "path"
 import Passkit from "passkit-generator"
 
 export default async function handler(req, res) {
-  //
-  // ---------------------------
-  // 🟢 CORS SETUP (required)
-  // ---------------------------
-  //
+  // CORS SETUP
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
-  // Handle preflight requests
   if (req.method === "OPTIONS") {
     return res.status(200).end()
   }
 
-  //
-  // ---------------------------
-  // 🟢 Only allow POST
-  // ---------------------------
-  //
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" })
   }
 
   try {
-    //
-    // ---------------------------
-    // 🟢 Parse request body
-    // ---------------------------
-    //
     const {
       name,
       email,
@@ -44,24 +29,13 @@ export default async function handler(req, res) {
       barcodeValue
     } = req.body || {}
 
-    // Basic validation
     if (!name || !eventName) {
       return res.status(400).json({ error: "Missing required fields" })
     }
 
-    //
-    // ---------------------------
-    // 🟢 Load certificates
-    // ---------------------------
-    //
     const p12 = Buffer.from(process.env.PASS_P12, "base64")
     const wwdrPem = Buffer.from(process.env.WWDR_PEM, "base64").toString("utf8")
 
-    //
-    // ---------------------------
-    // 🟢 Setup pass generator
-    // ---------------------------
-    //
     const modelPath = path.join(process.cwd(), "generic.pass")
     const pass = await Passkit.createPass({
       model: modelPath,
@@ -73,22 +47,16 @@ export default async function handler(req, res) {
       }
     })
 
-    //
-    // ---------------------------
-    // 🟢 Build pass contents
-    // ---------------------------
-    //
+    // MAIN TOP FIELD
+    pass.primaryFields.add("event", eventName)
 
-    // PRIMARY FIELD: main big text on the pass
-    pass.primaryFields.add("event", "Event", eventName)
+    // HEADER + OTHER FIELDS
+    pass.headerFields.add("eventHeader", eventName)
+    pass.secondaryFields.add("name", name)
+    pass.secondaryFields.add("ticketType", ticketType || "General Admission")
+    pass.secondaryFields.add("seat", seat || "Unassigned")
 
-    // Header and secondary fields
-    pass.headerFields.add("eventHeader", "Event", eventName)
-    pass.secondaryFields.add("name", "Name", name)
-    pass.secondaryFields.add("ticketType", "Ticket Type", ticketType || "General Admission")
-    pass.secondaryFields.add("seat", "Seat", seat || "Unassigned")
-
-    // Barcode
+    // BARCODE
     const barcode = barcodeValue || `AUTO-${Date.now()}`
     pass.barcodes.push({
       message: barcode,
@@ -96,11 +64,6 @@ export default async function handler(req, res) {
       messageEncoding: "iso-8859-1"
     })
 
-    //
-    // ---------------------------
-    // 🟢 Generate the pass
-    // ---------------------------
-    //
     const buffer = await pass.asBuffer()
     res.setHeader("Content-Type", "application/vnd.apple.pkpass")
     res.setHeader(
