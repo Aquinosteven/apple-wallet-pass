@@ -1,10 +1,20 @@
 // api/pass.js
 // Simple, known-good Demo pass using passkit-generator on Vercel
+// (Now with CORS + OPTIONS handling so Bolt can call it cross-origin)
 
 import * as passkitModule from "passkit-generator";
 const { PKPass } = passkitModule;
 
 export default async function handler(req, res) {
+  // --- CORS (temporary permissive, matches /api/health) ---
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
   try {
     // 1) Load env vars
     const {
@@ -62,15 +72,9 @@ export default async function handler(req, res) {
         description: "Test Wallet Pass",
         serialNumber,
         generic: {
-          primaryFields: [
-            { key: "title", label: "Your Ticket", value: "Demo Pass" },
-          ],
+          primaryFields: [{ key: "title", label: "Your Ticket", value: "Demo Pass" }],
           secondaryFields: [
-            {
-              key: "detail",
-              label: "Powered by",
-              value: "PassKit + Vercel",
-            },
+            { key: "detail", label: "Powered by", value: "PassKit + Vercel" },
           ],
         },
         backgroundColor: "rgb(32,32,32)",
