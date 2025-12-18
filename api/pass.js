@@ -1,7 +1,8 @@
 // api/pass.js
-// Fully in-memory Generic Apple Wallet pass (NO generic.pass folder required)
+// Stable, serverless-safe Apple Wallet pass generator for Vercel
 
-import { PKPass, Templates } from "passkit-generator";
+import * as passkit from "passkit-generator";
+const { PKPass } = passkit;
 
 export default async function handler(req, res) {
   // ---- CORS (temporary permissive) ----
@@ -14,7 +15,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1) Load env vars
     const {
       SIGNER_CERT_PEM,
       SIGNER_KEY_PEM,
@@ -34,54 +34,56 @@ export default async function handler(req, res) {
     if (!APPLE_TEAM_ID) missing.push("APPLE_TEAM_ID");
     if (!APPLE_ORG_NAME) missing.push("APPLE_ORG_NAME");
 
-    if (missing.length > 0) {
+    if (missing.length) {
       return res.status(500).json({
         ok: false,
-        message: "Missing one or more required environment variables.",
+        message: "Missing required environment variables",
         missing,
       });
     }
 
-    // 2) Decode certs
     const wwdr = Buffer.from(WWDR_PEM, "base64");
     const signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
     const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
 
-    // 3) Serial
     const serialNumber = `SER-${Date.now()}`;
 
-    // 4) Create pass using BUILT-IN GENERIC TEMPLATE
-    const pass = new PKPass(
+    const pass = await PKPass.from(
       {
-        formatVersion: 1,
-        passTypeIdentifier: APPLE_PASS_TYPE_ID,
-        teamIdentifier: APPLE_TEAM_ID,
-        organizationName: APPLE_ORG_NAME,
-        description: "AttendOS Test Pass",
-        serialNumber,
-        generic: {
-          primaryFields: [
-            { key: "event", label: "Event", value: "Demo Event" },
-          ],
-          secondaryFields: [
-            { key: "powered", label: "Powered by", value: "AttendOS" },
-          ],
+        // INLINE MODEL — no filesystem, no templates
+        model: {
+          formatVersion: 1,
+          passTypeIdentifier: APPLE_PASS_TYPE_ID,
+          teamIdentifier: APPLE_TEAM_ID,
+          organizationName: APPLE_ORG_NAME,
+          description: "AttendOS Test Pass",
+          serialNumber,
+
+          generic: {
+            primaryFields: [
+              { key: "event", label: "Event", value: "Demo Event" },
+            ],
+            secondaryFields: [
+              { key: "powered", label: "Powered by", value: "AttendOS" },
+            ],
+          },
+
+          backgroundColor: "rgb(32,32,32)",
+          foregroundColor: "rgb(255,255,255)",
+          labelColor: "rgb(255,255,255)",
         },
-        backgroundColor: "rgb(32,32,32)",
-        foregroundColor: "rgb(255,255,255)",
-        labelColor: "rgb(255,255,255)",
-      },
-      {
-        wwdr,
-        signerCert,
-        signerKey,
-        signerKeyPassphrase: PASS_P12_PASSWORD,
-      },
-      Templates.GENERIC
+
+        certificates: {
+          wwdr,
+          signerCert,
+          signerKey,
+          signerKeyPassphrase: PASS_P12_PASSWORD,
+        },
+      }
     );
 
-    // 5) Send pkpass
     const buffer = pass.getAsBuffer();
+
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader(
       "Content-Disposition",
@@ -90,7 +92,7 @@ export default async function handler(req, res) {
 
     return res.status(200).send(buffer);
   } catch (err) {
-    console.error("PASS ERROR:", err);
+    console.error("PASS GENERATION ERROR:", err);
     return res.status(500).json({
       ok: false,
       message: "Failed to generate pass",
