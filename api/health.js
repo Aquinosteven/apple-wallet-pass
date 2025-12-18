@@ -1,12 +1,9 @@
-const ALLOWED_ORIGIN = "https://saas-wallet-pass-eve-iurc.bolt.host";
-
 export default function handler(req, res) {
-  // CORS headers
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+  // TEMP: allow any origin (we'll lock this down after Bolt connects)
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  // Handle preflight
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
