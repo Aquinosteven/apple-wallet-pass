@@ -1,7 +1,11 @@
 import * as passkitModule from "passkit-generator";
 import crypto from "node:crypto";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
 const { PKPass } = passkitModule;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 function isValidRgbString(value) {
   if (typeof value !== "string") return false;
@@ -375,7 +379,7 @@ export default async function handler(req, res) {
 
     const pass = await PKPass.from(
       {
-        model: "generic.pass",
+        model: join(__dirname, "..", "generic.pass"),
         certificates: {
           wwdr,
           signerCert,
