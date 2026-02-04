@@ -1,6 +1,6 @@
 import { checkCertificateHealth } from '../util/certificates';
 
-export async function onRequest(context: any) {
+export async function onRequest() {
   try {
     const health = checkCertificateHealth();
 

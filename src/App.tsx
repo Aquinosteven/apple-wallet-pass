@@ -199,7 +199,7 @@ function App() {
 
       const blob = await response.blob();
       const contentDisposition = response.headers.get("content-disposition");
-      const filenameMatch = contentDisposition?.match(/filename="?([^\"]+)"?/i);
+      const filenameMatch = contentDisposition?.match(/filename="?([^"]+)"?/i);
       const filename = filenameMatch?.[1] || "online-event.pkpass";
       setDownloadName(filename);
 

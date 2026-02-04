@@ -108,8 +108,9 @@ export default async function handler(req, res) {
     APPLE_PASS_TYPE_ID,
     APPLE_TEAM_ID,
     APPLE_ORG_NAME,
-    PASS_P12,
-    PASS_P12_PASSWORD,
+    SIGNER_CERT_PEM_B64,
+    SIGNER_KEY_PEM_B64,
+    SIGNER_KEY_PASSPHRASE,
     WWDR_PEM,
   } = process.env;
 
@@ -117,8 +118,8 @@ export default async function handler(req, res) {
   if (!APPLE_PASS_TYPE_ID) missingEnv.push("APPLE_PASS_TYPE_ID");
   if (!APPLE_TEAM_ID) missingEnv.push("APPLE_TEAM_ID");
   if (!APPLE_ORG_NAME) missingEnv.push("APPLE_ORG_NAME");
-  if (!PASS_P12) missingEnv.push("PASS_P12");
-  if (!PASS_P12_PASSWORD) missingEnv.push("PASS_P12_PASSWORD");
+  if (!SIGNER_CERT_PEM_B64) missingEnv.push("SIGNER_CERT_PEM_B64");
+  if (!SIGNER_KEY_PEM_B64) missingEnv.push("SIGNER_KEY_PEM_B64");
   if (!WWDR_PEM) missingEnv.push("WWDR_PEM");
 
   if (missingEnv.length) {
@@ -242,14 +243,25 @@ export default async function handler(req, res) {
     const serialNumber = `EVT-${serialHash}`;
 
     let signerCert;
+    let signerKey;
     let wwdr;
     try {
-      signerCert = Buffer.from(PASS_P12, "base64");
+      signerCert = Buffer.from(SIGNER_CERT_PEM_B64, "base64");
     } catch (error) {
       return res.status(500).json({
         ok: false,
         code: "SIGNING_NOT_CONFIGURED",
-        message: "PASS_P12_B64 is not valid base64.",
+        message: "SIGNER_CERT_PEM_B64 is not valid base64.",
+      });
+    }
+
+    try {
+      signerKey = Buffer.from(SIGNER_KEY_PEM_B64, "base64");
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        code: "SIGNING_NOT_CONFIGURED",
+        message: "SIGNER_KEY_PEM_B64 is not valid base64.",
       });
     }
 
@@ -359,13 +371,16 @@ export default async function handler(req, res) {
       });
     }
 
+    const signerKeyPassphrase = SIGNER_KEY_PASSPHRASE || undefined;
+
     const pass = await PKPass.from(
       {
         model: "generic.pass",
         certificates: {
           wwdr,
           signerCert,
-          signerKeyPassphrase: PASS_P12_PASSWORD,
+          signerKey,
+          signerKeyPassphrase,
         },
       },
       {

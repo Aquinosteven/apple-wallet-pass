@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { loadCertificates } from '../util/certificates';
 import { buildPassJson } from '../util/passBuilder';
 
-export async function onRequest(context: any) {
+export async function onRequest() {
   try {
     const certs = loadCertificates();
 
