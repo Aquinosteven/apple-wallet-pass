@@ -1,6 +1,7 @@
 // api/pass.js
 
 import * as passkitModule from "passkit-generator";
+import crypto from "crypto";
 const { PKPass } = passkitModule;
 
 function isValidRGBString(s) {
@@ -17,6 +18,54 @@ function safeFileName(input, fallback = "ticket") {
   return (
     s.replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-").slice(0, 60) || fallback
   );
+}
+
+function parseBase64DataUrl(dataUrl) {
+  if (typeof dataUrl !== "string") return null;
+  const match = dataUrl.match(/^data:(image\/png|image\/jpeg);base64,(.+)$/i);
+  if (!match) return null;
+  const mimeType = match[1].toLowerCase();
+  const base64 = match[2];
+  try {
+    const buffer = Buffer.from(base64, "base64");
+    if (!buffer.length) return null;
+    return { mimeType, buffer };
+  } catch {
+    return null;
+  }
+}
+
+function hexToRgbString(value) {
+  if (typeof value !== "string") return null;
+  const match = value.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (!match) return null;
+  let hex = match[1];
+  if (hex.length === 3) {
+    hex = hex
+      .split("")
+      .map((ch) => ch + ch)
+      .join("");
+  }
+  const num = Number.parseInt(hex, 16);
+  if (Number.isNaN(num)) return null;
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  return `rgb(${r},${g},${b})`;
+}
+
+function formatDateTime(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
 }
 
 async function readJsonBody(req) {
@@ -86,17 +135,23 @@ export default async function handler(req, res) {
       return res.status(405).json({ ok: false, message: "Use GET or POST" });
     }
 
-    const eventName = String(payload?.eventName || "Demo Event").trim();
-    const hostName = String(payload?.hostName || "AttendOS").trim();
-    const startDateTimeISO = payload?.startDateTimeISO
-      ? String(payload.startDateTimeISO).trim()
-      : "";
-    const timezone = payload?.timezone ? String(payload.timezone).trim() : "";
-    const attendeeName = payload?.attendeeName ? String(payload.attendeeName).trim() : "";
-    const attendeeEmail = payload?.attendeeEmail ? String(payload.attendeeEmail).trim() : "";
+    const attendee = payload?.attendee && typeof payload.attendee === "object" ? payload.attendee : {};
+    const event = payload?.event && typeof payload.event === "object" ? payload.event : {};
+    const branding = payload?.branding && typeof payload.branding === "object" ? payload.branding : {};
+    const theme = payload?.theme && typeof payload.theme === "object" ? payload.theme : null;
+
+    const attendeeName = attendee?.name ? String(attendee.name).trim() : "";
+    const attendeeEmail = attendee?.email ? String(attendee.email).trim() : "";
+    const attendeePhone = attendee?.phone ? String(attendee.phone).trim() : "";
+
+    const eventTitle = event?.title ? String(event.title).trim() : "";
+    const startsAt = event?.startsAt ? String(event.startsAt).trim() : "";
+    const joinUrl = event?.joinUrl ? String(event.joinUrl).trim() : "";
+
+    const logoBase64 = branding?.logoBase64 ? String(branding.logoBase64).trim() : "";
 
     const brand = payload?.brand && typeof payload.brand === "object" ? payload.brand : {};
-    const backgroundColor =
+    let backgroundColor =
       isValidRGBString(brand.backgroundColor) ? brand.backgroundColor : "rgb(32,32,32)";
     const foregroundColor =
       isValidRGBString(brand.foregroundColor) ? brand.foregroundColor : "rgb(255,255,255)";
@@ -107,25 +162,72 @@ export default async function handler(req, res) {
     const signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
     const signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
 
-    const serialSeed = attendeeEmail || attendeeName || "anon";
-    const serialNumber = `SER-${Date.now()}-${Buffer.from(serialSeed).toString("hex").slice(0, 12)}`;
+    const errors = [];
+    if (!attendeeName) errors.push("attendee.name");
+    if (!attendeeEmail) errors.push("attendee.email");
+    if (!eventTitle) errors.push("event.title");
+    if (!startsAt) errors.push("event.startsAt");
+    if (!joinUrl) errors.push("event.joinUrl");
+    if (!logoBase64) errors.push("branding.logoBase64");
 
-    const primaryFields = [
-      { key: "event", label: "Event", value: eventName || "Demo Event" },
-    ];
-
-    const secondaryFields = [
-      { key: "host", label: "Host", value: hostName || "AttendOS" },
-    ];
-
-    const auxiliaryFields = [
-      { key: "start", label: "Starts", value: startDateTimeISO || "TBD" },
-    ];
-
-    // Optional: show timezone as separate line
-    if (timezone) {
-      secondaryFields.push({ key: "tz", label: "Timezone", value: timezone });
+    let joinUrlIsValid = false;
+    if (joinUrl) {
+      try {
+        new URL(joinUrl);
+        joinUrlIsValid = true;
+      } catch {
+        joinUrlIsValid = false;
+      }
     }
+    if (joinUrl && !joinUrlIsValid) errors.push("event.joinUrl (invalid URL)");
+
+    const formattedDateTime = formatDateTime(startsAt);
+    if (startsAt && !formattedDateTime) errors.push("event.startsAt (invalid datetime)");
+
+    const parsedLogo = parseBase64DataUrl(logoBase64);
+    if (logoBase64 && !parsedLogo) errors.push("branding.logoBase64 (invalid data URL)");
+    if (parsedLogo && parsedLogo.mimeType !== "image/png") {
+      errors.push("branding.logoBase64 (must be a PNG data URL)");
+    }
+
+    let themeMode = null;
+    let themeBackgroundColor = null;
+    let parsedStrip = null;
+    if (theme) {
+      themeMode = theme?.mode ? String(theme.mode).toLowerCase() : "";
+      if (!["color", "image"].includes(themeMode)) {
+        errors.push("theme.mode (must be color or image)");
+      }
+      themeBackgroundColor = hexToRgbString(theme?.backgroundColor);
+      if (!themeBackgroundColor) {
+        errors.push("theme.backgroundColor (invalid hex color)");
+      }
+      if (themeMode === "image") {
+        const stripBase64 = theme?.stripImageBase64
+          ? String(theme.stripImageBase64).trim()
+          : "";
+        parsedStrip = parseBase64DataUrl(stripBase64);
+        if (!stripBase64 || !parsedStrip) {
+          errors.push("theme.stripImageBase64 (invalid data URL)");
+        } else if (parsedStrip.mimeType !== "image/png") {
+          errors.push("theme.stripImageBase64 (must be a PNG data URL)");
+        }
+      }
+    }
+
+    if (errors.length) {
+      return res.status(400).json({
+        ok: false,
+        message: "Missing or invalid fields",
+        fields: errors,
+      });
+    }
+
+    if (themeMode && themeBackgroundColor) {
+      backgroundColor = themeBackgroundColor;
+    }
+
+    const serialNumber = `SER-${crypto.randomUUID()}`;
 
     const pass = await PKPass.from(
       {
@@ -142,21 +244,51 @@ export default async function handler(req, res) {
         passTypeIdentifier: APPLE_PASS_TYPE_ID,
         teamIdentifier: APPLE_TEAM_ID,
         organizationName: APPLE_ORG_NAME,
-        description: `${eventName} Ticket`,
+        description: `${eventTitle} Ticket`,
         serialNumber,
-        generic: {
-          primaryFields,
-          secondaryFields,
-          auxiliaryFields,
-        },
         backgroundColor,
         foregroundColor,
         labelColor,
       }
     );
 
+    const safePhone = attendeePhone ? String(attendeePhone) : "";
+
+    pass.generic = pass.generic || {};
+    pass.generic.primaryFields = [
+      { key: "eventTitle", label: "EVENT", value: String(eventTitle) },
+    ];
+
+    pass.generic.secondaryFields = [
+      { key: "attendeeName", label: "NAME", value: String(attendeeName) },
+      { key: "eventTime", label: "DATE", value: String(formattedDateTime) },
+    ];
+
+    pass.generic.auxiliaryFields = [
+      { key: "attendeeEmail", label: "EMAIL", value: String(attendeeEmail) },
+      ...(safePhone ? [{ key: "attendeePhone", label: "PHONE", value: safePhone }] : []),
+    ];
+
+    pass.generic.backFields = [
+      { key: "joinUrl", label: "JOIN LINK", value: String(joinUrl) },
+      { key: "serial", label: "SERIAL", value: String(serialNumber) },
+    ];
+
+    pass.primaryFields.splice(0, pass.primaryFields.length, ...pass.generic.primaryFields);
+    pass.secondaryFields.splice(0, pass.secondaryFields.length, ...pass.generic.secondaryFields);
+    pass.auxiliaryFields.splice(0, pass.auxiliaryFields.length, ...pass.generic.auxiliaryFields);
+    pass.backFields.splice(0, pass.backFields.length, ...pass.generic.backFields);
+
+    if (parsedLogo?.buffer) {
+      pass.addBuffer("icon.png", parsedLogo.buffer);
+      pass.addBuffer("logo.png", parsedLogo.buffer);
+    }
+    if (themeMode === "image" && parsedStrip?.buffer) {
+      pass.addBuffer("strip.png", parsedStrip.buffer);
+    }
+
     const pkpassBuffer = pass.getAsBuffer();
-    const filename = `${safeFileName(eventName)}-ticket-${serialNumber}.pkpass`;
+    const filename = `${safeFileName(eventTitle)}-ticket-${serialNumber}.pkpass`;
 
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
