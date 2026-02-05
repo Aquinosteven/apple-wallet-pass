@@ -185,7 +185,16 @@ function App() {
         const text = await response.text();
         try {
           const data = JSON.parse(text);
-          setError(data?.message || text || "Failed to generate pass.");
+          const fieldErrors = Array.isArray(data?.fields)
+            ? data.fields
+            : Array.isArray(data?.errors)
+            ? data.errors
+            : null;
+          if (fieldErrors && fieldErrors.length) {
+            setError(fieldErrors.join(" "));
+          } else {
+            setError(data?.message || text || "Failed to generate pass.");
+          }
         } catch {
           setError(text || "Failed to generate pass.");
         }
@@ -346,6 +355,10 @@ function App() {
             </label>
           ) : null}
 
+          {status === "error" && error && (
+            <p className="notice error">{error}</p>
+          )}
+
           <button type="submit" disabled={status === "loading" || !canSubmit}>
             {status === "loading" ? "Generating..." : "Generate Pass"}
           </button>
@@ -354,9 +367,7 @@ function App() {
         {status === "success" && message && (
           <p className="notice success">{message}</p>
         )}
-        {status === "error" && error && (
-          <p className="notice error">{error}</p>
-        )}
+        
 
         {status === "success" && downloadUrl ? (
           <div className="actions">

@@ -58,6 +58,20 @@ function hexToRgbString(value) {
   return `rgb(${r},${g},${b})`;
 }
 
+function parsePngHeader(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 33) return null;
+  const signature = buffer.subarray(0, 8);
+  const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (!signature.equals(pngSignature)) return null;
+  const ihdrLength = buffer.readUInt32BE(8);
+  const ihdrType = buffer.subarray(12, 16).toString("ascii");
+  if (ihdrType !== "IHDR" || ihdrLength < 13 || buffer.length < 33) return null;
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  const colorType = buffer.readUInt8(25);
+  return { width, height, colorType };
+}
+
 function formatDateTime(value) {
   if (!value) return null;
   const date = new Date(value);
@@ -197,6 +211,8 @@ export default async function handler(req, res) {
     let themeMode = null;
     let themeBackgroundColor = null;
     let parsedStrip = null;
+    let stripInfo = null;
+    let stripValid = false;
     if (theme) {
       themeMode = theme?.mode ? String(theme.mode).toLowerCase() : "";
       if (!["color", "image"].includes(themeMode)) {
@@ -210,6 +226,7 @@ export default async function handler(req, res) {
         const stripBase64 = theme?.stripImageBase64
           ? String(theme.stripImageBase64).trim()
           : "";
+        console.log("Theme strip received:", Boolean(stripBase64));
         parsedStrip = parseBase64DataUrl(stripBase64);
         if (!stripBase64) {
           console.warn("Theme strip image missing: theme.stripImageBase64 empty");
@@ -222,12 +239,41 @@ export default async function handler(req, res) {
             `Theme strip image must be PNG, received ${parsedStrip.mimeType}`
           );
           errors.push("theme.stripImageBase64 (must be a PNG data URL)");
+        } else {
+          stripInfo = parsePngHeader(parsedStrip.buffer);
+          if (!stripInfo) {
+            console.warn("Theme strip image PNG header invalid");
+            errors.push("theme.stripImageBase64 (invalid PNG data)");
+          } else {
+            console.log(
+              `Theme strip size: ${stripInfo.width}x${stripInfo.height}`
+            );
+            if (stripInfo.width !== 1125 || stripInfo.height !== 243) {
+              console.warn(
+                `Theme strip invalid size: ${stripInfo.width}x${stripInfo.height}`
+              );
+              errors.push(
+                `theme.stripImageBase64 (must be 1125x243px, got ${stripInfo.width}x${stripInfo.height})`
+              );
+            }
+            if (stripInfo.colorType !== 2) {
+              console.warn(
+                `Theme strip invalid color type: ${stripInfo.colorType}`
+              );
+              errors.push("theme.stripImageBase64 (must be RGB with no alpha)");
+            }
+          }
+          stripValid =
+            !!stripInfo &&
+            stripInfo.width === 1125 &&
+            stripInfo.height === 243 &&
+            stripInfo.colorType === 2;
         }
       }
     }
 
     if (themeMode === "image") {
-      res.setHeader("X-Has-Strip", parsedStrip?.buffer ? "true" : "false");
+      res.setHeader("X-Has-Strip", stripValid ? "true" : "false");
     }
 
     if (errors.length) {
@@ -298,7 +344,7 @@ export default async function handler(req, res) {
       pass.addBuffer("icon.png", parsedLogo.buffer);
       pass.addBuffer("logo.png", parsedLogo.buffer);
     }
-    if (themeMode === "image" && parsedStrip?.buffer) {
+    if (themeMode === "image" && stripValid && parsedStrip?.buffer) {
       pass.addBuffer("strip.png", parsedStrip.buffer);
     }
 
