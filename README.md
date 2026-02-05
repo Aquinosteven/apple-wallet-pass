@@ -131,6 +131,11 @@ APPLE_WWDR_CERT_PEM_B64=LS0tLS1CRUdJTi...
 
 ## API Endpoints
 
+Notes:
+- UI calls `/api/client-pass`.
+- `API_KEY` is server-side only (set as a Vercel env var).
+- `/api/client-pass` forwards `/api/pass` headers and pkpass binary on 200; forwards text/JSON errors on non-200.
+
 ### Health Check: `/api/test-pass-health`
 
 Validates that all environment variables are configured correctly and certificates can be decoded.
@@ -246,6 +251,28 @@ npm run dev
 # Build for production
 npm run build
 ```
+
+## UI Demo (Vite)
+
+### How to run locally
+
+1. Create a `.env` file and set your server-side keys:
+   - `API_KEY` (used by `/api/client-pass` to authenticate with `/api/pass`)
+   - All Apple Wallet signing values required by `/api/pass`
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Start the dev server:
+
+```bash
+npm run dev
+```
+
+4. Open the UI at `http://localhost:5173`.
+5. Choose a `passType` and click **Generate Pass** to download a `.pkpass` file.
 
 ## Project Structure
 
