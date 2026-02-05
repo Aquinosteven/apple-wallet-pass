@@ -131,10 +131,9 @@ APPLE_WWDR_CERT_PEM_B64=LS0tLS1CRUdJTi...
 
 ## API Endpoints
 
-Notes:
-- UI calls `/api/client-pass`.
-- `API_KEY` is server-side only (set as a Vercel env var).
-- `/api/client-pass` forwards `/api/pass` headers and pkpass binary on 200; forwards text/JSON errors on non-200.
+**Current Pass Endpoints**
+- Canonical: `POST /api/pass`
+- Back-compat shim: `POST /api/client-pass`
 
 ### Health Check: `/api/test-pass-health`
 

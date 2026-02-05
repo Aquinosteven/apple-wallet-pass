@@ -3,6 +3,9 @@
     "api/pass.js": {
       "includeFiles": "generic.pass/**"
     },
+    "api/client-pass.js": {
+      "includeFiles": "generic.pass/**"
+    },
     "api/online-event.js": {
       "includeFiles": "generic.pass/**"
     }

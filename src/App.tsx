@@ -19,7 +19,7 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch("/api/client-pass", {
+      const response = await fetch("/api/pass", {
         method: "POST",
         headers: {
           "content-type": "application/json",
