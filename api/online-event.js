@@ -379,7 +379,7 @@ export default async function handler(req, res) {
 
     const pass = await PKPass.from(
       {
-        model: join(__dirname, "..", "generic.pass"),
+        model: join(__dirname, "..", "event-ticket.pass"),
         certificates: {
           wwdr,
           signerCert,
@@ -401,15 +401,7 @@ export default async function handler(req, res) {
         backgroundColor,
         foregroundColor,
         labelColor,
-        barcodes: [
-          {
-            message: joinLinkUrl,
-            format: "PKBarcodeFormatQR",
-            messageEncoding: "iso-8859-1",
-            altText: joinLinkLabel,
-          },
-        ],
-        generic: {
+        eventTicket: {
           headerFields,
           primaryFields,
           secondaryFields,

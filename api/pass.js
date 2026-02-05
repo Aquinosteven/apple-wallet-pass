@@ -207,12 +207,23 @@ export default async function handler(req, res) {
           ? String(theme.stripImageBase64).trim()
           : "";
         parsedStrip = parseBase64DataUrl(stripBase64);
-        if (!stripBase64 || !parsedStrip) {
+        if (!stripBase64) {
+          console.warn("Theme strip image missing: theme.stripImageBase64 empty");
+          errors.push("theme.stripImageBase64 (invalid data URL)");
+        } else if (!parsedStrip) {
+          console.warn("Theme strip image invalid data URL");
           errors.push("theme.stripImageBase64 (invalid data URL)");
         } else if (parsedStrip.mimeType !== "image/png") {
+          console.warn(
+            `Theme strip image must be PNG, received ${parsedStrip.mimeType}`
+          );
           errors.push("theme.stripImageBase64 (must be a PNG data URL)");
         }
       }
+    }
+
+    if (themeMode === "image") {
+      res.setHeader("X-Has-Strip", parsedStrip?.buffer ? "true" : "false");
     }
 
     if (errors.length) {
@@ -231,7 +242,7 @@ export default async function handler(req, res) {
 
     const pass = await PKPass.from(
       {
-        model: "generic.pass",
+        model: "event-ticket.pass",
         certificates: {
           wwdr,
           signerCert,
@@ -254,30 +265,30 @@ export default async function handler(req, res) {
 
     const safePhone = attendeePhone ? String(attendeePhone) : "";
 
-    pass.generic = pass.generic || {};
-    pass.generic.primaryFields = [
+    pass.eventTicket = pass.eventTicket || {};
+    pass.eventTicket.primaryFields = [
       { key: "eventTitle", label: "EVENT", value: String(eventTitle) },
     ];
 
-    pass.generic.secondaryFields = [
+    pass.eventTicket.secondaryFields = [
       { key: "attendeeName", label: "NAME", value: String(attendeeName) },
       { key: "eventTime", label: "DATE", value: String(formattedDateTime) },
     ];
 
-    pass.generic.auxiliaryFields = [
+    pass.eventTicket.auxiliaryFields = [
       { key: "attendeeEmail", label: "EMAIL", value: String(attendeeEmail) },
       ...(safePhone ? [{ key: "attendeePhone", label: "PHONE", value: safePhone }] : []),
     ];
 
-    pass.generic.backFields = [
+    pass.eventTicket.backFields = [
       { key: "joinUrl", label: "JOIN LINK", value: String(joinUrl) },
       { key: "serial", label: "SERIAL", value: String(serialNumber) },
     ];
 
-    pass.primaryFields.splice(0, pass.primaryFields.length, ...pass.generic.primaryFields);
-    pass.secondaryFields.splice(0, pass.secondaryFields.length, ...pass.generic.secondaryFields);
-    pass.auxiliaryFields.splice(0, pass.auxiliaryFields.length, ...pass.generic.auxiliaryFields);
-    pass.backFields.splice(0, pass.backFields.length, ...pass.generic.backFields);
+    pass.primaryFields.splice(0, pass.primaryFields.length, ...pass.eventTicket.primaryFields);
+    pass.secondaryFields.splice(0, pass.secondaryFields.length, ...pass.eventTicket.secondaryFields);
+    pass.auxiliaryFields.splice(0, pass.auxiliaryFields.length, ...pass.eventTicket.auxiliaryFields);
+    pass.backFields.splice(0, pass.backFields.length, ...pass.eventTicket.backFields);
 
     if (parsedLogo?.buffer) {
       pass.addBuffer("icon.png", parsedLogo.buffer);
