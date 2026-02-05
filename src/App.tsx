@@ -126,7 +126,7 @@ function App() {
     if (themeMode === "image" && !stripImageBase64) {
       errors.push("Strip image is required for image theme.");
     }
-    if (joinUrl && !/^https?:\\/\\//i.test(joinUrl.trim())) {
+    if (joinUrl && !/^https?:\/\//i.test(joinUrl.trim())) {
       errors.push("Join URL must start with http:// or https://");
     }
     if (errors.length) {
