@@ -1,13 +1,13 @@
 {
   "functions": {
     "api/pass.js": {
-      "includeFiles": "generic.pass/**"
+      "includeFiles": "event-ticket.pass/**"
     },
     "api/client-pass.js": {
-      "includeFiles": "generic.pass/**"
+      "includeFiles": "event-ticket.pass/**"
     },
     "api/online-event.js": {
-      "includeFiles": "generic.pass/**"
+      "includeFiles": "event-ticket.pass/**"
     }
   }
 }

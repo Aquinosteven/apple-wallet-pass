@@ -2,7 +2,11 @@
 
 import * as passkitModule from "passkit-generator";
 import crypto from "crypto";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 const { PKPass } = passkitModule;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 function isValidRGBString(s) {
   if (typeof s !== "string") return false;
@@ -242,7 +246,7 @@ export default async function handler(req, res) {
 
     const pass = await PKPass.from(
       {
-        model: "event-ticket.pass",
+        model: join(__dirname, "..", "event-ticket.pass"),
         certificates: {
           wwdr,
           signerCert,
