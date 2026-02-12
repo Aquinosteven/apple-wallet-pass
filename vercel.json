@@ -3,6 +3,9 @@
     "api/pass.js": {
       "includeFiles": "event-ticket.pass/**"
     },
+    "api/ghl-pass.js": {
+      "includeFiles": "event-ticket.pass/**"
+    },
     "api/client-pass.js": {
       "includeFiles": "event-ticket.pass/**"
     },
