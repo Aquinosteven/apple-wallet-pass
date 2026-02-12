@@ -125,15 +125,6 @@ function setCors(res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-api-key");
 }
 
-function parseJoinTokenFromShortUrl(shortJoinUrl) {
-  try {
-    const parsed = new URL(shortJoinUrl);
-    return parsed.searchParams.get("token") || "";
-  } catch {
-    return "";
-  }
-}
-
 function shortUrlTooLongResponse(res, shortJoinUrlLength, joinUrlLength) {
   return res.status(400).json({
     ok: false,
@@ -317,19 +308,23 @@ export default async function handler(req, res) {
     const passToken = createSignedToken(
       {
         type: "pass_download",
+        serial,
         attendee: payload.attendee,
         event: {
           title: payload.event.title,
           startsAt: payload.event.startsAt || "",
         },
-        shortJoinUrl,
-        serial,
+        joinToken,
         exp: passExp,
       },
       secret
     );
 
     const passUrl = `${baseUrl}/api/ghl-pass?token=${encodeURIComponent(passToken)}`;
+    console.log("[ghl-pass] url lengths", {
+      passUrlLength: passUrl.length,
+      shortJoinUrlLength: shortJoinUrl.length,
+    });
 
     return res.status(200).json({
       ok: true,
@@ -349,25 +344,21 @@ export default async function handler(req, res) {
     const payload = verified.payload || {};
     const attendee = payload.attendee && typeof payload.attendee === "object" ? payload.attendee : null;
     const event = payload.event && typeof payload.event === "object" ? payload.event : null;
-    const shortJoinUrl = payload.shortJoinUrl ? String(payload.shortJoinUrl) : "";
+    const joinToken = payload.joinToken ? String(payload.joinToken) : "";
     const serial = payload.serial ? String(payload.serial) : "";
+    const baseUrl = getBaseUrl(req);
+    const shortJoinUrl = baseUrl
+      ? `${baseUrl}/api/join?token=${encodeURIComponent(joinToken)}`
+      : `/api/join?token=${encodeURIComponent(joinToken)}`;
 
-    if (!attendee || !event || !shortJoinUrl || !serial) {
+    if (!attendee || !event || !joinToken || !serial) {
       return res.status(400).json({ ok: false, error: "INVALID_OR_EXPIRED" });
     }
-    if (!attendee.name || !attendee.email || !event.title || !isHttpsUrl(shortJoinUrl)) {
+    if (!attendee.name || !attendee.email || !event.title) {
       return res.status(400).json({ ok: false, error: "INVALID_OR_EXPIRED" });
     }
     if (shortJoinUrl.length > MAX_SHORT_JOIN_URL_LENGTH) {
-      let joinUrlLength = 0;
-      const nestedJoinToken = parseJoinTokenFromShortUrl(shortJoinUrl);
-      if (nestedJoinToken) {
-        const nestedVerified = verifySignedToken(nestedJoinToken, secret, "join_redirect");
-        if (nestedVerified.ok && nestedVerified.payload?.joinUrl) {
-          joinUrlLength = String(nestedVerified.payload.joinUrl).length;
-        }
-      }
-      return shortUrlTooLongResponse(res, shortJoinUrl.length, joinUrlLength);
+      return shortUrlTooLongResponse(res, shortJoinUrl.length, 0);
     }
 
     try {
