@@ -34,7 +34,7 @@ export default function handler(req, res) {
     (key) => !process.env[key] || String(process.env[key]).trim() === ""
   );
   const templates = getTemplates();
-  const signingReady = missingEnv.length === 0 && templates.length > 0;
+  const signingReady = missingEnv.length === 0;
 
   return res.status(200).json({
     ok: signingReady,
