@@ -2,11 +2,13 @@ import fs from "fs";
 import path from "path";
 
 const REQUIRED_ENV_VARS = [
-  "APPLE_PASS_TYPE_IDENTIFIER",
-  "APPLE_TEAM_IDENTIFIER",
-  "APPLE_KEY_IDENTIFIER",
-  "APPLE_PRIVATE_KEY",
-  "APPLE_WWDR_CERT",
+  "SIGNER_CERT_PEM",
+  "SIGNER_KEY_PEM",
+  "PASS_P12_PASSWORD",
+  "WWDR_PEM",
+  "APPLE_PASS_TYPE_ID",
+  "APPLE_TEAM_ID",
+  "APPLE_ORG_NAME",
 ];
 
 function getTemplates() {
