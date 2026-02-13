@@ -4,11 +4,15 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import clientPassHandler from "./api/client-pass.js";
 import passHandler from "./api/pass.js";
 import healthPassHandler from "./api/health-pass.js";
+import googleSaveHandler from "./api/google-save.js";
+import gwalletHealthHandler from "./api/gwallet-health.js";
 
 const vercelHandlers: Array<{ prefix: string; handler: Handler }>= [
   { prefix: "/api/client-pass", handler: clientPassHandler },
   { prefix: "/api/pass", handler: passHandler },
   { prefix: "/api/health-pass", handler: healthPassHandler },
+  { prefix: "/api/google-save", handler: googleSaveHandler },
+  { prefix: "/api/gwallet-health", handler: gwalletHealthHandler },
 ];
 
 type Handler = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>;
@@ -61,7 +65,7 @@ function withVercelResponse(res: ServerResponse): VercelResponse {
 function localApiPlugin() {
   return {
     name: "local-api",
-    configureServer(server: { middlewares: { use: Function } }) {
+    configureServer(server: { middlewares: { use: (fn: (req: IncomingMessage, res: ServerResponse, next: () => void) => void) => void } }) {
       server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
         const url = req.url || "";
         const matched = vercelHandlers.find((entry) => url.startsWith(entry.prefix));

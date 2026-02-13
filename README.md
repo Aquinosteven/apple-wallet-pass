@@ -134,6 +134,38 @@ APPLE_WWDR_CERT_PEM_B64=LS0tLS1CRUdJTi...
 **Current Pass Endpoints**
 - Canonical: `POST /api/pass`
 - Back-compat shim: `POST /api/client-pass`
+- Google Wallet Save URL: `GET|POST /api/google-save`
+- Google Wallet Health: `GET /api/gwallet-health` (checks service-account token + Generic Class API access for `${GOOGLE_WALLET_ISSUER_ID}.showfi.generic.v1`)
+
+### Google Wallet Save URL: `/api/google-save`
+
+Creates a signed Google Wallet "Save to Google Wallet" URL using a Google Cloud
+service account key (JWT flow, RS256).
+
+Required environment variables:
+
+```env
+GOOGLE_WALLET_ISSUER_ID=3388000000022901234
+GOOGLE_WALLET_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"wallet-signer@your-project.iam.gserviceaccount.com",...}
+```
+
+Response shape:
+
+```json
+{ "ok": true, "saveUrl": "https://pay.google.com/gp/v/save/..." }
+```
+
+On failure:
+
+```json
+{ "ok": false, "error": "..." }
+```
+
+Google Wallet health test:
+
+```bash
+curl -s https://<your-vercel-domain>/api/gwallet-health | jq
+```
 
 ### Health Check: `/api/test-pass-health`
 
