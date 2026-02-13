@@ -26,3 +26,11 @@ dist-ssr
 *.pkpass
 
 tmp/
+
+# secrets
+.secrets/
+*.p8
+*.pem
+*.p12
+*.json
+.env*
