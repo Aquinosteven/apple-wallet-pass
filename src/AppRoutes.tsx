@@ -12,7 +12,7 @@ import IntegrationsPage from './bolt/pages/dashboard/IntegrationsPage';
 import NewEventWizard from './bolt/pages/dashboard/NewEventWizard';
 import SettingsPage from './bolt/pages/dashboard/SettingsPage';
 import HomePage from './bolt/pages/home/HomePage';
-import { isSupabaseConfigured } from './bolt/supabaseClient';
+import { getSupabaseClient, hasSupabaseConfig } from './bolt/supabaseClient';
 import PassGeneratorPage from './App';
 
 function MarketingLayout({ children }: { children: ReactNode }) {
@@ -26,7 +26,7 @@ function MarketingLayout({ children }: { children: ReactNode }) {
 }
 
 function RequireSupabase({ children }: { children: ReactNode }) {
-  if (!isSupabaseConfigured) {
+  if (!hasSupabaseConfig() || !getSupabaseClient()) {
     return <SupabaseNotConfigured />;
   }
   return <>{children}</>;
