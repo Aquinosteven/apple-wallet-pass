@@ -211,6 +211,11 @@ GET /api/test-pass
 - **Success**: Downloads a `test.pkpass` file
 - **Error**: Returns JSON with error details
 
+## Deployment Routing (Vercel)
+
+BrowserRouter requires SPA rewrites on Vercel.
+Keep `/api/*` and `/functions/api/*` pass-through, and rewrite all other paths to `/` so deep links like `/pass`, `/login`, and `/dashboard/*` do not 404 on refresh.
+
 ## Testing on iPhone
 
 ### Step 1: Validate Configuration

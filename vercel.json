@@ -12,5 +12,19 @@
     "api/online-event.js": {
       "includeFiles": "event-ticket.pass/**"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/functions/api/(.*)",
+      "destination": "/functions/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
 }
