@@ -216,6 +216,20 @@ GET /api/test-pass
 BrowserRouter requires SPA rewrites on Vercel.
 Keep `/api/*` and `/functions/api/*` pass-through, and rewrite all other paths to `/` so deep links like `/pass`, `/login`, and `/dashboard/*` do not 404 on refresh.
 
+## Supabase Setup (Auth + DB + Storage)
+
+Run the SQL migration in `/docs/supabase-schema.sql` in your Supabase project:
+
+1. Open Supabase Dashboard -> SQL Editor.
+2. Create a new query, paste the full contents of `/docs/supabase-schema.sql`, and run it.
+3. Confirm tables exist: `events`, `ticket_designs`, `issued_tickets`.
+4. Confirm bucket exists: `assets` (private).
+
+Notes:
+- RLS is enabled on all core tables.
+- Policies enforce per-user access using `auth.uid()`.
+- Asset object paths are expected under `/<user_id>/<event_id>/...`.
+
 ## Testing on iPhone
 
 ### Step 1: Validate Configuration
