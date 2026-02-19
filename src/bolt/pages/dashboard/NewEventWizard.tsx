@@ -4,6 +4,14 @@ import { ArrowLeft } from 'lucide-react';
 import WizardStepper from './wizard/WizardStepper';
 import EventDetailsStep, { EventDetailsData } from './wizard/EventDetailsStep';
 import TicketDesignStep, { TicketDesignData } from './wizard/TicketDesignStep';
+import {
+  createEvent,
+  createTicketDesign,
+  mapEventForApi,
+  mapTicketDesignForApi,
+  updateEvent,
+  updateTicketDesign,
+} from '../../utils/backendApi';
 
 const steps = [
   { id: 1, label: 'Event Details' },
@@ -53,10 +61,33 @@ export default function NewEventWizard() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [eventDetails, setEventDetails] = useState<EventDetailsData>(defaultEventDetails);
   const [ticketDesign, setTicketDesign] = useState<TicketDesignData>(defaultTicketDesign);
+  const [eventId, setEventId] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
-  const handleSaveDraft = () => {
-    console.log('Saving draft:', { eventDetails, ticketDesign });
+  const handleSaveDraft = async () => {
+    try {
+      setIsSavingDraft(true);
+      const draftEvent = mapEventForApi(eventDetails, {
+        id: eventId ?? undefined,
+        isPublished: false,
+      });
+
+      const savedEvent = eventId
+        ? await updateEvent({ ...draftEvent, id: eventId })
+        : await createEvent(draftEvent);
+      const resolvedEventId = savedEvent?.id ?? draftEvent.id;
+      setEventId(resolvedEventId);
+
+      const draftDesign = mapTicketDesignForApi(resolvedEventId, ticketDesign);
+      if (eventId) {
+        await updateTicketDesign(draftDesign);
+      } else {
+        await createTicketDesign(draftDesign);
+      }
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   const handleContinueToDesign = () => {
@@ -69,10 +100,29 @@ export default function NewEventWizard() {
   };
 
   const handlePublish = async () => {
-    setIsPublishing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const newEventId = Date.now().toString();
-    navigate(`/dashboard/events/${newEventId}?published=true`);
+    try {
+      setIsPublishing(true);
+      const publishEvent = mapEventForApi(eventDetails, {
+        id: eventId ?? undefined,
+        isPublished: true,
+      });
+      const savedEvent = eventId
+        ? await updateEvent({ ...publishEvent, id: eventId })
+        : await createEvent(publishEvent);
+      const resolvedEventId = savedEvent?.id ?? publishEvent.id;
+      setEventId(resolvedEventId);
+
+      const publishDesign = mapTicketDesignForApi(resolvedEventId, ticketDesign);
+      if (eventId) {
+        await updateTicketDesign(publishDesign);
+      } else {
+        await createTicketDesign(publishDesign);
+      }
+
+      navigate(`/dashboard/events/${resolvedEventId}?published=true`);
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -111,6 +161,7 @@ export default function NewEventWizard() {
                   data={eventDetails}
                   onChange={setEventDetails}
                   onSaveDraft={handleSaveDraft}
+                  isSavingDraft={isSavingDraft}
                   onContinue={handleContinueToDesign}
                 />
               )}
@@ -122,6 +173,7 @@ export default function NewEventWizard() {
                   onChange={setTicketDesign}
                   onBack={handleBackToDetails}
                   onSaveDraft={handleSaveDraft}
+                  isSavingDraft={isSavingDraft}
                   onPublish={handlePublish}
                   isPublishing={isPublishing}
                 />

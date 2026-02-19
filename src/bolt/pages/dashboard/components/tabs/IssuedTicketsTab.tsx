@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Search, MoreHorizontal, Upload, Code, UserPlus, Eye, XCircle } from 'lucide-react';
+import { Send, Search, Upload, Code, UserPlus, Eye, XCircle } from 'lucide-react';
 
 interface IssuedTicket {
   id: string;

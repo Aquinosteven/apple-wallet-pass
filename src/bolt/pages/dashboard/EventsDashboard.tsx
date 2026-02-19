@@ -1,52 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Calendar } from 'lucide-react';
 import EventCard, { Event, EventStatus } from './components/EventCard';
-
-const sampleEvents: Event[] = [
-  {
-    id: '1',
-    name: 'Q1 Revenue Masterclass',
-    date: 'Mar 15, 2026',
-    time: '2:00 PM',
-    timezone: 'EST',
-    status: 'active',
-    ticketsIssued: 342,
-    walletAdds: 298,
-    checkIns: 156,
-  },
-  {
-    id: '2',
-    name: 'Product Launch Webinar',
-    date: 'Mar 22, 2026',
-    time: '11:00 AM',
-    timezone: 'PST',
-    status: 'ready',
-    ticketsIssued: 0,
-    walletAdds: 0,
-    checkIns: 0,
-  },
-  {
-    id: '3',
-    name: '5-Day Conversion Challenge',
-    date: 'Apr 1-5, 2026',
-    status: 'draft',
-    ticketsIssued: 0,
-    walletAdds: 0,
-    checkIns: 0,
-  },
-  {
-    id: '4',
-    name: 'Annual Sales Conference 2025',
-    date: 'Dec 10, 2025',
-    time: '9:00 AM',
-    timezone: 'CST',
-    status: 'ended',
-    ticketsIssued: 1250,
-    walletAdds: 1180,
-    checkIns: 1043,
-  },
-];
+import { listEvents } from '../../utils/backendApi';
 
 const filterOptions: { value: EventStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All Events' },
@@ -57,16 +13,32 @@ const filterOptions: { value: EventStatus | 'all'; label: string }[] = [
 ];
 
 export default function EventsDashboard() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all');
 
-  const filteredEvents = sampleEvents.filter((event) => {
+  useEffect(() => {
+    let mounted = true;
+    async function loadEvents() {
+      const loadedEvents = await listEvents();
+      if (!mounted) return;
+      setEvents(loadedEvents);
+      setIsLoading(false);
+    }
+    loadEvents();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredEvents = events.filter((event) => {
     const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const hasEvents = sampleEvents.length > 0;
+  const hasEvents = events.length > 0;
 
   return (
     <div className="max-w-5xl">
@@ -86,7 +58,11 @@ export default function EventsDashboard() {
         </Link>
       </div>
 
-      {hasEvents ? (
+      {isLoading ? (
+        <div className="text-center py-12">
+          <p className="text-sm text-gray-500">Loading events...</p>
+        </div>
+      ) : hasEvents ? (
         <>
           <div className="flex items-center gap-3 mb-5">
             <div className="relative flex-1 max-w-xs">
