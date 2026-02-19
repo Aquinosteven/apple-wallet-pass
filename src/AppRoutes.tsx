@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Footer from './bolt/components/layout/Footer';
 import Navbar from './bolt/components/layout/Navbar';
@@ -25,14 +25,15 @@ function MarketingLayout({ children }: { children: ReactNode }) {
   );
 }
 
-function RequireSupabase({ children }: { children: ReactNode }) {
-  if (!hasSupabaseConfig() || !getSupabaseClient()) {
-    return <SupabaseNotConfigured />;
-  }
-  return <>{children}</>;
-}
-
 export default function AppRoutes() {
+  const supabaseReady = hasSupabaseConfig() && Boolean(getSupabaseClient());
+  const loginElement: ReactElement = supabaseReady ? <LoginPage /> : <SupabaseNotConfigured />;
+  const dashboardElement: ReactElement = supabaseReady ? (
+    <DashboardLayout />
+  ) : (
+    <SupabaseNotConfigured />
+  );
+
   return (
     <Routes>
       <Route
@@ -43,29 +44,19 @@ export default function AppRoutes() {
           </MarketingLayout>
         }
       />
-      <Route
-        path="/login"
-        element={
-          <RequireSupabase>
-            <LoginPage />
-          </RequireSupabase>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <RequireSupabase>
-            <DashboardLayout />
-          </RequireSupabase>
-        }
-      >
-        <Route index element={<EventsDashboard />} />
-        <Route path="events/new" element={<NewEventWizard />} />
-        <Route path="events/:eventId" element={<EventDetailPage />} />
-        <Route path="tickets" element={<GlobalTicketsPage />} />
-        <Route path="integrations" element={<IntegrationsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
+      <Route path="/login" element={loginElement} />
+      {supabaseReady ? (
+        <Route path="/dashboard" element={dashboardElement}>
+          <Route index element={<EventsDashboard />} />
+          <Route path="events/new" element={<NewEventWizard />} />
+          <Route path="events/:eventId" element={<EventDetailPage />} />
+          <Route path="tickets" element={<GlobalTicketsPage />} />
+          <Route path="integrations" element={<IntegrationsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+      ) : (
+        <Route path="/dashboard/*" element={dashboardElement} />
+      )}
       <Route path="/pass" element={<PassGeneratorPage />} />
       <Route path="/events/new" element={<Navigate to="/dashboard/events/new" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
