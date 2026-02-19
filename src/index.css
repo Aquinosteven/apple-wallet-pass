@@ -1,25 +1,102 @@
-:root {
-  color-scheme: light;
-  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-  color: #0f172a;
-  background: #f8fafc;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply text-gray-900;
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  #root {
+    min-height: 100vh;
+  }
 }
 
-* {
-  box-sizing: border-box;
+@layer components {
+  .card {
+    @apply bg-white rounded-2xl border border-gray-100 p-6 shadow-sm;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 text-sm border border-gray-200 rounded-lg
+      placeholder:text-gray-400
+      focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy/40
+      transition-shadow;
+  }
+
+  .btn-primary {
+    @apply px-5 py-2.5 text-sm font-medium text-white bg-navy rounded-xl
+      hover:bg-navy-light active:bg-navy-dark
+      disabled:opacity-50 disabled:cursor-not-allowed
+      shadow-sm hover:shadow-md
+      transition-all duration-200;
+  }
+
+  .btn-secondary {
+    @apply px-5 py-2.5 text-sm font-medium text-gray-600 bg-white rounded-xl
+      border border-gray-200
+      hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100
+      disabled:opacity-50 disabled:cursor-not-allowed
+      transition-all duration-200;
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+@layer utilities {
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in {
+    animation: slide-in 0.25s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.4s ease-out;
+  }
 }
 
-#root {
-  min-height: 100vh;
-}
-
-.page {
+.pass-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -27,7 +104,7 @@ body {
   padding: 32px 16px;
 }
 
-.card {
+.pass-card {
   width: min(520px, 100%);
   background: #ffffff;
   border-radius: 20px;
@@ -36,30 +113,37 @@ body {
   border: 1px solid #e2e8f0;
 }
 
-.header h1 {
+.pass-header h1 {
   margin: 0 0 8px;
   font-size: 28px;
 }
 
-.header p {
+.pass-header p {
   margin: 0;
   color: #475569;
 }
 
-.form {
+.pass-form {
   margin-top: 24px;
   display: grid;
   gap: 16px;
 }
 
-.field {
+.pass-field {
   display: grid;
   gap: 8px;
   font-size: 14px;
   color: #334155;
 }
 
-select {
+.pass-form select,
+.pass-form input,
+.pass-form button {
+  font-family: inherit;
+}
+
+.pass-form select,
+.pass-form input {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid #cbd5f5;
@@ -67,7 +151,7 @@ select {
   font-size: 14px;
 }
 
-button {
+.pass-form button {
   border: none;
   border-radius: 12px;
   background: #1d4ed8;
@@ -78,45 +162,45 @@ button {
   transition: transform 0.15s ease, background 0.15s ease;
 }
 
-button:disabled {
+.pass-form button:disabled {
   cursor: wait;
   background: #94a3b8;
 }
 
-button:not(:disabled):hover {
+.pass-form button:not(:disabled):hover {
   background: #1e40af;
   transform: translateY(-1px);
 }
 
-.notice {
+.pass-notice {
   margin-top: 16px;
   padding: 12px 14px;
   border-radius: 12px;
   font-size: 14px;
 }
 
-.notice.success {
+.pass-success {
   background: #ecfdf5;
   color: #047857;
   border: 1px solid #bbf7d0;
 }
 
-.notice.error {
+.pass-error {
   background: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fecaca;
 }
 
-.actions {
+.pass-actions {
   margin-top: 20px;
 }
 
-.actions a {
+.pass-actions a {
   color: #1d4ed8;
   text-decoration: none;
   font-weight: 500;
 }
 
-.actions a:hover {
+.pass-actions a:hover {
   text-decoration: underline;
 }

@@ -221,15 +221,15 @@ function App() {
   };
 
   return (
-    <div className="page">
-      <main className="card">
-        <header className="header">
+    <div className="pass-page">
+      <main className="pass-card">
+        <header className="pass-header">
           <h1>Apple Wallet Pass — Personalization</h1>
           <p>Generate a personalized .pkpass with attendee + event details.</p>
         </header>
 
-        <form className="form" onSubmit={handleSubmit}>
-          <label className="field">
+        <form className="pass-form" onSubmit={handleSubmit}>
+          <label className="pass-field">
             <span>Preset</span>
             <select
               value={preset}
@@ -243,7 +243,7 @@ function App() {
             </select>
           </label>
 
-          <label className="field">
+          <label className="pass-field">
             <span>Name</span>
             <input
               type="text"
@@ -254,7 +254,7 @@ function App() {
             />
           </label>
 
-          <label className="field">
+          <label className="pass-field">
             <span>Email</span>
             <input
               type="email"
@@ -265,7 +265,7 @@ function App() {
             />
           </label>
 
-          <label className="field">
+          <label className="pass-field">
             <span>Phone</span>
             <input
               type="tel"
@@ -275,7 +275,7 @@ function App() {
             />
           </label>
 
-          <label className="field">
+          <label className="pass-field">
             <span>Event title</span>
             <input
               type="text"
@@ -286,7 +286,7 @@ function App() {
             />
           </label>
 
-          <label className="field">
+          <label className="pass-field">
             <span>Date &amp; time</span>
             <input
               type="datetime-local"
@@ -296,7 +296,7 @@ function App() {
             />
           </label>
 
-          <label className="field">
+          <label className="pass-field">
             <span>Join URL</span>
             <input
               type="url"
@@ -307,7 +307,7 @@ function App() {
             />
           </label>
 
-          <label className="field">
+          <label className="pass-field">
             <span>Logo (PNG)</span>
             <input
               type="file"
@@ -318,7 +318,7 @@ function App() {
             {logoName ? <em>Selected: {logoName}</em> : null}
           </label>
 
-          <label className="field">
+          <label className="pass-field">
             <span>Theme mode</span>
             <select
               value={themeMode}
@@ -331,7 +331,7 @@ function App() {
             </select>
           </label>
 
-          <label className="field">
+          <label className="pass-field">
             <span>Background color</span>
             <input
               type="color"
@@ -341,7 +341,7 @@ function App() {
           </label>
 
           {themeMode === "image" ? (
-            <label className="field">
+            <label className="pass-field">
               <span>Strip image (PNG)</span>
               <input
                 type="file"
@@ -356,7 +356,7 @@ function App() {
           ) : null}
 
           {status === "error" && error && (
-            <p className="notice error">{error}</p>
+            <p className="pass-notice pass-error">{error}</p>
           )}
 
           <button type="submit" disabled={status === "loading" || !canSubmit}>
@@ -365,19 +365,19 @@ function App() {
         </form>
 
         {status === "success" && message && (
-          <p className="notice success">{message}</p>
+          <p className="pass-notice pass-success">{message}</p>
         )}
         
 
         {status === "success" && downloadUrl ? (
-          <div className="actions">
+          <div className="pass-actions">
             <a href={downloadUrl} download={downloadName}>
               Download .pkpass
             </a>
           </div>
         ) : null}
 
-        <div className="actions">
+        <div className="pass-actions">
           <a href="/api/health-pass" target="_blank" rel="noreferrer">
             Open API health
           </a>
