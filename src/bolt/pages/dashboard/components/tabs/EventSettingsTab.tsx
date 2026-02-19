@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import { EventStatus } from '../EventCard';
 
@@ -10,28 +10,48 @@ interface EventData {
   timezone?: string;
   description?: string;
   status: EventStatus;
+  ticketPublished: boolean;
+  ticketsIssued: number;
+  walletAdds: number;
+  checkIns: number;
+  lastIssuedAt?: string;
 }
 
 interface EventSettingsTabProps {
   event: EventData;
-  setEvent: React.Dispatch<React.SetStateAction<EventData>>;
+  onSave: (event: EventData) => Promise<void> | void;
 }
 
-export default function EventSettingsTab({ event, setEvent }: EventSettingsTabProps) {
+export default function EventSettingsTab({ event, onSave }: EventSettingsTabProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [name, setName] = useState(event.name);
   const [date, setDate] = useState(event.date || '');
   const [time, setTime] = useState(event.time || '');
   const [description, setDescription] = useState(event.description || '');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    setEvent((prev) => ({
-      ...prev,
+  useEffect(() => {
+    setName(event.name);
+    setDate(event.date || '');
+    setTime(event.time || '');
+    setDescription(event.description || '');
+  }, [event]);
+
+  const handleSave = async () => {
+    const updatedEvent: EventData = {
+      ...event,
       name,
       date: date || undefined,
       time: time || undefined,
       description: description || undefined,
-    }));
+    };
+
+    try {
+      setIsSaving(true);
+      await onSave(updatedEvent);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -88,9 +108,10 @@ export default function EventSettingsTab({ event, setEvent }: EventSettingsTabPr
         <div className="mt-5 pt-4 border-t border-gray-100 flex justify-end">
           <button
             onClick={handleSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-colors"
+            disabled={isSaving}
+            className="px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Save Changes
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>

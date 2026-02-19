@@ -30,6 +30,7 @@ interface EventDetailsStepProps {
   data: EventDetailsData;
   onChange: (data: EventDetailsData) => void;
   onSaveDraft: () => void;
+  isSavingDraft?: boolean;
   onContinue: () => void;
 }
 
@@ -97,7 +98,13 @@ function formatPreviewTime(timeStr: string, tz: string): string {
   return `${hour12}:${minutes} ${ampm} ${tzAbbrs[tz] || ''}`.trim();
 }
 
-export default function EventDetailsStep({ data, onChange, onSaveDraft, onContinue }: EventDetailsStepProps) {
+export default function EventDetailsStep({
+  data,
+  onChange,
+  onSaveDraft,
+  isSavingDraft = false,
+  onContinue,
+}: EventDetailsStepProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const update = (field: keyof EventDetailsData, value: string | boolean) => {
@@ -456,13 +463,14 @@ export default function EventDetailsStep({ data, onChange, onSaveDraft, onContin
 
         <div className="sticky bottom-0 bg-gradient-to-t from-gray-50 via-gray-50 to-gray-50/80 -mx-8 -mb-8 px-8 py-4 border-t border-gray-200">
           <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onSaveDraft}
-              className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              Save Draft
-            </button>
+              <button
+                type="button"
+                onClick={onSaveDraft}
+                disabled={isSavingDraft}
+                className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSavingDraft ? 'Saving...' : 'Save Draft'}
+              </button>
             <button
               type="button"
               onClick={onContinue}

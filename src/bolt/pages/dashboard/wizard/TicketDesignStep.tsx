@@ -19,6 +19,7 @@ interface TicketDesignStepProps {
   onChange: (data: TicketDesignData) => void;
   onBack: () => void;
   onSaveDraft: () => void;
+  isSavingDraft?: boolean;
   onPublish: () => void;
   isPublishing: boolean;
 }
@@ -76,6 +77,7 @@ export default function TicketDesignStep({
   onChange,
   onBack,
   onSaveDraft,
+  isSavingDraft = false,
   onPublish,
   isPublishing,
 }: TicketDesignStepProps) {
@@ -296,9 +298,10 @@ export default function TicketDesignStep({
               <button
                 type="button"
                 onClick={onSaveDraft}
-                className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                disabled={isSavingDraft}
+                className="px-4 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Save Draft
+                {isSavingDraft ? 'Saving...' : 'Save Draft'}
               </button>
               <button
                 type="button"

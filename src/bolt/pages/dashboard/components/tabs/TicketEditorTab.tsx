@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Upload, Image, Palette, QrCode, Clock, Info } from 'lucide-react';
 import { EventStatus } from '../EventCard';
+import type { ApiTicketDesign } from '../../../../utils/backendApi';
 
 interface EventData {
   status: EventStatus;
@@ -9,14 +10,68 @@ interface EventData {
 
 interface TicketEditorTabProps {
   event: EventData;
-  onPublish: () => void;
+  eventId: string;
+  ticketDesign: ApiTicketDesign | null;
+  onSaveDraft: (ticketDesign: ApiTicketDesign) => Promise<void> | void;
+  onPublish: () => Promise<void> | void;
 }
 
-export default function TicketEditorTab({ event, onPublish }: TicketEditorTabProps) {
+export default function TicketEditorTab({
+  event,
+  eventId,
+  ticketDesign,
+  onSaveDraft,
+  onPublish,
+}: TicketEditorTabProps) {
   const [backgroundColor, setBackgroundColor] = useState('#4285F4');
   const [barcodeEnabled, setBarcodeEnabled] = useState(true);
   const [logoFile, setLogoFile] = useState<string | null>(null);
   const [stripFile, setStripFile] = useState<string | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+
+  useEffect(() => {
+    if (!ticketDesign) return;
+    setBackgroundColor(ticketDesign.backgroundColor || '#4285F4');
+    setBarcodeEnabled(Boolean(ticketDesign.barcodeEnabled));
+    setLogoFile(ticketDesign.logoUrl || null);
+    setStripFile(ticketDesign.stripUrl || null);
+  }, [ticketDesign]);
+
+  const handleSaveDraft = async () => {
+    const payload: ApiTicketDesign = {
+      eventId,
+      backgroundColor,
+      barcodeEnabled,
+      logoUrl: logoFile,
+      stripUrl: stripFile,
+    };
+
+    try {
+      setIsSavingDraft(true);
+      await onSaveDraft(payload);
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    const payload: ApiTicketDesign = {
+      eventId,
+      backgroundColor,
+      barcodeEnabled,
+      logoUrl: logoFile,
+      stripUrl: stripFile,
+    };
+
+    try {
+      setIsPublishing(true);
+      await onSaveDraft(payload);
+      await onPublish();
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   const isPublished = event.ticketPublished;
 
@@ -182,15 +237,19 @@ export default function TicketEditorTab({ event, onPublish }: TicketEditorTabPro
         </div>
 
         <div className="sticky bottom-0 bg-gray-50/95 backdrop-blur -mx-6 -mb-6 px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-            Save Draft
+          <button
+            onClick={handleSaveDraft}
+            disabled={isSavingDraft}
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isSavingDraft ? 'Saving...' : 'Save Draft'}
           </button>
           <button
-            onClick={onPublish}
-            disabled={isPublished}
+            onClick={handlePublish}
+            disabled={isPublished || isPublishing}
             className="px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isPublished ? 'Published' : 'Publish Ticket'}
+            {isPublished ? 'Published' : isPublishing ? 'Publishing...' : 'Publish Ticket'}
           </button>
         </div>
       </div>
