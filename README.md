@@ -155,10 +155,16 @@ Response shape:
 { "ok": true, "saveUrl": "https://pay.google.com/gp/v/save/..." }
 ```
 
-On failure:
+Validation/config failure (`400`):
 
 ```json
-{ "ok": false, "error": "..." }
+{ "ok": false, "error": "...", "missing": ["GOOGLE_WALLET_ISSUER_ID"] }
+```
+
+Unexpected server failure (`500`):
+
+```json
+{ "ok": false, "error": "...", "missing": [] }
 ```
 
 Google Wallet health test:
@@ -166,6 +172,10 @@ Google Wallet health test:
 ```bash
 curl -s https://<your-vercel-domain>/api/gwallet-health | jq
 ```
+
+`/api/gwallet-health` uses `GOOGLE_WALLET_SERVICE_ACCOUNT_JSON`.
+Backward compatibility: if only `GOOGLE_WALLET_SA_JSON` is present, it is used and
+the response includes a deprecation warning.
 
 ### Health Check: `/api/test-pass-health`
 
