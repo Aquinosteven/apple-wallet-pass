@@ -31,30 +31,6 @@ interface EventData {
   lastIssuedAt?: string;
 }
 
-const sampleEvent: EventData = {
-  id: '1',
-  name: 'Q1 Revenue Masterclass',
-  date: 'Mar 15, 2026',
-  time: '2:00 PM',
-  timezone: 'EST',
-  description: 'A comprehensive masterclass on revenue optimization strategies for Q1.',
-  status: 'active',
-  ticketPublished: true,
-  ticketsIssued: 342,
-  walletAdds: 298,
-  checkIns: 156,
-  lastIssuedAt: '2 hours ago',
-};
-
-function buildFallbackEvent(eventId: string, isPublished: boolean): EventData {
-  return {
-    ...sampleEvent,
-    id: eventId,
-    status: isPublished ? 'ready' : sampleEvent.status,
-    ticketPublished: isPublished || sampleEvent.ticketPublished,
-  };
-}
-
 const tabs = [
   { id: 'overview', label: 'Overview' },
   { id: 'ticket', label: 'Ticket' },
@@ -77,11 +53,10 @@ export default function EventDetailPage() {
   const justPublished = searchParams.get('published') === 'true';
 
   const [activeTab, setActiveTab] = useState('overview');
-  const [event, setEvent] = useState<EventData>(() =>
-    buildFallbackEvent(eventId || sampleEvent.id, justPublished),
-  );
+  const [event, setEvent] = useState<EventData | null>(null);
   const [ticketDesign, setTicketDesign] = useState<ApiTicketDesign | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(isNew || justPublished);
   const [showNextSteps, setShowNextSteps] = useState(justPublished);
 
@@ -89,28 +64,74 @@ export default function EventDetailPage() {
     let mounted = true;
     async function loadEvent() {
       setIsLoading(true);
+      setLoadError(null);
       if (!eventId) {
+        setEvent(null);
+        setLoadError('Event not found.');
         setIsLoading(false);
         return;
       }
 
-      const [loadedEvent, loadedDesign] = await Promise.all([
-        getEventById(eventId),
-        getTicketDesignByEventId(eventId),
-      ]);
+      try {
+        const [loadedEvent, loadedDesign] = await Promise.all([
+          getEventById(eventId),
+          getTicketDesignByEventId(eventId),
+        ]);
 
-      if (!mounted) return;
+        if (!mounted) return;
+        if (!loadedEvent) {
+          setEvent(null);
+          setLoadError('Event not found.');
+          setTicketDesign(null);
+          return;
+        }
 
-      setEvent(loadedEvent ?? buildFallbackEvent(eventId, justPublished));
-      setTicketDesign(loadedDesign);
-      setIsLoading(false);
+        setEvent(loadedEvent);
+        setTicketDesign(loadedDesign);
+      } catch (error) {
+        if (!mounted) return;
+        setEvent(null);
+        setTicketDesign(null);
+        setLoadError(error instanceof Error ? error.message : 'Failed to load event.');
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
     }
 
-    loadEvent();
+    void loadEvent();
     return () => {
       mounted = false;
     };
   }, [eventId, justPublished]);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl">
+        <div className="text-center py-12">
+          <p className="text-sm text-gray-500">Loading event...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="max-w-5xl">
+        <div className="text-center py-16">
+          <h1 className="text-xl font-semibold text-gray-900">Event not found</h1>
+          <p className="mt-2 text-sm text-gray-500">{loadError || 'This event could not be loaded.'}</p>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center mt-5 px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-colors"
+          >
+            Back to Events
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const status = statusConfig[event.status];
 
@@ -168,118 +189,112 @@ export default function EventDetailPage() {
 
   return (
     <div className="max-w-5xl">
-      {isLoading ? (
-        <div className="text-center py-12">
-          <p className="text-sm text-gray-500">Loading event...</p>
-        </div>
-      ) : (
-        <>
-          {showToast && (
-            <Toast
-              notification={{ type: 'success', message: getToastMessage() }}
-              onDismiss={() => setShowToast(false)}
-            />
-          )}
+      <>
+        {showToast && (
+          <Toast
+            notification={{ type: 'success', message: getToastMessage() }}
+            onDismiss={() => setShowToast(false)}
+          />
+        )}
 
-          {showNextSteps && (
-            <div className="mb-6 bg-ggreen/5 border border-ggreen/20 rounded-xl p-5 relative">
-              <button
-                onClick={() => setShowNextSteps(false)}
-                className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-ggreen/10 flex items-center justify-center shrink-0">
-                  <CheckCircle className="w-5 h-5 text-ggreen" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base font-semibold text-gray-900 mb-1">Your ticket is ready</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Start issuing tickets to attendees. You can send them individually or in bulk via CSV upload.
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setActiveTab('issued')}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-colors"
-                    >
-                      <Send className="w-4 h-4" />
-                      Issue Tickets
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('distribution')}
-                      className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                    >
-                      View Distribution Options
-                    </button>
-                  </div>
+        {showNextSteps && (
+          <div className="mb-6 bg-ggreen/5 border border-ggreen/20 rounded-xl p-5 relative">
+            <button
+              onClick={() => setShowNextSteps(false)}
+              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-ggreen/10 flex items-center justify-center shrink-0">
+                <CheckCircle className="w-5 h-5 text-ggreen" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-semibold text-gray-900 mb-1">Your ticket is ready</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Start issuing tickets to attendees. You can send them individually or in bulk via CSV upload.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setActiveTab('issued')}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                    Issue Tickets
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('distribution')}
+                    className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    View Distribution Options
+                  </button>
                 </div>
               </div>
             </div>
-          )}
-
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-            <Link to="/dashboard" className="hover:text-gray-700 transition-colors">
-              Events
-            </Link>
-            <ChevronRight className="w-4 h-4" />
-            <span className="text-gray-900 font-medium">{event.name}</span>
           </div>
+        )}
 
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
-              <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${status.bg} ${status.color}`}>
-                {status.label}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <Share2 className="w-4 h-4" />
-                Share
+        <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+          <Link to="/dashboard" className="hover:text-gray-700 transition-colors">
+            Events
+          </Link>
+          <ChevronRight className="w-4 h-4" />
+          <span className="text-gray-900 font-medium">{event.name}</span>
+        </div>
+
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${status.bg} ${status.color}`}>
+              {status.label}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <Share2 className="w-4 h-4" />
+              Share
+            </button>
+            {event.status === 'draft' ? (
+              <button
+                onClick={handlePublishTicket}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-colors"
+              >
+                Publish Ticket
               </button>
-              {event.status === 'draft' ? (
-                <button
-                  onClick={handlePublishTicket}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-colors"
-                >
-                  Publish Ticket
-                </button>
-              ) : (
-                <button
-                  onClick={() => setActiveTab('issued')}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                  Issue Tickets
-                </button>
-              )}
-            </div>
+            ) : (
+              <button
+                onClick={() => setActiveTab('issued')}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-colors"
+              >
+                <Send className="w-4 h-4" />
+                Issue Tickets
+              </button>
+            )}
           </div>
+        </div>
 
-          <div className="border-b border-gray-200 mb-6">
-            <nav className="flex gap-6">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="flex gap-6">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
                 pb-3 text-sm font-medium border-b-2 transition-colors
                 ${activeTab === tab.id
                   ? 'border-gblue text-gblue'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
                 }
               `}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-          {renderTabContent()}
-        </>
-      )}
+        {renderTabContent()}
+      </>
     </div>
   );
 }

@@ -2,6 +2,16 @@ import { GoogleAuth } from "google-auth-library";
 
 const WALLET_SCOPE = "https://www.googleapis.com/auth/wallet_object.issuer";
 const CLASS_SUFFIX = "showfi.generic.v1";
+const ENV_SERVICE_ACCOUNT = "GOOGLE_WALLET_SERVICE_ACCOUNT_JSON";
+const ENV_SERVICE_ACCOUNT_LEGACY = "GOOGLE_WALLET_SA_JSON";
+
+class HttpError extends Error {
+  constructor(status, message, missing = []) {
+    super(message);
+    this.status = status;
+    this.missing = missing;
+  }
+}
 
 function responseShape({
   issuerId,
@@ -10,6 +20,7 @@ function responseShape({
   apiOk,
   apiStatus,
   apiError,
+  warnings,
 }) {
   return {
     ok: Boolean(tokenOk && apiOk),
@@ -19,18 +30,38 @@ function responseShape({
     apiOk: Boolean(apiOk),
     apiStatus: apiStatus ?? null,
     apiError: apiError ?? null,
+    warnings: Array.isArray(warnings) ? warnings : [],
   };
 }
 
 function parseServiceAccount(raw) {
   if (!raw || String(raw).trim() === "") {
-    throw new Error("Missing GOOGLE_WALLET_SA_JSON");
+    throw new HttpError(400, "Missing required environment variables", [ENV_SERVICE_ACCOUNT]);
   }
   try {
     return JSON.parse(String(raw));
   } catch {
-    throw new Error("Invalid GOOGLE_WALLET_SA_JSON");
+    throw new HttpError(400, `Invalid ${ENV_SERVICE_ACCOUNT}`);
   }
+}
+
+function getServiceAccountEnvValue() {
+  const preferred = String(process.env[ENV_SERVICE_ACCOUNT] || "").trim();
+  if (preferred) {
+    return { value: preferred, warnings: [] };
+  }
+
+  const legacy = String(process.env[ENV_SERVICE_ACCOUNT_LEGACY] || "").trim();
+  if (legacy) {
+    return {
+      value: legacy,
+      warnings: [
+        `${ENV_SERVICE_ACCOUNT_LEGACY} is deprecated; please migrate to ${ENV_SERVICE_ACCOUNT}.`,
+      ],
+    };
+  }
+
+  return { value: "", warnings: [] };
 }
 
 export default async function handler(req, res) {
@@ -40,7 +71,7 @@ export default async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "GET") {
-    return res.status(200).json(
+    return res.status(405).json(
       responseShape({
         issuerId: String(process.env.GOOGLE_WALLET_ISSUER_ID || ""),
         classId: "",
@@ -48,6 +79,7 @@ export default async function handler(req, res) {
         apiOk: false,
         apiStatus: null,
         apiError: "Use GET",
+        warnings: [],
       })
     );
   }
@@ -59,9 +91,17 @@ export default async function handler(req, res) {
   let apiOk = false;
   let apiStatus = null;
   let apiError = null;
+  const warnings = [];
 
   try {
-    const credentials = parseServiceAccount(process.env.GOOGLE_WALLET_SA_JSON);
+    if (!issuerId) {
+      throw new HttpError(400, "Missing required environment variables", [
+        "GOOGLE_WALLET_ISSUER_ID",
+      ]);
+    }
+    const { value: serviceAccountRaw, warnings: envWarnings } = getServiceAccountEnvValue();
+    warnings.push(...envWarnings);
+    const credentials = parseServiceAccount(serviceAccountRaw);
     const auth = new GoogleAuth({
       credentials,
       scopes: [WALLET_SCOPE],
@@ -74,8 +114,6 @@ export default async function handler(req, res) {
     tokenOk = Boolean(accessToken);
     if (!tokenOk) {
       apiError = "Failed to obtain access token";
-    } else if (!issuerId) {
-      apiError = "Missing GOOGLE_WALLET_ISSUER_ID";
     } else {
       const url = `https://walletobjects.googleapis.com/walletobjects/v1/genericClass/${encodeURIComponent(classId)}`;
       const apiResponse = await fetch(url, {
@@ -100,10 +138,24 @@ export default async function handler(req, res) {
       }
     }
   } catch (error) {
+    if (error instanceof HttpError) {
+      return res.status(error.status).json({
+        ok: false,
+        error: error.message,
+        missing: error.missing,
+        warnings,
+      });
+    }
     apiError = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({
+      ok: false,
+      error: apiError,
+      missing: [],
+      warnings,
+    });
   }
 
   return res
     .status(200)
-    .json(responseShape({ issuerId, classId, tokenOk, apiOk, apiStatus, apiError }));
+    .json(responseShape({ issuerId, classId, tokenOk, apiOk, apiStatus, apiError, warnings }));
 }

@@ -1,6 +1,7 @@
 import type { EventStatus } from '../pages/dashboard/components/EventCard';
 import type { EventDetailsData } from '../pages/dashboard/wizard/EventDetailsStep';
 import type { TicketDesignData } from '../pages/dashboard/wizard/TicketDesignStep';
+import { supabase } from '../../lib/supabaseClient';
 
 export interface ApiEvent {
   id: string;
@@ -30,6 +31,40 @@ interface ApiRequestInit extends RequestInit {
   body?: string;
 }
 
+async function getAccessTokenOrThrow(): Promise<string> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    throw new Error(`Failed to get auth session: ${error.message}`);
+  }
+
+  const token = data.session?.access_token;
+  if (!token) {
+    throw new Error('Missing auth session. Please sign in again.');
+  }
+
+  return token;
+}
+
+function mapStatusToUi(status: string | undefined): EventStatus {
+  if (status === 'draft') return 'draft';
+  if (status === 'published') return 'ready';
+  if (status === 'active') return 'active';
+  if (status === 'ended') return 'ended';
+  if (status === 'ready') return 'ready';
+  return 'draft';
+}
+
+function mapStatusToApi(status: EventStatus): 'draft' | 'published' {
+  return status === 'draft' ? 'draft' : 'published';
+}
+
+function mapEventResponse(event: ApiEvent): ApiEvent {
+  return {
+    ...event,
+    status: mapStatusToUi(String(event.status || 'draft')),
+  };
+}
+
 async function requestJson<T>(url: string, init: ApiRequestInit): Promise<T | null> {
   try {
     const response = await fetch(url, init);
@@ -45,6 +80,21 @@ async function requestJson<T>(url: string, init: ApiRequestInit): Promise<T | nu
 function asArray<T>(payload: T | T[] | null): T[] {
   if (!payload) return [];
   return Array.isArray(payload) ? payload : [payload];
+}
+
+async function authedRequestJson<T>(url: string, init: ApiRequestInit): Promise<T | null> {
+  const token = await getAccessTokenOrThrow();
+
+  const headers = new Headers(init.headers || {});
+  headers.set('Authorization', `Bearer ${token}`);
+  if (init.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  return requestJson<T>(url, {
+    ...init,
+    headers,
+  });
 }
 
 function toIsoDate(dateValue: string): string | undefined {
@@ -101,60 +151,61 @@ export function mapTicketDesignForApi(eventId: string, design: TicketDesignData)
 }
 
 export async function listEvents(): Promise<ApiEvent[]> {
-  const payload = await requestJson<ApiEvent[] | ApiEvent>('/api/events', { method: 'GET' });
-  return asArray(payload);
+  const payload = await authedRequestJson<ApiEvent[] | ApiEvent>('/api/events', { method: 'GET' });
+  return asArray(payload).map(mapEventResponse);
 }
 
 export async function getEventById(eventId: string): Promise<ApiEvent | null> {
-  const payload = await requestJson<ApiEvent[] | ApiEvent>(
+  const payload = await authedRequestJson<ApiEvent[] | ApiEvent>(
     `/api/events?eventId=${encodeURIComponent(eventId)}`,
     { method: 'GET' },
   );
   const events = asArray(payload);
-  return events.find((event) => event.id === eventId) ?? events[0] ?? null;
+  const match = events.find((event) => event.id === eventId) ?? events[0] ?? null;
+  return match ? mapEventResponse(match) : null;
 }
 
 export async function createEvent(event: ApiEvent): Promise<ApiEvent | null> {
-  return requestJson<ApiEvent>('/api/events', {
+  const payload = await authedRequestJson<ApiEvent>('/api/events', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       ...event,
+      status: mapStatusToApi(event.status),
       startDate: toIsoDate(event.date || ''),
     }),
   });
+  return payload ? mapEventResponse(payload) : null;
 }
 
 export async function updateEvent(event: ApiEvent): Promise<ApiEvent | null> {
-  return requestJson<ApiEvent>('/api/events', {
+  const payload = await authedRequestJson<ApiEvent>('/api/events', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       ...event,
+      status: mapStatusToApi(event.status),
       startDate: toIsoDate(event.date || ''),
     }),
   });
+  return payload ? mapEventResponse(payload) : null;
 }
 
 export async function getTicketDesignByEventId(eventId: string): Promise<ApiTicketDesign | null> {
-  return requestJson<ApiTicketDesign>(
+  return authedRequestJson<ApiTicketDesign>(
     `/api/ticket-designs?eventId=${encodeURIComponent(eventId)}`,
     { method: 'GET' },
   );
 }
 
 export async function createTicketDesign(ticketDesign: ApiTicketDesign): Promise<ApiTicketDesign | null> {
-  return requestJson<ApiTicketDesign>('/api/ticket-designs', {
+  return authedRequestJson<ApiTicketDesign>('/api/ticket-designs', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(ticketDesign),
   });
 }
 
 export async function updateTicketDesign(ticketDesign: ApiTicketDesign): Promise<ApiTicketDesign | null> {
-  return requestJson<ApiTicketDesign>('/api/ticket-designs', {
+  return authedRequestJson<ApiTicketDesign>('/api/ticket-designs', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(ticketDesign),
   });
 }
