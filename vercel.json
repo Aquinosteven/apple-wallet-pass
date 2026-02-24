@@ -6,14 +6,15 @@
     "api/ghl-pass.js": {
       "includeFiles": "event-ticket.pass/**"
     },
-    "api/client-pass.js": {
-      "includeFiles": "event-ticket.pass/**"
-    },
     "api/online-event.js": {
       "includeFiles": "event-ticket.pass/**"
     }
   },
   "rewrites": [
+    {
+      "source": "/api/client-pass",
+      "destination": "/api/pass"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"

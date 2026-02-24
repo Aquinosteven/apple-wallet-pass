@@ -1,4 +1,4 @@
-import { verifySignedToken } from "./_token.js";
+import { verifySignedToken } from "../lib/token.js";
 
 const MAX_SHORT_JOIN_URL_LENGTH = 1900;
 

@@ -3,7 +3,7 @@ import crypto from "crypto";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { createSignedToken, verifySignedToken } from "./_token.js";
+import { createSignedToken, verifySignedToken } from "../lib/token.js";
 
 const { PKPass } = passkitModule;
 const __filename = fileURLToPath(import.meta.url);
