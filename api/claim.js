@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { generateApplePass } from "../lib/generatePass.js";
 import { getTokenFromBody, getTokenFromGetQuery, validateClaimToken } from "../lib/claimValidation.js";
 import { readJsonBodyStrict } from "../lib/requestValidation.js";
+import { limiters } from "../lib/rateLimit.js";
+import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -119,8 +121,28 @@ async function ensureAppleSerial(supabase, passId, existingSerial) {
   return { serial: null, error: "Unable to assign apple serial number" };
 }
 
+function enforceLimits(req, res, token) {
+  const ip = getClientIp(req);
+  const ipLimiter = req.method === "GET" ? limiters.claimReadByIp : limiters.generateByIp;
+  const byIp = ipLimiter(ip);
+  if (!byIp.allowed) {
+    sendRateLimitExceeded(res, byIp.retryAfterSeconds);
+    return false;
+  }
+
+  const byToken = limiters.claimByToken(token || "unknown");
+  if (!byToken.allowed) {
+    sendRateLimitExceeded(res, byToken.retryAfterSeconds);
+    return false;
+  }
+
+  return true;
+}
+
 export default async function handler(req, res) {
   setCors(res);
+  setNoStore(res);
+  maybeLogSuspiciousRequest(req, { endpoint: "/api/claim" });
 
   if (req.method === "OPTIONS") {
     return res.status(204).end();
@@ -142,6 +164,7 @@ export default async function handler(req, res) {
       if (tokenError) {
         return res.status(400).json({ ok: false, error: tokenError });
       }
+      if (!enforceLimits(req, res, token)) return;
 
       const { row, error } = await fetchClaimRowByToken(supabase, token);
       if (error) {
@@ -173,6 +196,7 @@ export default async function handler(req, res) {
     if (tokenError) {
       return res.status(400).json({ ok: false, error: tokenError });
     }
+    if (!enforceLimits(req, res, token)) return;
 
     const fetched = await fetchClaimRowByToken(supabase, token);
     if (fetched.error) {

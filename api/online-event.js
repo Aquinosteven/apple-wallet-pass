@@ -2,6 +2,8 @@ import * as passkitModule from "passkit-generator";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { limiters } from "../lib/rateLimit.js";
+import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 
 const { PKPass } = passkitModule;
 const __filename = fileURLToPath(import.meta.url);
@@ -111,10 +113,16 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  setNoStore(res);
+  maybeLogSuspiciousRequest(req, { endpoint: "/api/online-event" });
 
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, message: "Use POST" });
+  }
+  const ipLimit = limiters.generateByIp(getClientIp(req));
+  if (!ipLimit.allowed) {
+    return sendRateLimitExceeded(res, ipLimit.retryAfterSeconds);
   }
 
   const APPLE_PASS_TYPE_ID = firstNonEmpty(process.env.APPLE_PASS_TYPE_ID);

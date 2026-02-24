@@ -2,7 +2,14 @@
 
 import crypto from "crypto";
 import { generateApplePass } from "../lib/generatePass.js";
-import { readJsonBodyStrict } from "../lib/requestValidation.js";
+import {
+  isValidEmail,
+  isValidHttpUrl,
+  readJsonBodyStrict,
+  validateStringField,
+} from "../lib/requestValidation.js";
+import { limiters } from "../lib/rateLimit.js";
+import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 
 function isValidRGBString(s) {
   if (typeof s !== "string") return false;
@@ -65,8 +72,18 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  setNoStore(res);
+  maybeLogSuspiciousRequest(req, { endpoint: "/api/pass" });
 
   if (req.method === "OPTIONS") return res.status(204).end();
+  if (!["GET", "POST"].includes(req.method || "")) {
+    return res.status(405).json({ ok: false, message: "Use GET or POST" });
+  }
+
+  const ipLimit = limiters.generateByIp(getClientIp(req));
+  if (!ipLimit.allowed) {
+    return sendRateLimitExceeded(res, ipLimit.retryAfterSeconds);
+  }
 
   try {
     let payload = null;
@@ -130,6 +147,26 @@ export default async function handler(req, res) {
       }
     }
     if (joinUrl && !joinUrlIsValid) errors.push("event.joinUrl (invalid URL)");
+    if (attendeeEmail && !isValidEmail(attendeeEmail)) errors.push("attendee.email (invalid email)");
+    if (joinUrl && !isValidHttpUrl(joinUrl)) errors.push("event.joinUrl (invalid URL)");
+
+    const fieldChecks = [
+      validateStringField(attendeeName, { field: "attendee.name", required: true, min: 1, max: 120 }),
+      validateStringField(attendeeEmail, { field: "attendee.email", required: true, min: 5, max: 200 }),
+      validateStringField(attendeePhone, { field: "attendee.phone", required: false, min: 0, max: 40 }),
+      validateStringField(eventTitle, {
+        field: "event.title",
+        required: true,
+        min: 2,
+        max: 140,
+        pattern: /^[\w\s.,:&'()\-+/@#]+$/i,
+      }),
+      validateStringField(startsAt, { field: "event.startsAt", required: true, min: 8, max: 80 }),
+      validateStringField(joinUrl, { field: "event.joinUrl", required: true, min: 10, max: 2048 }),
+    ];
+    for (const check of fieldChecks) {
+      if (!check.ok) errors.push(check.error);
+    }
 
     const parsedStartsAt = Date.parse(startsAt);
     if (startsAt && Number.isNaN(parsedStartsAt)) errors.push("event.startsAt (invalid datetime)");
@@ -235,6 +272,7 @@ export default async function handler(req, res) {
       logoBuffer: parsedLogo?.buffer || null,
       stripBuffer: themeMode === "image" && stripValid && parsedStrip?.buffer ? parsedStrip.buffer : null,
     });
+
 
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);

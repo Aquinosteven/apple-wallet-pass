@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
-import { readJsonBodyStrict } from "../lib/requestValidation.js";
+import { readJsonBodyStrict, validateStringField } from "../lib/requestValidation.js";
+import { limiters } from "../lib/rateLimit.js";
+import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 
 const REQUIRED_ENV_VARS = [
   "GOOGLE_WALLET_ISSUER_ID",
@@ -168,10 +170,16 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  setNoStore(res);
+  maybeLogSuspiciousRequest(req, { endpoint: "/api/google-save" });
 
   if (req.method === "OPTIONS") return res.status(204).end();
   if (!["GET", "POST"].includes(req.method || "")) {
     return res.status(405).json({ ok: false, error: "Use GET or POST" });
+  }
+  const ipLimit = limiters.generateByIp(getClientIp(req));
+  if (!ipLimit.allowed) {
+    return sendRateLimitExceeded(res, ipLimit.retryAfterSeconds);
   }
 
   try {
@@ -198,6 +206,37 @@ export default async function handler(req, res) {
         throw new HttpError(parsedBody.status, parsedBody.error);
       }
       body = parsedBody.body || {};
+      if (typeof body.claimId === "string" && body.claimId.trim()) {
+        const tokenLimit = limiters.claimByToken(body.claimId.trim());
+        if (!tokenLimit.allowed) {
+          return sendRateLimitExceeded(res, tokenLimit.retryAfterSeconds);
+        }
+      }
+      const fieldChecks = [
+        validateStringField(body.classSuffix, {
+          field: "classSuffix",
+          required: false,
+          min: 1,
+          max: 60,
+          pattern: /^[a-zA-Z0-9._-]+$/,
+        }),
+        validateStringField(body.objectSuffix, {
+          field: "objectSuffix",
+          required: false,
+          min: 1,
+          max: 60,
+          pattern: /^[a-zA-Z0-9._-]+$/,
+        }),
+        validateStringField(body.issuerName, { field: "issuerName", required: false, min: 1, max: 80 }),
+        validateStringField(body.cardTitle, { field: "cardTitle", required: false, min: 1, max: 80 }),
+        validateStringField(body.header, { field: "header", required: false, min: 1, max: 80 }),
+        validateStringField(body.subheader, { field: "subheader", required: false, min: 1, max: 80 }),
+        validateStringField(body.details, { field: "details", required: false, min: 1, max: 500 }),
+      ];
+      const failed = fieldChecks.find((entry) => !entry.ok);
+      if (failed) {
+        throw new HttpError(400, failed.error);
+      }
     }
     const classSuffix = sanitizeIdPart(body.classSuffix, "generic_pass_class");
     const objectSuffix = sanitizeIdPart(
@@ -226,6 +265,7 @@ export default async function handler(req, res) {
 
     const token = signJwtRs256({ alg: "RS256", typ: "JWT" }, payload, serviceAccount.private_key);
     const saveUrl = `https://pay.google.com/gp/v/save/${token}`;
+
 
     return res.status(200).json({ ok: true, saveUrl });
   } catch (error) {
