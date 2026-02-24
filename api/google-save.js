@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { readJsonBodyStrict } from "../lib/requestValidation.js";
 
 const REQUIRED_ENV_VARS = [
   "GOOGLE_WALLET_ISSUER_ID",
@@ -64,24 +65,6 @@ function signJwtRs256(header, payload, privateKeyPem) {
   const encodedSignature = base64UrlEncode(signature);
 
   return `${signingInput}.${encodedSignature}`;
-}
-
-async function readJsonBody(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-
-  const contentType = String(req.headers["content-type"] || "").toLowerCase();
-  if (!contentType.includes("application/json")) return null;
-
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8").trim();
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    throw new HttpError(400, "Invalid JSON body");
-  }
 }
 
 function normalizeJoinUrl(raw) {
@@ -208,7 +191,14 @@ export default async function handler(req, res) {
     const issuerId = String(process.env.GOOGLE_WALLET_ISSUER_ID).trim();
     const serviceAccount = parseServiceAccount(process.env.GOOGLE_WALLET_SERVICE_ACCOUNT_JSON);
 
-    const body = req.method === "POST" ? (await readJsonBody(req)) || {} : {};
+    let body = {};
+    if (req.method === "POST") {
+      const parsedBody = await readJsonBodyStrict(req, { allowEmpty: true });
+      if (!parsedBody.ok) {
+        throw new HttpError(parsedBody.status, parsedBody.error);
+      }
+      body = parsedBody.body || {};
+    }
     const classSuffix = sanitizeIdPart(body.classSuffix, "generic_pass_class");
     const objectSuffix = sanitizeIdPart(
       body.objectSuffix,

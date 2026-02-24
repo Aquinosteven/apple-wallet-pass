@@ -1,19 +1,24 @@
-import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Footer from './bolt/components/layout/Footer';
 import Navbar from './bolt/components/layout/Navbar';
-import LoginPage from './bolt/pages/LoginPage';
-import DashboardLayout from './bolt/pages/dashboard/DashboardLayout';
-import EventDetailPage from './bolt/pages/dashboard/EventDetailPage';
-import EventsDashboard from './bolt/pages/dashboard/EventsDashboard';
-import GlobalTicketsPage from './bolt/pages/dashboard/GlobalTicketsPage';
-import IntegrationsPage from './bolt/pages/dashboard/IntegrationsPage';
-import NewEventWizard from './bolt/pages/dashboard/NewEventWizard';
-import SettingsPage from './bolt/pages/dashboard/SettingsPage';
-import HomePage from './bolt/pages/home/HomePage';
-import ClaimPage from './bolt/pages/claim/ClaimPage';
 import { getSession, onAuthStateChange } from './lib/auth';
-import PassGeneratorPage from './App';
+
+const LoginPage = lazy(() => import('./bolt/pages/LoginPage'));
+const DashboardLayout = lazy(() => import('./bolt/pages/dashboard/DashboardLayout'));
+const EventDetailPage = lazy(() => import('./bolt/pages/dashboard/EventDetailPage'));
+const EventsDashboard = lazy(() => import('./bolt/pages/dashboard/EventsDashboard'));
+const GlobalTicketsPage = lazy(() => import('./bolt/pages/dashboard/GlobalTicketsPage'));
+const IntegrationsPage = lazy(() => import('./bolt/pages/dashboard/IntegrationsPage'));
+const NewEventWizard = lazy(() => import('./bolt/pages/dashboard/NewEventWizard'));
+const SettingsPage = lazy(() => import('./bolt/pages/dashboard/SettingsPage'));
+const HomePage = lazy(() => import('./bolt/pages/home/HomePage'));
+const ClaimPage = lazy(() => import('./bolt/pages/claim/ClaimPage'));
+const PassGeneratorPage = lazy(() => import('./App'));
+
+function RouteFallback() {
+  return <div className="min-h-screen bg-gray-50" />;
+}
 
 function RequireAuth({ isAuthed, children }: { isAuthed: boolean; children: ReactElement }) {
   const location = useLocation();
@@ -89,28 +94,30 @@ export default function AppRoutes() {
   );
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <MarketingLayout>
-            <HomePage />
-          </MarketingLayout>
-        }
-      />
-      <Route path="/login" element={isAuthed ? <Navigate to="/dashboard" replace /> : loginElement} />
-      <Route path="/dashboard" element={dashboardElement}>
-        <Route index element={<EventsDashboard />} />
-        <Route path="events/new" element={<NewEventWizard />} />
-        <Route path="events/:eventId" element={<EventDetailPage />} />
-        <Route path="tickets" element={<GlobalTicketsPage />} />
-        <Route path="integrations" element={<IntegrationsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
-      <Route path="/pass" element={<PassGeneratorPage />} />
-      <Route path="/claim/:token" element={<ClaimPage />} />
-      <Route path="/events/new" element={<Navigate to="/dashboard/events/new" replace />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <MarketingLayout>
+              <HomePage />
+            </MarketingLayout>
+          }
+        />
+        <Route path="/login" element={isAuthed ? <Navigate to="/dashboard" replace /> : loginElement} />
+        <Route path="/dashboard" element={dashboardElement}>
+          <Route index element={<EventsDashboard />} />
+          <Route path="events/new" element={<NewEventWizard />} />
+          <Route path="events/:eventId" element={<EventDetailPage />} />
+          <Route path="tickets" element={<GlobalTicketsPage />} />
+          <Route path="integrations" element={<IntegrationsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+        <Route path="/pass" element={<PassGeneratorPage />} />
+        <Route path="/claim/:token" element={<ClaimPage />} />
+        <Route path="/events/new" element={<Navigate to="/dashboard/events/new" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }

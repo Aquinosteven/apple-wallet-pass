@@ -98,6 +98,15 @@ function isValidUrl(value) {
   }
 }
 
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
@@ -108,22 +117,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, message: "Use POST" });
   }
 
-  const {
-    APPLE_PASS_TYPE_ID,
-    APPLE_TEAM_ID,
-    APPLE_ORG_NAME,
-    SIGNER_CERT_PEM_B64,
-    SIGNER_KEY_PEM_B64,
-    SIGNER_KEY_PASSPHRASE,
-    WWDR_PEM,
-  } = process.env;
+  const APPLE_PASS_TYPE_ID = firstNonEmpty(process.env.APPLE_PASS_TYPE_ID);
+  const APPLE_TEAM_ID = firstNonEmpty(process.env.APPLE_TEAM_ID);
+  const APPLE_ORG_NAME = firstNonEmpty(process.env.APPLE_ORG_NAME);
+  const SIGNER_CERT_PEM = firstNonEmpty(process.env.SIGNER_CERT_PEM, process.env.SIGNER_CERT_PEM_B64);
+  const SIGNER_KEY_PEM = firstNonEmpty(process.env.SIGNER_KEY_PEM, process.env.SIGNER_KEY_PEM_B64);
+  const SIGNER_KEY_PASSPHRASE = firstNonEmpty(
+    process.env.SIGNER_KEY_PASSPHRASE,
+    process.env.PASS_P12_PASSWORD
+  );
+  const WWDR_PEM = firstNonEmpty(process.env.WWDR_PEM);
 
   const missingEnv = [];
   if (!APPLE_PASS_TYPE_ID) missingEnv.push("APPLE_PASS_TYPE_ID");
   if (!APPLE_TEAM_ID) missingEnv.push("APPLE_TEAM_ID");
   if (!APPLE_ORG_NAME) missingEnv.push("APPLE_ORG_NAME");
-  if (!SIGNER_CERT_PEM_B64) missingEnv.push("SIGNER_CERT_PEM_B64");
-  if (!SIGNER_KEY_PEM_B64) missingEnv.push("SIGNER_KEY_PEM_B64");
+  if (!SIGNER_CERT_PEM) missingEnv.push("SIGNER_CERT_PEM");
+  if (!SIGNER_KEY_PEM) missingEnv.push("SIGNER_KEY_PEM");
   if (!WWDR_PEM) missingEnv.push("WWDR_PEM");
 
   if (missingEnv.length) {
@@ -250,22 +260,22 @@ export default async function handler(req, res) {
     let signerKey;
     let wwdr;
     try {
-      signerCert = Buffer.from(SIGNER_CERT_PEM_B64, "base64");
+      signerCert = Buffer.from(SIGNER_CERT_PEM, "base64");
     } catch (error) {
       return res.status(500).json({
         ok: false,
         code: "SIGNING_NOT_CONFIGURED",
-        message: "SIGNER_CERT_PEM_B64 is not valid base64.",
+        message: "SIGNER_CERT_PEM is not valid base64.",
       });
     }
 
     try {
-      signerKey = Buffer.from(SIGNER_KEY_PEM_B64, "base64");
+      signerKey = Buffer.from(SIGNER_KEY_PEM, "base64");
     } catch (error) {
       return res.status(500).json({
         ok: false,
         code: "SIGNING_NOT_CONFIGURED",
-        message: "SIGNER_KEY_PEM_B64 is not valid base64.",
+        message: "SIGNER_KEY_PEM is not valid base64.",
       });
     }
 
@@ -275,7 +285,7 @@ export default async function handler(req, res) {
       return res.status(500).json({
         ok: false,
         code: "SIGNING_NOT_CONFIGURED",
-        message: "WWDR_PEM_B64 is not valid base64.",
+        message: "WWDR_PEM is not valid base64.",
       });
     }
 
