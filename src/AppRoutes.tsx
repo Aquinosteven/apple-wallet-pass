@@ -11,6 +11,7 @@ import IntegrationsPage from './bolt/pages/dashboard/IntegrationsPage';
 import NewEventWizard from './bolt/pages/dashboard/NewEventWizard';
 import SettingsPage from './bolt/pages/dashboard/SettingsPage';
 import HomePage from './bolt/pages/home/HomePage';
+import ClaimPage from './bolt/pages/claim/ClaimPage';
 import { getSession, onAuthStateChange } from './lib/auth';
 import PassGeneratorPage from './App';
 
@@ -107,6 +108,7 @@ export default function AppRoutes() {
         <Route path="settings" element={<SettingsPage />} />
       </Route>
       <Route path="/pass" element={<PassGeneratorPage />} />
+      <Route path="/claim/:token" element={<ClaimPage />} />
       <Route path="/events/new" element={<Navigate to="/dashboard/events/new" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

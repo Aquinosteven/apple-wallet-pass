@@ -34,3 +34,8 @@ tmp/
 *.p12
 *.json
 .env*
+
+# Supabase CLI temp files
+supabase/.temp/
+supabase/**/.temp/
+**/.temp/
