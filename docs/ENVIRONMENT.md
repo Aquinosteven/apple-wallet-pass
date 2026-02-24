@@ -38,6 +38,10 @@ Supported fallback in health endpoint only:
 
 - `GHL_PASS_SECRET`
 
+### GHL issue-claim writeback (`api/issue-claim.js`)
+
+- `GHL_PRIVATE_INTEGRATION_KEY` (optional; when set with contact/location IDs present, `/api/issue-claim` updates contact custom fields in LeadConnector)
+
 ### Selftest endpoint (`/api/selftest-issue-claim` via `api/health.js?mode=selftest-issue-claim`)
 
 - `SELFTEST_KEY` (required header allowlist secret for selftest endpoint)

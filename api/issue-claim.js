@@ -8,6 +8,8 @@ import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoSto
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const GHL_API_BASE_URL = "https://services.leadconnectorhq.com";
+const GHL_API_VERSION = "2021-07-28";
 
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -62,6 +64,17 @@ function normalizeText(value) {
 function normalizeOptionalText(value) {
   const normalized = normalizeText(value);
   return normalized || null;
+}
+
+function coerceOptionalId(value) {
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    return normalized || "";
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return "";
 }
 
 function shouldDebugWebhookLogs() {
@@ -140,6 +153,13 @@ function maybeParseJsonString(value) {
   }
 }
 
+function maybeParseJsonContainer(value) {
+  if (value && typeof value === "object") return value;
+  const parsed = maybeParseJsonString(value);
+  if (parsed && typeof parsed === "object") return parsed;
+  return null;
+}
+
 async function readBodyWithContentType(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
     return {
@@ -200,6 +220,101 @@ async function readBodyWithContentType(req) {
 function asObject(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return value;
+}
+
+function maskIdentifier(value) {
+  const normalized = normalizeText(value);
+  if (!normalized) return "";
+  if (normalized.length <= 8) {
+    return `${normalized.slice(0, 2)}...${normalized.slice(-2)}`;
+  }
+  return `${normalized.slice(0, 4)}...${normalized.slice(-4)}`;
+}
+
+function extractGhlContactContext(body) {
+  const root = maybeParseJsonContainer(body);
+  if (!root) return { contactId: "", locationId: "" };
+
+  const stack = [root];
+  const visited = new Set();
+  let contactId = "";
+  let locationId = "";
+
+  while (stack.length && (!contactId || !locationId)) {
+    const current = stack.pop();
+    if (!current || (typeof current !== "object" && !Array.isArray(current))) continue;
+    if (visited.has(current)) continue;
+    visited.add(current);
+
+    if (Array.isArray(current)) {
+      for (const item of current) {
+        const container = maybeParseJsonContainer(item);
+        if (container) stack.push(container);
+      }
+      continue;
+    }
+
+    if (!contactId) {
+      contactId = coerceOptionalId(current.contactId)
+        || coerceOptionalId(asObject(current.contact)?.id);
+    }
+    if (!locationId) {
+      locationId = coerceOptionalId(current.locationId)
+        || coerceOptionalId(asObject(current.location)?.id);
+    }
+
+    for (const key of ["metadata", "customData", "custom_data", "payload", "data"]) {
+      const nested = maybeParseJsonContainer(current[key]);
+      if (nested) stack.push(nested);
+    }
+
+    for (const value of Object.values(current)) {
+      const nested = maybeParseJsonContainer(value);
+      if (nested) stack.push(nested);
+    }
+  }
+
+  return { contactId, locationId };
+}
+
+async function writebackGhlContact({
+  fetchImpl,
+  contactId,
+  locationId,
+  claimUrl,
+  claimToken,
+  integrationKey,
+}) {
+  if (!fetchImpl || !contactId || !locationId || !integrationKey) {
+    return { attempted: false, ok: false };
+  }
+
+  try {
+    const response = await fetchImpl(`${GHL_API_BASE_URL}/contacts/${encodeURIComponent(contactId)}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${integrationKey}`,
+        Version: GHL_API_VERSION,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        locationId,
+        customFields: [
+          { key: "contact.showfi_claim_url", field_value: claimUrl },
+          { key: "contact.showfi_claim_token", field_value: claimToken },
+        ],
+      }),
+    });
+
+    return {
+      attempted: true,
+      ok: response.ok,
+      status: Number.isFinite(response.status) ? response.status : undefined,
+    };
+  } catch {
+    return { attempted: true, ok: false };
+  }
 }
 
 function findValueInSources(sources, keys) {
@@ -312,6 +427,7 @@ function enforceRateLimit(req, res) {
 export function createIssueClaimHandler(deps = {}) {
   const getSupabase = deps.getSupabaseAdmin || getSupabaseAdmin;
   const issueClaim = deps.issueClaim || issueClaimTokenForRegistrant;
+  const fetchImpl = deps.fetchImpl || globalThis.fetch?.bind(globalThis);
 
   return async function issueClaimHandler(req, res) {
     setCors(res);
@@ -351,14 +467,43 @@ export function createIssueClaimHandler(deps = {}) {
       const data = validBody.data;
       const issued = await issueClaim(supabase, data);
       const claimUrl = buildClaimUrl(req, issued.claimToken);
+      const { contactId, locationId } = extractGhlContactContext(parsedBody.body);
+      const integrationKey = normalizeText(process.env.GHL_PRIVATE_INTEGRATION_KEY || "");
+      const ghlWriteback = await writebackGhlContact({
+        fetchImpl,
+        contactId,
+        locationId,
+        claimUrl,
+        claimToken: issued.claimToken,
+        integrationKey,
+      });
 
-      return res.status(200).json({
+      if (shouldDebugWebhookLogs()) {
+        console.log("[issue-claim][debug][ghl-writeback]", {
+          contactId: maskIdentifier(contactId),
+          locationId: maskIdentifier(locationId),
+          attempted: ghlWriteback.attempted,
+          ok: ghlWriteback.ok,
+          status: Number.isFinite(ghlWriteback.status) ? ghlWriteback.status : undefined,
+        });
+      }
+
+      const responseBody = {
         ok: true,
         claimUrl,
         claimToken: issued.claimToken,
         eventId: issued.eventId,
         registrantId: issued.registrantId,
-      });
+      };
+      if (shouldDebugWebhookLogs()) {
+        responseBody.ghlWriteback = {
+          attempted: ghlWriteback.attempted,
+          ok: ghlWriteback.ok,
+          ...(Number.isFinite(ghlWriteback.status) ? { status: ghlWriteback.status } : {}),
+        };
+      }
+
+      return res.status(200).json(responseBody);
     } catch (error) {
       if (error instanceof IssueClaimError) {
         return res.status(error.status).json({ ok: false, error: error.message });
