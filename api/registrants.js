@@ -1,6 +1,6 @@
-import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { readJsonBodyStrict } from "../lib/requestValidation.js";
+import { createPassWithUniqueToken } from "../lib/claimToken.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -62,40 +62,6 @@ function normalizeOptionalField(value) {
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function createClaimToken() {
-  return crypto.randomBytes(32).toString("hex");
-}
-
-async function createPassWithUniqueToken(supabase, eventId, registrantId) {
-  const maxAttempts = 3;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const claimToken = createClaimToken();
-    const { data, error } = await supabase
-      .from("passes")
-      .insert({
-        event_id: eventId,
-        registrant_id: registrantId,
-        claim_token: claimToken,
-      })
-      .select("id,claim_token")
-      .single();
-
-    if (!error) {
-      return { pass: data, error: null };
-    }
-
-    // Retry token generation on unique-constraint collisions.
-    if (error.code === "23505" && String(error.message || "").includes("claim_token")) {
-      continue;
-    }
-
-    return { pass: null, error };
-  }
-
-  return { pass: null, error: { message: "Unable to generate a unique claim token" } };
 }
 
 export default async function handler(req, res) {
