@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { readJsonBodyStrict } from "../lib/requestValidation.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -48,24 +49,6 @@ async function getAuthenticatedUser(req) {
     return { user: data.user, error: null, status: 200 };
   } catch {
     return { user: null, error: "Invalid or expired auth token", status: 401 };
-  }
-}
-
-async function readJsonBody(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-
-  const contentType = String(req.headers["content-type"] || "").toLowerCase();
-  if (!contentType.includes("application/json")) return null;
-
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8").trim();
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
   }
 }
 
@@ -188,7 +171,11 @@ export default async function handler(req, res) {
       return res.status(200).json(mapped);
     }
 
-    const body = await readJsonBody(req);
+    const parsedBody = await readJsonBodyStrict(req);
+    if (!parsedBody.ok) {
+      return res.status(parsedBody.status).json({ ok: false, error: parsedBody.error });
+    }
+    const body = parsedBody.body;
     if (!body || typeof body !== "object") {
       return res.status(400).json({ ok: false, error: "Invalid JSON body" });
     }

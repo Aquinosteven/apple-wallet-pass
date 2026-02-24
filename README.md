@@ -114,20 +114,24 @@ APPLE_TEAM_ID=ABCD123456
 # Your organization name as registered with Apple
 APPLE_ORG_NAME=Your Company Name
 
-# The base64-encoded P12 certificate (paste the entire base64 string, no line breaks)
-APPLE_PASS_CERT_P12_B64=MIIKSAIBAzCCCg...
+# The base64-encoded signer certificate PEM
+SIGNER_CERT_PEM=LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t...
 
-# The password you set when exporting the P12 certificate
-APPLE_PASS_CERT_PASSWORD=your-p12-password
+# The base64-encoded signer private key PEM
+SIGNER_KEY_PEM=LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQ...
 
-# The base64-encoded WWDR certificate (paste the entire base64 string, no line breaks)
-APPLE_WWDR_CERT_PEM_B64=LS0tLS1CRUdJTi...
+# Passphrase for your signer key
+PASS_P12_PASSWORD=your-key-passphrase
+
+# The base64-encoded WWDR certificate
+WWDR_PEM=LS0tLS1CRUdJTi...
 ```
 
 **Important Notes:**
 - Do NOT add quotes around the base64 strings
 - Do NOT add line breaks in the base64 strings
 - Make sure there are no extra spaces before or after the values
+- For a complete endpoint-by-endpoint environment matrix and legacy aliases, see `/docs/ENVIRONMENT.md`.
 
 ## API Endpoints
 

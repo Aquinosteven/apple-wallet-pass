@@ -1,6 +1,8 @@
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { generateApplePass } from "../lib/generatePass.js";
+import { getTokenFromBody, getTokenFromGetQuery, validateClaimToken } from "../lib/claimValidation.js";
+import { readJsonBodyStrict } from "../lib/requestValidation.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -19,45 +21,6 @@ function getSupabaseAdmin() {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-}
-
-async function readJsonBody(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-
-  const contentType = String(req.headers["content-type"] || "").toLowerCase();
-  if (!contentType.includes("application/json")) return null;
-
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8").trim();
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function getTokenFromRequest(req) {
-  if (req.method === "GET") {
-    const token = typeof req.query?.token === "string" ? req.query.token.trim() : "";
-    return token;
-  }
-
-  return "";
-}
-
-function getTokenFromBody(body) {
-  if (!body || typeof body !== "object") return "";
-  return typeof body.token === "string" ? body.token.trim() : "";
-}
-
-function validateTokenOrError(token) {
-  if (!token) return "token is required";
-  if (token.length < 64) return "token is invalid";
-  if (!/^[a-f0-9]+$/i.test(token)) return "token is invalid";
-  return null;
 }
 
 function mapClaimPreview(row) {
@@ -174,8 +137,8 @@ export default async function handler(req, res) {
     const supabase = getSupabaseAdmin();
 
     if (req.method === "GET") {
-      const token = getTokenFromRequest(req);
-      const tokenError = validateTokenOrError(token);
+      const token = getTokenFromGetQuery(req);
+      const tokenError = validateClaimToken(token);
       if (tokenError) {
         return res.status(400).json({ ok: false, error: tokenError });
       }
@@ -199,13 +162,14 @@ export default async function handler(req, res) {
       });
     }
 
-    const body = await readJsonBody(req);
-    if (!body || typeof body !== "object") {
-      return res.status(400).json({ ok: false, error: "Invalid JSON body" });
+    const parsedBody = await readJsonBodyStrict(req);
+    if (!parsedBody.ok) {
+      return res.status(parsedBody.status).json({ ok: false, error: parsedBody.error });
     }
+    const body = parsedBody.body;
 
     const token = getTokenFromBody(body);
-    const tokenError = validateTokenOrError(token);
+    const tokenError = validateClaimToken(token);
     if (tokenError) {
       return res.status(400).json({ ok: false, error: tokenError });
     }

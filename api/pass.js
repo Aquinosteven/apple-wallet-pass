@@ -2,6 +2,7 @@
 
 import crypto from "crypto";
 import { generateApplePass } from "../lib/generatePass.js";
+import { readJsonBodyStrict } from "../lib/requestValidation.js";
 
 function isValidRGBString(s) {
   if (typeof s !== "string") return false;
@@ -59,24 +60,6 @@ function parsePngHeader(buffer) {
   return { width, height, colorType };
 }
 
-async function readJsonBody(req) {
-  if (req.body && typeof req.body === "object") return req.body;
-
-  const contentType = (req.headers["content-type"] || "").toLowerCase();
-  if (!contentType.includes("application/json")) return null;
-
-  const chunks = [];
-  for await (const chunk of req) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8").trim();
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
 export default async function handler(req, res) {
   // CORS (temporary permissive)
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -88,11 +71,18 @@ export default async function handler(req, res) {
   try {
     let payload = null;
     if (req.method === "POST") {
-      payload = await readJsonBody(req);
-      if (!payload) {
+      const parsedBody = await readJsonBodyStrict(req);
+      if (!parsedBody.ok) {
+        return res.status(parsedBody.status).json({
+          ok: false,
+          message: parsedBody.error,
+        });
+      }
+      payload = parsedBody.body;
+      if (!payload || typeof payload !== "object") {
         return res.status(400).json({
           ok: false,
-          message: "Invalid or missing JSON body. Send Content-Type: application/json",
+          message: "Invalid JSON body",
         });
       }
     } else if (req.method !== "GET") {
