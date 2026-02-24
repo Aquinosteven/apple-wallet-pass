@@ -136,19 +136,25 @@ async function trackError(req, token, status, error) {
   });
 }
 
-function enforceLimits(req, res, token) {
-  const ip = getClientIp(req);
-  const ipLimiter = req.method === "GET" ? limiters.claimReadByIp : limiters.generateByIp;
-  const byIp = ipLimiter(ip);
-  if (!byIp.allowed) {
-    sendRateLimitExceeded(res, byIp.retryAfterSeconds);
-    return false;
+function enforceLimits(req, res, token, options = {}) {
+  const { skipIp = false } = options;
+
+  if (!skipIp) {
+    const ip = getClientIp(req);
+    const ipLimiter = req.method === "GET" ? limiters.claimReadByIp : limiters.generateByIp;
+    const byIp = ipLimiter(ip);
+    if (!byIp.allowed) {
+      sendRateLimitExceeded(res, byIp.retryAfterSeconds);
+      return false;
+    }
   }
 
-  const byToken = limiters.claimByToken(token || "unknown");
-  if (!byToken.allowed) {
-    sendRateLimitExceeded(res, byToken.retryAfterSeconds);
-    return false;
+  if (token) {
+    const byToken = limiters.claimByToken(token);
+    if (!byToken.allowed) {
+      sendRateLimitExceeded(res, byToken.retryAfterSeconds);
+      return false;
+    }
   }
 
   return true;
@@ -169,18 +175,19 @@ export default async function handler(req, res) {
   ].includes(req.method || "")) {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   }
+  if (!enforceLimits(req, res, "")) return;
 
   try {
     const supabase = getSupabaseAdmin();
 
     if (req.method === "GET") {
       const token = getTokenFromGetQuery(req);
+      if (!enforceLimits(req, res, token, { skipIp: true })) return;
       const tokenError = validateClaimToken(token);
       if (tokenError) {
         await trackError(req, token, 400, tokenError);
         return res.status(400).json({ ok: false, error: tokenError });
       }
-      if (!enforceLimits(req, res, token)) return;
 
       const { row, error } = await fetchClaimRowByToken(supabase, token);
       if (error) {
@@ -220,12 +227,12 @@ export default async function handler(req, res) {
     const body = parsedBody.body;
 
     const token = getTokenFromBody(body);
+    if (!enforceLimits(req, res, token, { skipIp: true })) return;
     const tokenError = validateClaimToken(token);
     if (tokenError) {
       await trackError(req, token, 400, tokenError);
       return res.status(400).json({ ok: false, error: tokenError });
     }
-    if (!enforceLimits(req, res, token)) return;
 
     await trackClaimEventFromRequest(req, {
       eventType: "claim_started",

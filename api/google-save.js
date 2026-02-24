@@ -100,6 +100,28 @@ function resolveJoinUrl(body) {
   return null;
 }
 
+function enforceLimits(req, res, token, options = {}) {
+  const { skipIp = false } = options;
+
+  if (!skipIp) {
+    const byIp = limiters.generateByIp(getClientIp(req));
+    if (!byIp.allowed) {
+      sendRateLimitExceeded(res, byIp.retryAfterSeconds);
+      return false;
+    }
+  }
+
+  if (token) {
+    const byToken = limiters.claimByToken(token);
+    if (!byToken.allowed) {
+      sendRateLimitExceeded(res, byToken.retryAfterSeconds);
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function buildGenericClassAndObject({ issuerId, body, classSuffix, objectSuffix }) {
   const classId = `${issuerId}.${classSuffix}`;
   const objectId = `${issuerId}.${objectSuffix}`;
@@ -178,10 +200,7 @@ export default async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method || "")) {
     return res.status(405).json({ ok: false, error: "Use GET or POST" });
   }
-  const ipLimit = limiters.generateByIp(getClientIp(req));
-  if (!ipLimit.allowed) {
-    return sendRateLimitExceeded(res, ipLimit.retryAfterSeconds);
-  }
+  if (!enforceLimits(req, res, "")) return;
 
   try {
     const missing = REQUIRED_ENV_VARS.filter((name) => {
@@ -207,12 +226,8 @@ export default async function handler(req, res) {
         throw new HttpError(parsedBody.status, parsedBody.error);
       }
       body = parsedBody.body || {};
-      if (typeof body.claimId === "string" && body.claimId.trim()) {
-        const tokenLimit = limiters.claimByToken(body.claimId.trim());
-        if (!tokenLimit.allowed) {
-          return sendRateLimitExceeded(res, tokenLimit.retryAfterSeconds);
-        }
-      }
+      const claimId = typeof body.claimId === "string" ? body.claimId.trim() : "";
+      if (!enforceLimits(req, res, claimId, { skipIp: true })) return;
       const fieldChecks = [
         validateStringField(body.classSuffix, {
           field: "classSuffix",

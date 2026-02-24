@@ -233,17 +233,34 @@ function handleOptions(res) {
   return res.status(200).json({ ok: true });
 }
 
+function enforceLimits(req, res, token, options = {}) {
+  const { skipIp = false } = options;
+  if (!skipIp) {
+    const ipLimiter = req.method === "POST" ? limiters.generateByIp : limiters.claimReadByIp;
+    const byIp = ipLimiter(getClientIp(req));
+    if (!byIp.allowed) {
+      sendRateLimitExceeded(res, byIp.retryAfterSeconds);
+      return false;
+    }
+  }
+
+  if (token) {
+    const byToken = limiters.claimByToken(token);
+    if (!byToken.allowed) {
+      sendRateLimitExceeded(res, byToken.retryAfterSeconds);
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export default async function handler(req, res) {
   setCors(res);
   if (req.method === "OPTIONS") return handleOptions(res);
   setNoStore(res);
   maybeLogSuspiciousRequest(req, { endpoint: "/api/ghl-pass" });
-
-  const ipLimiter = req.method === "POST" ? limiters.generateByIp : limiters.claimReadByIp;
-  const ipLimit = ipLimiter(getClientIp(req));
-  if (!ipLimit.allowed) {
-    return sendRateLimitExceeded(res, ipLimit.retryAfterSeconds);
-  }
+  if (!enforceLimits(req, res, "")) return;
 
   const secret = process.env.GHL_PASS_SECRET;
   if (!secret) {
@@ -345,6 +362,7 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     const token = req.query?.token ? String(req.query.token) : "";
+    if (!enforceLimits(req, res, token, { skipIp: true })) return;
     const verified = verifySignedToken(token, secret, "pass_download");
     if (!verified.ok) {
       return res.status(400).json({ ok: false, error: "INVALID_OR_EXPIRED" });

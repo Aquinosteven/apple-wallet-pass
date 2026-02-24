@@ -109,6 +109,15 @@ function firstNonEmpty(...values) {
   return "";
 }
 
+function enforceLimits(req, res) {
+  const byIp = limiters.generateByIp(getClientIp(req));
+  if (!byIp.allowed) {
+    sendRateLimitExceeded(res, byIp.retryAfterSeconds);
+    return false;
+  }
+  return true;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
@@ -120,10 +129,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, message: "Use POST" });
   }
-  const ipLimit = limiters.generateByIp(getClientIp(req));
-  if (!ipLimit.allowed) {
-    return sendRateLimitExceeded(res, ipLimit.retryAfterSeconds);
-  }
+  if (!enforceLimits(req, res)) return;
 
   const APPLE_PASS_TYPE_ID = firstNonEmpty(process.env.APPLE_PASS_TYPE_ID);
   const APPLE_TEAM_ID = firstNonEmpty(process.env.APPLE_TEAM_ID);

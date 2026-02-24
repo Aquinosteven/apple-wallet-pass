@@ -68,6 +68,15 @@ function parsePngHeader(buffer) {
   return { width, height, colorType };
 }
 
+function enforceLimits(req, res) {
+  const byIp = limiters.generateByIp(getClientIp(req));
+  if (!byIp.allowed) {
+    sendRateLimitExceeded(res, byIp.retryAfterSeconds);
+    return false;
+  }
+  return true;
+}
+
 export default async function handler(req, res) {
   // CORS (temporary permissive)
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -80,11 +89,7 @@ export default async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method || "")) {
     return res.status(405).json({ ok: false, message: "Use GET or POST" });
   }
-
-  const ipLimit = limiters.generateByIp(getClientIp(req));
-  if (!ipLimit.allowed) {
-    return sendRateLimitExceeded(res, ipLimit.retryAfterSeconds);
-  }
+  if (!enforceLimits(req, res)) return;
 
   try {
     let payload = null;
