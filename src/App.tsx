@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { trackClaimEvent } from "./lib/claimAnalytics";
 
 type Status = "idle" | "loading" | "success" | "error";
 type GoogleSavePayload = {
@@ -261,6 +262,10 @@ function App() {
   const handleGoogleWalletClick = async () => {
     if (!googleSavePayload) return;
     setGoogleWalletError(null);
+    await trackClaimEvent({
+      eventType: "google_wallet_link_created",
+      metadata: { source: "generator_google_button" },
+    });
     try {
       const response = await fetch("/api/google-save", {
         method: "POST",
@@ -290,6 +295,10 @@ function App() {
         return;
       }
       window.open(data.saveUrl, "_blank", "noopener,noreferrer");
+      await trackClaimEvent({
+        eventType: "google_wallet_saved",
+        metadata: { source: "generator_google_opened" },
+      });
     } catch (err) {
       setGoogleWalletError(err instanceof Error ? err.message : "Unexpected error.");
     }
@@ -446,7 +455,16 @@ function App() {
 
         {status === "success" && downloadUrl ? (
           <div className="pass-actions">
-            <a href={downloadUrl} download={downloadName}>
+            <a
+              href={downloadUrl}
+              download={downloadName}
+              onClick={() => {
+                void trackClaimEvent({
+                  eventType: "pkpass_downloaded",
+                  metadata: { source: "generator_download_link" },
+                });
+              }}
+            >
               Download .pkpass
             </a>
             {googleWalletReady ? (
