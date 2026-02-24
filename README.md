@@ -177,6 +177,21 @@ curl -s https://<your-vercel-domain>/api/gwallet-health | jq
 Backward compatibility: if only `GOOGLE_WALLET_SA_JSON` is present, it is used and
 the response includes a deprecation warning.
 
+Local UI verification (Google Wallet button flow):
+
+1. Set local env vars, then run:
+```bash
+npm run dev
+```
+2. Open the app, fill the pass form, and click **Generate Pass**.
+3. Confirm **Download .pkpass** appears.
+4. If Google Wallet health is `ok`, confirm **Add to Google Wallet** appears.
+5. Click **Add to Google Wallet** and verify `/api/google-save` returns:
+```json
+{ "ok": true, "saveUrl": "https://pay.google.com/gp/v/save/..." }
+```
+6. If the request fails, the UI shows a red error notice under the success actions.
+
 ### Health Check: `/api/test-pass-health`
 
 Validates that all environment variables are configured correctly and certificates can be decoded.
