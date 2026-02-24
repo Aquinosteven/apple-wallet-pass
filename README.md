@@ -1,11 +1,11 @@
 # Apple Wallet Pass Generator
 
-A minimal end-to-end Apple Wallet pass generator built with Bolt Server Functions and your Apple Developer certificates.
+A minimal end-to-end Apple Wallet pass generator built with Vercel serverless API routes and your Apple Developer certificates.
 
 ## Features
 
 - Generate native `.pkpass` files using your Apple Developer certificates
-- Two API endpoints for testing and validation
+- API routes for pass generation, claim redemption, and wallet links
 - Server-side PKCS#7 signing with passkit-generator
 - Base64 certificate management for secure deployment
 
@@ -196,49 +196,20 @@ npm run dev
 ```
 6. If the request fails, the UI shows a red error notice under the success actions.
 
-### Health Check: `/api/test-pass-health`
+### Health Check: `/api/health`
 
-Validates that all environment variables are configured correctly and certificates can be decoded.
-
-**Request:**
-```bash
-GET /api/test-pass-health
-```
-
-**Response (Success):**
-```json
-{
-  "ok": true,
-  "hasP12": true,
-  "hasWWDR": true,
-  "passTypeId": "pass.com.yourcompany.yourpass",
-  "teamId": "ABCD123456",
-  "orgName": "Your Company Name"
-}
-```
-
-**Response (Error):**
-```json
-{
-  "ok": false,
-  "hasP12": false,
-  "hasWWDR": true,
-  "error": "Missing P12 certificate or password: APPLE_PASS_CERT_P12_B64 or APPLE_PASS_CERT_PASSWORD"
-}
-```
-
-### Generate Test Pass: `/api/test-pass`
-
-Generates and downloads a test `.pkpass` file that can be installed in Apple Wallet.
+Use the pass mode health endpoint to validate Apple Wallet signing config.
 
 **Request:**
 ```bash
-GET /api/test-pass
+curl -s "https://<your-vercel-domain>/api/health?mode=pass" | jq
 ```
 
-**Response:**
-- **Success**: Downloads a `test.pkpass` file
-- **Error**: Returns JSON with error details
+Google Wallet health check:
+
+```bash
+curl -s "https://<your-vercel-domain>/api/health?mode=gwallet" | jq
+```
 
 ## Deployment Routing (Vercel)
 
@@ -282,15 +253,15 @@ Notes:
 ### Step 1: Validate Configuration
 
 1. Open any web browser
-2. Visit: `https://your-app-url.com/api/test-pass-health`
+2. Visit: `https://your-app-url.com/api/health?mode=pass`
 3. Verify the response shows `"ok": true`
 4. If there are errors, review the error message and check your `.env` file
 
 ### Step 2: Test Pass Generation
 
 1. Open **Safari** on your iPhone (this MUST be Safari, other browsers won't work)
-2. Visit: `https://your-app-url.com/api/test-pass`
-3. If successful, you'll see an "Add to Apple Wallet" button
+2. Trigger pass generation from your app or claim flow (`POST /api/pass` or `POST /api/claim`)
+3. If successful, you'll see an "Add to Apple Wallet" button/download
 4. Tap the button to add the pass to your Apple Wallet
 5. The pass should appear in the Wallet app
 
@@ -353,9 +324,7 @@ npm run build
 
 ### How to run locally
 
-1. Create a `.env` file and set your server-side keys:
-   - `API_KEY` (used by `/api/client-pass` to authenticate with `/api/pass`)
-   - All Apple Wallet signing values required by `/api/pass`
+1. Create a `.env` file and set server-side keys documented in `/docs/ENVIRONMENT.md`.
 2. Install dependencies:
 
 ```bash
@@ -374,16 +343,11 @@ npm run dev
 ## Project Structure
 
 ```
-functions/
-├── api/
-│   ├── test-pass.ts           # Main pass generation endpoint
-│   └── test-pass-health.ts    # Health check endpoint
-├── util/
-│   ├── certificates.ts        # Certificate loading and validation
-│   └── passBuilder.ts         # Pass JSON template builder
-└── assets/
-    ├── icon.png               # Pass icon (29x29 to 87x87)
-    └── logo.png               # Pass logo (160x50 recommended)
+api/                 # Vercel API routes (pass, claim, events, registrants, google-save)
+lib/                 # Shared server utilities (pass generation, validation, security)
+src/                 # Frontend app
+supabase/migrations/ # SQL migrations
+scripts/             # Local verification scripts
 ```
 
 ## Next Steps

@@ -1,0 +1,129 @@
+# Release Checklist
+
+Use this checklist before promoting a deployment.
+
+## 1) Required Environment Variables (Vercel)
+
+Reference: `/docs/ENVIRONMENT.md`.
+
+Set these in Vercel project envs (`production` at minimum):
+
+```bash
+# Apple Wallet signing
+SIGNER_CERT_PEM
+SIGNER_KEY_PEM
+PASS_P12_PASSWORD
+WWDR_PEM
+APPLE_PASS_TYPE_ID
+APPLE_TEAM_ID
+APPLE_ORG_NAME
+
+# Supabase admin
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+
+# Google Wallet
+GOOGLE_WALLET_ISSUER_ID
+GOOGLE_WALLET_SERVICE_ACCOUNT_JSON
+
+# GHL pass flow
+GHL_PASS_SECRET
+```
+
+Quick check:
+
+```bash
+vercel env ls
+```
+
+## 2) Supabase Migration Verification
+
+Apply pending migrations for the target Supabase project, then verify tables/policies.
+
+### Verify required tables exist
+
+Run in Supabase SQL editor:
+
+```sql
+select table_name
+from information_schema.tables
+where table_schema = 'public'
+  and table_name in ('events', 'ticket_designs', 'registrants', 'passes', 'claim_events')
+order by table_name;
+```
+
+### Verify RLS is enabled
+
+```sql
+select tablename, rowsecurity
+from pg_tables
+where schemaname = 'public'
+  and tablename in ('events', 'ticket_designs', 'registrants', 'passes', 'claim_events')
+order by tablename;
+```
+
+### Verify ticket_designs policies exist
+
+```sql
+select policyname, permissive, cmd
+from pg_policies
+where schemaname = 'public'
+  and tablename = 'ticket_designs'
+order by policyname;
+```
+
+### Verify claim_events API visibility
+
+```bash
+node scripts/verify-claim-events.js
+```
+
+## 3) Deployed End-to-End Smoke Test
+
+This flow validates the claim + wallet path end to end:
+
+1. create claim token
+2. open claim page
+3. redeem
+4. Apple pass generation success
+5. Google Wallet save URL valid
+6. `claim_events` row created
+
+### Run (auto-create claim token)
+
+Requires an event owned by the provided auth user.
+
+```bash
+BASE_URL="https://<your-deployment-domain>" \
+AUTH_TOKEN="<supabase-user-access-token>" \
+EVENT_ID="<event-uuid>" \
+SUPABASE_URL="https://<project-ref>.supabase.co" \
+SUPABASE_SERVICE_ROLE_KEY="<service-role-key>" \
+node scripts/smoke-claim-flow.js
+```
+
+### Run (existing claim token)
+
+```bash
+BASE_URL="https://<your-deployment-domain>" \
+CLAIM_TOKEN="<64-char-hex-token>" \
+SUPABASE_URL="https://<project-ref>.supabase.co" \
+SUPABASE_SERVICE_ROLE_KEY="<service-role-key>" \
+node scripts/smoke-claim-flow.js
+```
+
+Expected result:
+
+- Script exits `0`
+- Summary shows all required checks as `PASS`
+
+## 4) Quality Gates
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+```
+
+All commands must pass before release.
