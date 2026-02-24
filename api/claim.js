@@ -5,6 +5,7 @@ import { getTokenFromBody, getTokenFromGetQuery, validateClaimToken } from "../l
 import { readJsonBodyStrict } from "../lib/requestValidation.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
+import { trackClaimEventFromRequest } from "../lib/claimEvents.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -27,6 +28,8 @@ function getSupabaseAdmin() {
 
 function mapClaimPreview(row) {
   return {
+    passId: row.id,
+    eventId: row.event_id,
     event: {
       title: row.event.name,
       date: row.event.starts_at,
@@ -42,7 +45,7 @@ async function fetchClaimRowByToken(supabase, token) {
   const { data, error } = await supabase
     .from("passes")
     .select(
-      "id,claim_token,claimed_at,apple_serial_number,event:events!passes_event_id_fkey(name,starts_at),registrant:registrants!passes_registrant_id_fkey(name,email,phone)"
+      "id,event_id,claim_token,claimed_at,apple_serial_number,event:events!passes_event_id_fkey(name,starts_at),registrant:registrants!passes_registrant_id_fkey(name,email,phone)"
     )
     .eq("claim_token", token)
     .limit(1)
@@ -121,6 +124,18 @@ async function ensureAppleSerial(supabase, passId, existingSerial) {
   return { serial: null, error: "Unable to assign apple serial number" };
 }
 
+async function trackError(req, token, status, error) {
+  await trackClaimEventFromRequest(req, {
+    eventType: "claim_error",
+    claimId: token || null,
+    metadata: {
+      endpoint: "/api/claim",
+      status,
+      error,
+    },
+  });
+}
+
 function enforceLimits(req, res, token) {
   const ip = getClientIp(req);
   const ipLimiter = req.method === "GET" ? limiters.claimReadByIp : limiters.generateByIp;
@@ -162,22 +177,34 @@ export default async function handler(req, res) {
       const token = getTokenFromGetQuery(req);
       const tokenError = validateClaimToken(token);
       if (tokenError) {
+        await trackError(req, token, 400, tokenError);
         return res.status(400).json({ ok: false, error: tokenError });
       }
       if (!enforceLimits(req, res, token)) return;
 
       const { row, error } = await fetchClaimRowByToken(supabase, token);
       if (error) {
+        await trackError(req, token, 500, error);
         return res.status(500).json({ ok: false, error });
       }
 
       if (!row || !row.event || !row.registrant) {
+        await trackError(req, token, 404, "Claim token not found");
         return res.status(404).json({ ok: false, error: "Claim token not found" });
       }
 
       if (row.claimed_at) {
+        await trackError(req, token, 409, "Claim token has already been used");
         return res.status(409).json({ ok: false, error: "Claim token has already been used" });
       }
+
+      await trackClaimEventFromRequest(req, {
+        eventType: "claim_viewed",
+        claimId: token,
+        passId: row.id,
+        eventId: row.event_id,
+        metadata: { endpoint: "/api/claim", phase: "preview" },
+      });
 
       return res.status(200).json({
         ok: true,
@@ -187,6 +214,7 @@ export default async function handler(req, res) {
 
     const parsedBody = await readJsonBodyStrict(req);
     if (!parsedBody.ok) {
+      await trackError(req, "", parsedBody.status, parsedBody.error);
       return res.status(parsedBody.status).json({ ok: false, error: parsedBody.error });
     }
     const body = parsedBody.body;
@@ -194,15 +222,24 @@ export default async function handler(req, res) {
     const token = getTokenFromBody(body);
     const tokenError = validateClaimToken(token);
     if (tokenError) {
+      await trackError(req, token, 400, tokenError);
       return res.status(400).json({ ok: false, error: tokenError });
     }
     if (!enforceLimits(req, res, token)) return;
 
+    await trackClaimEventFromRequest(req, {
+      eventType: "claim_started",
+      claimId: token,
+      metadata: { endpoint: "/api/claim" },
+    });
+
     const fetched = await fetchClaimRowByToken(supabase, token);
     if (fetched.error) {
+      await trackError(req, token, 500, fetched.error);
       return res.status(500).json({ ok: false, error: fetched.error });
     }
     if (!fetched.row || !fetched.row.event || !fetched.row.registrant) {
+      await trackError(req, token, 404, "Claim token not found");
       return res.status(404).json({ ok: false, error: "Claim token not found" });
     }
 
@@ -222,6 +259,7 @@ export default async function handler(req, res) {
         .maybeSingle();
 
       if (claimError) {
+        await trackError(req, token, 500, claimError.message);
         return res.status(500).json({ ok: false, error: claimError.message });
       }
       if (claimedPass?.claimed_at) {
@@ -231,7 +269,9 @@ export default async function handler(req, res) {
 
     const serialResult = await ensureAppleSerial(supabase, claimRow.id, claimRow.apple_serial_number);
     if (serialResult.error || !serialResult.serial) {
-      return res.status(500).json({ ok: false, error: serialResult.error || "Missing apple serial number" });
+      const errText = serialResult.error || "Missing apple serial number";
+      await trackError(req, token, 500, errText);
+      return res.status(500).json({ ok: false, error: errText });
     }
 
     const baseUrl = getBaseUrl(req);
@@ -249,10 +289,21 @@ export default async function handler(req, res) {
       serialNumber: serialResult.serial,
     });
 
+    await trackClaimEventFromRequest(req, {
+      eventType: "pkpass_downloaded",
+      claimId: token,
+      passId: claimRow.id,
+      eventId: claimRow.event_id,
+      metadata: { endpoint: "/api/claim", medium: "apple_wallet" },
+    });
+
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader("Content-Disposition", "attachment; filename=\"event.pkpass\"");
     return res.status(200).send(pkpassBuffer);
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await trackError(req, "", 500, message);
+
     if (Array.isArray(error?.missing) && error.missing.length) {
       return res.status(500).json({
         ok: false,
@@ -262,7 +313,7 @@ export default async function handler(req, res) {
     }
     return res.status(500).json({
       ok: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: message,
     });
   }
 }

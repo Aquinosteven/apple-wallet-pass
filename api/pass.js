@@ -10,6 +10,7 @@ import {
 } from "../lib/requestValidation.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
+import { trackClaimEventFromRequest } from "../lib/claimEvents.js";
 
 function isValidRGBString(s) {
   if (typeof s !== "string") return false;
@@ -90,6 +91,10 @@ export default async function handler(req, res) {
     if (req.method === "POST") {
       const parsedBody = await readJsonBodyStrict(req);
       if (!parsedBody.ok) {
+        await trackClaimEventFromRequest(req, {
+          eventType: "claim_error",
+          metadata: { endpoint: "/api/pass", status: parsedBody.status, error: parsedBody.error },
+        });
         return res.status(parsedBody.status).json({
           ok: false,
           message: parsedBody.error,
@@ -273,11 +278,27 @@ export default async function handler(req, res) {
       stripBuffer: themeMode === "image" && stripValid && parsedStrip?.buffer ? parsedStrip.buffer : null,
     });
 
+    await trackClaimEventFromRequest(req, {
+      eventType: "pkpass_downloaded",
+      metadata: {
+        endpoint: "/api/pass",
+        attendeeEmail,
+        eventTitle,
+      },
+    });
 
     res.setHeader("Content-Type", "application/vnd.apple.pkpass");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     return res.status(200).send(pkpassBuffer);
   } catch (err) {
+    await trackClaimEventFromRequest(req, {
+      eventType: "claim_error",
+      metadata: {
+        endpoint: "/api/pass",
+        status: 500,
+        error: err?.message || String(err),
+      },
+    });
     if (Array.isArray(err?.missing) && err.missing.length) {
       return res.status(500).json({
         ok: false,

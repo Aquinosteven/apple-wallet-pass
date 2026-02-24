@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { readJsonBodyStrict, validateStringField } from "../lib/requestValidation.js";
+import { trackClaimEventFromRequest } from "../lib/claimEvents.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 
@@ -266,9 +267,25 @@ export default async function handler(req, res) {
     const token = signJwtRs256({ alg: "RS256", typ: "JWT" }, payload, serviceAccount.private_key);
     const saveUrl = `https://pay.google.com/gp/v/save/${token}`;
 
+    await trackClaimEventFromRequest(req, {
+      eventType: "google_wallet_link_created",
+      claimId: body?.claimId ? String(body.claimId) : null,
+      passId: body?.passId ? String(body.passId) : null,
+      eventId: body?.eventId ? String(body.eventId) : null,
+      metadata: { endpoint: "/api/google-save" },
+    });
 
     return res.status(200).json({ ok: true, saveUrl });
   } catch (error) {
+    await trackClaimEventFromRequest(req, {
+      eventType: "claim_error",
+      claimId: req?.body?.claimId ? String(req.body.claimId) : null,
+      metadata: {
+        endpoint: "/api/google-save",
+        status: error instanceof HttpError ? error.status : 500,
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
     if (error instanceof HttpError) {
       return res.status(error.status).json({
         ok: false,
