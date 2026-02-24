@@ -1,7 +1,8 @@
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { readJsonBodyStrict, isValidEmail } from "../lib/requestValidation.js";
-import { createPassWithUniqueToken } from "../lib/claimToken.js";
+import { buildClaimUrl } from "../lib/baseUrl.js";
+import { IssueClaimError, issueClaimTokenForRegistrant } from "../lib/issueClaimCore.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 
@@ -12,22 +13,6 @@ function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-ghl-secret");
-}
-
-function getBaseUrl(req) {
-  const protoRaw = req.headers["x-forwarded-proto"] || "https";
-  const envHost = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL || "";
-  const hostRaw = req.headers["x-forwarded-host"] || req.headers.host || envHost;
-  const requestedProtocol = String(protoRaw).split(",")[0].trim().toLowerCase();
-  const protocol = requestedProtocol === "https" || requestedProtocol === "http"
-    ? requestedProtocol
-    : "https";
-  const host = String(hostRaw).split(",")[0].trim();
-  if (!host) return null;
-  if (host === String(envHost).trim()) {
-    return `https://${host}`;
-  }
-  return `${protocol}://${host}`;
 }
 
 function getSupabaseAdmin() {
@@ -79,14 +64,6 @@ function normalizeOptionalText(value) {
   return normalized || null;
 }
 
-function normalizeSource(metadata) {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return "issue-claim";
-  }
-  const source = typeof metadata.source === "string" ? metadata.source.trim() : "";
-  return source || "issue-claim";
-}
-
 function validateBody(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { ok: false, error: "Invalid JSON body", fields: [] };
@@ -122,85 +99,6 @@ function validateBody(body) {
   };
 }
 
-async function requireEvent(supabase, eventId) {
-  const { data, error } = await supabase
-    .from("events")
-    .select("id")
-    .eq("id", eventId)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) return { event: null, error: error.message, status: 500 };
-  if (!data) return { event: null, error: "Event not found", status: 404 };
-  return { event: data, error: null, status: 200 };
-}
-
-async function upsertRegistrant(supabase, input) {
-  const { data: existing, error: selectError } = await supabase
-    .from("registrants")
-    .select("id")
-    .eq("event_id", input.eventId)
-    .eq("email", input.email)
-    .limit(1)
-    .maybeSingle();
-
-  if (selectError) {
-    return { registrant: null, error: selectError.message };
-  }
-
-  const source = normalizeSource(input.metadata);
-
-  if (existing?.id) {
-    const updatePayload = {
-      source,
-    };
-    if (input.name) updatePayload.name = input.name;
-    updatePayload.phone = input.phone;
-
-    const { data: updated, error: updateError } = await supabase
-      .from("registrants")
-      .update(updatePayload)
-      .eq("id", existing.id)
-      .select("id")
-      .single();
-
-    if (updateError) return { registrant: null, error: updateError.message };
-    return { registrant: updated, error: null };
-  }
-
-  const insertPayload = {
-    event_id: input.eventId,
-    email: input.email,
-    name: input.name || input.email,
-    phone: input.phone,
-    source,
-  };
-
-  const { data: created, error: createError } = await supabase
-    .from("registrants")
-    .insert(insertPayload)
-    .select("id")
-    .single();
-
-  if (createError) return { registrant: null, error: createError.message };
-  return { registrant: created, error: null };
-}
-
-async function findReusablePass(supabase, eventId, registrantId) {
-  const { data, error } = await supabase
-    .from("passes")
-    .select("id,claim_token,claimed_at")
-    .eq("event_id", eventId)
-    .eq("registrant_id", registrantId)
-    .is("claimed_at", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) return { pass: null, error: error.message };
-  return { pass: data || null, error: null };
-}
-
 function enforceRateLimit(req, res) {
   const byIp = limiters.generateByIp(getClientIp(req));
   if (!byIp.allowed) {
@@ -212,10 +110,7 @@ function enforceRateLimit(req, res) {
 
 export function createIssueClaimHandler(deps = {}) {
   const getSupabase = deps.getSupabaseAdmin || getSupabaseAdmin;
-  const verifyEvent = deps.requireEvent || requireEvent;
-  const upsert = deps.upsertRegistrant || upsertRegistrant;
-  const findPass = deps.findReusablePass || findReusablePass;
-  const createPass = deps.createPassWithUniqueToken || createPassWithUniqueToken;
+  const issueClaim = deps.issueClaim || issueClaimTokenForRegistrant;
 
   return async function issueClaimHandler(req, res) {
     setCors(res);
@@ -252,43 +147,23 @@ export function createIssueClaimHandler(deps = {}) {
     try {
       const supabase = getSupabase();
       const data = validBody.data;
-
-      const eventResult = await verifyEvent(supabase, data.eventId);
-      if (!eventResult.event) {
-        return res.status(eventResult.status || 500).json({ ok: false, error: eventResult.error || "Event lookup failed" });
-      }
-
-      const registrantResult = await upsert(supabase, data);
-      if (!registrantResult.registrant?.id) {
-        return res.status(500).json({ ok: false, error: registrantResult.error || "Failed to upsert registrant" });
-      }
-
-      const reusable = await findPass(supabase, data.eventId, registrantResult.registrant.id);
-      if (reusable.error) {
-        return res.status(500).json({ ok: false, error: reusable.error });
-      }
-
-      let pass = reusable.pass;
-      if (!pass?.claim_token) {
-        const createdPass = await createPass(supabase, data.eventId, registrantResult.registrant.id);
-        if (createdPass.error || !createdPass.pass?.claim_token) {
-          return res.status(500).json({ ok: false, error: createdPass.error?.message || createdPass.error || "Failed to create claim token" });
-        }
-        pass = createdPass.pass;
-      }
-
-      const baseUrl = getBaseUrl(req);
-      const claimPath = `/claim/${encodeURIComponent(pass.claim_token)}`;
-      const claimUrl = baseUrl ? `${baseUrl}${claimPath}` : claimPath;
+      const issued = await issueClaim(supabase, data);
+      const claimUrl = buildClaimUrl(req, issued.claimToken);
 
       return res.status(200).json({
         ok: true,
         claimUrl,
-        claimToken: pass.claim_token,
-        eventId: data.eventId,
-        registrantId: registrantResult.registrant.id,
+        claimToken: issued.claimToken,
+        eventId: issued.eventId,
+        registrantId: issued.registrantId,
       });
     } catch (error) {
+      if (error instanceof IssueClaimError) {
+        return res.status(error.status).json({ ok: false, error: error.message });
+      }
+      if (Number.isInteger(error?.status) && error.status >= 400 && error.status < 600) {
+        return res.status(error.status).json({ ok: false, error: error.message || String(error) });
+      }
       return res.status(500).json({
         ok: false,
         error: error instanceof Error ? error.message : String(error),

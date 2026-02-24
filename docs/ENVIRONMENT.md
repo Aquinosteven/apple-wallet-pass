@@ -38,6 +38,10 @@ Supported fallback in health endpoint only:
 
 - `GHL_PASS_SECRET`
 
+### Selftest endpoint (`/api/selftest-issue-claim` via `api/health.js?mode=selftest-issue-claim`)
+
+- `SELFTEST_KEY` (required header allowlist secret for selftest endpoint)
+
 ### Health/build metadata (`api/health.js?mode=pass`)
 
 - `VERSION` (optional)

@@ -1,5 +1,9 @@
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
+import { createClient } from "@supabase/supabase-js";
+import { buildClaimUrl } from "../lib/baseUrl.js";
+import { IssueClaimError, issueClaimTokenForRegistrant } from "../lib/issueClaimCore.js";
 
 const PASS_REQUIRED_ENV_VARS = [
   "SIGNER_CERT_PEM",
@@ -15,6 +19,8 @@ const WALLET_SCOPE = "https://www.googleapis.com/auth/wallet_object.issuer";
 const CLASS_SUFFIX = "showfi.generic.v1";
 const ENV_SERVICE_ACCOUNT = "GOOGLE_WALLET_SERVICE_ACCOUNT_JSON";
 const ENV_SERVICE_ACCOUNT_LEGACY = "GOOGLE_WALLET_SA_JSON";
+const SELFTEST_EMAIL = "selftest+issue-claim@showfi.local";
+const SELFTEST_NAME = "Issue Claim Selftest";
 
 class HttpError extends Error {
   constructor(status, message, missing = []) {
@@ -48,6 +54,68 @@ function getMode(req) {
   } catch {
     return "";
   }
+}
+
+function getQueryValue(req, key) {
+  const queryValue = req?.query?.[key];
+  if (typeof queryValue === "string") return queryValue.trim();
+  if (Array.isArray(queryValue) && typeof queryValue[0] === "string") {
+    return queryValue[0].trim();
+  }
+  try {
+    const parsed = new URL(req.url || "", "http://localhost");
+    return String(parsed.searchParams.get(key) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function getHeader(req, name) {
+  const direct = req?.headers?.[name];
+  if (typeof direct === "string") return direct;
+  const lowered = req?.headers?.[name.toLowerCase()];
+  if (typeof lowered === "string") return lowered;
+  const upper = req?.headers?.[name.toUpperCase()];
+  if (typeof upper === "string") return upper;
+  return "";
+}
+
+function secureEqual(left, right) {
+  const leftBuf = Buffer.from(String(left || ""), "utf8");
+  const rightBuf = Buffer.from(String(right || ""), "utf8");
+  if (!leftBuf.length || !rightBuf.length) return false;
+  if (leftBuf.length !== rightBuf.length) return false;
+  return crypto.timingSafeEqual(leftBuf, rightBuf);
+}
+
+function getSupabaseAdmin() {
+  const url = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").trim();
+  const key = String(process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  if (!url || !key) {
+    throw new HttpError(500, "Missing required environment variables", [
+      "SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+    ]);
+  }
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+async function pickSelftestEventId(supabase) {
+  const { data, error } = await supabase
+    .from("events")
+    .select("id")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    throw new HttpError(500, error.message || "Failed to query events");
+  }
+  if (!data?.id) {
+    throw new HttpError(404, "No events found for selftest");
+  }
+  return String(data.id);
 }
 
 function responseShape({
@@ -215,6 +283,71 @@ async function handleGwalletMode(req, res) {
     .json(responseShape({ issuerId, classId, tokenOk, apiOk, apiStatus, apiError, warnings }));
 }
 
+export function createSelftestIssueClaimModeHandler(deps = {}) {
+  const getSupabase = deps.getSupabaseAdmin || getSupabaseAdmin;
+  const pickEventId = deps.pickEventId || pickSelftestEventId;
+  const issueClaim = deps.issueClaim || issueClaimTokenForRegistrant;
+  const makeClaimUrl = deps.buildClaimUrl || buildClaimUrl;
+
+  return async function handleSelftestIssueClaimMode(req, res) {
+    if (req.method !== "GET") {
+      return res.status(405).json({ ok: false, error: "Use GET" });
+    }
+
+    const expectedKey = String(process.env.SELFTEST_KEY || "").trim();
+    if (!expectedKey) {
+      return res.status(500).json({
+        ok: false,
+        error: "Missing required environment variables",
+        missing: ["SELFTEST_KEY"],
+      });
+    }
+
+    const providedKey = String(getHeader(req, "x-selftest-key") || "").trim();
+    if (!providedKey) {
+      return res.status(401).json({ ok: false, error: "Missing x-selftest-key" });
+    }
+    if (!secureEqual(providedKey, expectedKey)) {
+      return res.status(403).json({ ok: false, error: "Invalid x-selftest-key" });
+    }
+
+    try {
+      const supabase = getSupabase();
+      const requestedEventId = getQueryValue(req, "eventId");
+      const eventId = requestedEventId || await pickEventId(supabase);
+      const issued = await issueClaim(supabase, {
+        eventId,
+        name: SELFTEST_NAME,
+        email: SELFTEST_EMAIL,
+        phone: null,
+        metadata: { source: "selftest-issue-claim" },
+      });
+      const claimUrl = makeClaimUrl(req, issued.claimToken);
+      return res.status(200).json({
+        ok: true,
+        note: "issue-claim selftest passed",
+        eventId: issued.eventId,
+        registrantId: issued.registrantId,
+        claimToken: issued.claimToken,
+        claimUrl,
+      });
+    } catch (error) {
+      if (error instanceof IssueClaimError) {
+        return res.status(error.status).json({ ok: false, error: error.message });
+      }
+      if (error instanceof HttpError) {
+        return res.status(error.status).json({ ok: false, error: error.message, missing: error.missing });
+      }
+      return res.status(500).json({
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+}
+
+const handleSelftestIssueClaimMode = createSelftestIssueClaimModeHandler();
+
 export default async function handler(req, res) {
   // Always allow cross-origin reads for health checks
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -226,6 +359,7 @@ export default async function handler(req, res) {
   const mode = getMode(req);
   if (mode === "pass") return handlePassMode(req, res);
   if (mode === "gwallet") return handleGwalletMode(req, res);
+  if (mode === "selftest-issue-claim") return handleSelftestIssueClaimMode(req, res);
 
   return res.status(200).json({
     ok: true,

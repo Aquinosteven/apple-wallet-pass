@@ -28,6 +28,9 @@ GOOGLE_WALLET_SERVICE_ACCOUNT_JSON
 
 # GHL pass flow
 GHL_PASS_SECRET
+
+# Selftest allowlist
+SELFTEST_KEY
 ```
 
 Quick check:

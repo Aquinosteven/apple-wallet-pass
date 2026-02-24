@@ -12,6 +12,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/selftest-issue-claim",
+      "destination": "/api/health?mode=selftest-issue-claim"
+    },
+    {
       "source": "/api/passkit-test",
       "destination": "/api/health?mode=pass"
     },

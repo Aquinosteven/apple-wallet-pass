@@ -87,12 +87,10 @@ test("issue-claim returns 400 for invalid payload", async () => {
 test("issue-claim returns 200 for happy path", async () => {
   const handler = createIssueClaimHandler({
     getSupabaseAdmin: () => ({ fake: true }),
-    requireEvent: async () => ({ event: { id: "event-123" }, error: null, status: 200 }),
-    upsertRegistrant: async () => ({ registrant: { id: "reg-123" }, error: null }),
-    findReusablePass: async () => ({ pass: null, error: null }),
-    createPassWithUniqueToken: async () => ({
-      pass: { id: "pass-123", claim_token: "a".repeat(64) },
-      error: null,
+    issueClaim: async () => ({
+      eventId: "event-123",
+      registrantId: "reg-123",
+      claimToken: "a".repeat(64),
     }),
   });
 
