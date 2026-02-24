@@ -1,6 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 
 type Status = "idle" | "loading" | "success" | "error";
+type GoogleSavePayload = {
+  header: string;
+  attendee: {
+    name: string;
+    email: string;
+    phone?: string;
+  };
+  event: {
+    title: string;
+    startsAt: string;
+    joinUrl: string;
+  };
+  joinUrl: string;
+  eventUrl: string;
+};
 
 const presets = [
   { value: "webinar", label: "Webinar" },
@@ -44,6 +59,9 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState<string>("personalized.pkpass");
+  const [googleWalletError, setGoogleWalletError] = useState<string | null>(null);
+  const [googleSavePayload, setGoogleSavePayload] = useState<GoogleSavePayload | null>(null);
+  const [googleWalletReady, setGoogleWalletReady] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -115,6 +133,9 @@ function App() {
     setMessage(null);
     setError(null);
     setDownloadUrl(null);
+    setGoogleWalletError(null);
+    setGoogleSavePayload(null);
+    setGoogleWalletReady(false);
 
     const errors: string[] = [];
     if (!name.trim()) errors.push("Name is required.");
@@ -157,6 +178,17 @@ function App() {
         themePayload.stripImageBase64 = stripImageBase64;
       }
 
+      const attendeePayload = {
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+      };
+      const eventPayload = {
+        title: eventTitle.trim(),
+        startsAt,
+        joinUrl: joinUrl.trim(),
+      };
+
       const response = await fetch("/api/pass", {
         method: "POST",
         headers: {
@@ -164,16 +196,8 @@ function App() {
         },
         body: JSON.stringify({
           preset,
-          attendee: {
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim(),
-          },
-          event: {
-            title: eventTitle.trim(),
-            startsAt,
-            joinUrl: joinUrl.trim(),
-          },
+          attendee: attendeePayload,
+          event: eventPayload,
           branding: {
             logoBase64,
           },
@@ -211,12 +235,63 @@ function App() {
       setDownloadUrl(url);
       setDownloadName(filename);
       setMessage(`Pass ready: ${filename}`);
+      setGoogleSavePayload({
+        header: eventPayload.title || "ShowFi Pass",
+        attendee: attendeePayload,
+        event: eventPayload,
+        joinUrl: eventPayload.joinUrl || window.location.href,
+        eventUrl: window.location.href,
+      });
+      try {
+        const healthResponse = await fetch("/api/gwallet-health");
+        const health = await healthResponse.json();
+        setGoogleWalletReady(Boolean(health?.ok));
+      } catch {
+        setGoogleWalletReady(false);
+      }
       setStatus("success");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error.");
       setStatus("error");
     } finally {
       setStatus((current) => (current === "loading" ? "idle" : current));
+    }
+  };
+
+  const handleGoogleWalletClick = async () => {
+    if (!googleSavePayload) return;
+    setGoogleWalletError(null);
+    try {
+      const response = await fetch("/api/google-save", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          ...googleSavePayload,
+          joinUrl: googleSavePayload.joinUrl || googleSavePayload.eventUrl,
+        }),
+      });
+      const text = await response.text();
+      let data: { ok?: boolean; saveUrl?: string; error?: string } | null = null;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = null;
+      }
+      if (!response.ok || !data?.ok || !data?.saveUrl) {
+        setGoogleWalletError(
+          data?.error || text || "Failed to create Google Wallet save URL."
+        );
+        return;
+      }
+      if (!data.saveUrl.startsWith("https://pay.google.com/gp/v/save/")) {
+        setGoogleWalletError("Google Wallet save URL format is invalid.");
+        return;
+      }
+      window.open(data.saveUrl, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setGoogleWalletError(err instanceof Error ? err.message : "Unexpected error.");
     }
   };
 
@@ -374,7 +449,15 @@ function App() {
             <a href={downloadUrl} download={downloadName}>
               Download .pkpass
             </a>
+            {googleWalletReady ? (
+              <button type="button" onClick={handleGoogleWalletClick}>
+                Add to Google Wallet
+              </button>
+            ) : null}
           </div>
+        ) : null}
+        {status === "success" && googleWalletError ? (
+          <p className="pass-notice pass-error">{googleWalletError}</p>
         ) : null}
 
         <div className="pass-actions">

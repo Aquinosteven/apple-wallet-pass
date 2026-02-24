@@ -193,6 +193,10 @@
 
 .pass-actions {
   margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .pass-actions a {
@@ -203,4 +207,18 @@
 
 .pass-actions a:hover {
   text-decoration: underline;
+}
+
+.pass-actions button {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1e293b;
+  font-weight: 600;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.pass-actions button:hover {
+  background: #f8fafc;
 }
