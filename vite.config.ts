@@ -1,14 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import clientPassHandler from "./api/client-pass.js";
 import passHandler from "./api/pass.js";
 import healthPassHandler from "./api/health-pass.js";
 import googleSaveHandler from "./api/google-save.js";
 import gwalletHealthHandler from "./api/gwallet-health.js";
 
 const vercelHandlers: Array<{ prefix: string; handler: Handler }>= [
-  { prefix: "/api/client-pass", handler: clientPassHandler },
+  { prefix: "/api/client-pass", handler: passHandler },
   { prefix: "/api/pass", handler: passHandler },
   { prefix: "/api/health-pass", handler: healthPassHandler },
   { prefix: "/api/google-save", handler: googleSaveHandler },
