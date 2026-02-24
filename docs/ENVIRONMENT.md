@@ -25,20 +25,20 @@ Supported fallback in code:
 
 - `VITE_SUPABASE_URL` is accepted as a fallback for `SUPABASE_URL` on server endpoints.
 
-### Google Wallet (`api/google-save.js`, `api/gwallet-health.js`)
+### Google Wallet (`api/google-save.js`, `api/health.js?mode=gwallet`)
 
 - `GOOGLE_WALLET_ISSUER_ID`
 - `GOOGLE_WALLET_SERVICE_ACCOUNT_JSON`
 
 Supported fallback in health endpoint only:
 
-- `GOOGLE_WALLET_SA_JSON` (legacy fallback read by `/api/gwallet-health`).
+- `GOOGLE_WALLET_SA_JSON` (legacy fallback read by `/api/health?mode=gwallet`).
 
 ### GHL pass flows (`api/ghl-pass.js`, `api/join.js`)
 
 - `GHL_PASS_SECRET`
 
-### Health/build metadata (`api/health-pass.js`)
+### Health/build metadata (`api/health.js?mode=pass`)
 
 - `VERSION` (optional)
 - `VERCEL_GIT_COMMIT_SHA` (optional)

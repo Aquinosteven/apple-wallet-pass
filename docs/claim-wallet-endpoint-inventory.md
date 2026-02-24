@@ -28,5 +28,5 @@ Publicly reachable endpoints in the claim + wallet add flow:
 
 ## Health (kept open)
 - `GET /api/health`
-- `GET /api/health-pass`
-- `GET /api/gwallet-health`
+- `GET /api/health?mode=pass`
+- `GET /api/health?mode=gwallet`

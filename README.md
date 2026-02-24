@@ -139,7 +139,7 @@ WWDR_PEM=LS0tLS1CRUdJTi...
 - Canonical: `POST /api/pass`
 - Back-compat shim: `POST /api/client-pass`
 - Google Wallet Save URL: `GET|POST /api/google-save`
-- Google Wallet Health: `GET /api/gwallet-health` (checks service-account token + Generic Class API access for `${GOOGLE_WALLET_ISSUER_ID}.showfi.generic.v1`)
+- Google Wallet Health: `GET /api/health?mode=gwallet` (checks service-account token + Generic Class API access for `${GOOGLE_WALLET_ISSUER_ID}.showfi.generic.v1`)
 
 ### Google Wallet Save URL: `/api/google-save`
 
@@ -174,10 +174,10 @@ Unexpected server failure (`500`):
 Google Wallet health test:
 
 ```bash
-curl -s https://<your-vercel-domain>/api/gwallet-health | jq
+curl -s "https://<your-vercel-domain>/api/health?mode=gwallet" | jq
 ```
 
-`/api/gwallet-health` uses `GOOGLE_WALLET_SERVICE_ACCOUNT_JSON`.
+`/api/health?mode=gwallet` uses `GOOGLE_WALLET_SERVICE_ACCOUNT_JSON`.
 Backward compatibility: if only `GOOGLE_WALLET_SA_JSON` is present, it is used and
 the response includes a deprecation warning.
 

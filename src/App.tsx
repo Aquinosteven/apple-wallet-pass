@@ -244,7 +244,7 @@ function App() {
         eventUrl: window.location.href,
       });
       try {
-        const healthResponse = await fetch("/api/gwallet-health");
+        const healthResponse = await fetch("/api/health?mode=gwallet");
         const health = await healthResponse.json();
         setGoogleWalletReady(Boolean(health?.ok));
       } catch {
@@ -479,7 +479,7 @@ function App() {
         ) : null}
 
         <div className="pass-actions">
-          <a href="/api/health-pass" target="_blank" rel="noreferrer">
+          <a href="/api/health?mode=pass" target="_blank" rel="noreferrer">
             Open API health
           </a>
         </div>
