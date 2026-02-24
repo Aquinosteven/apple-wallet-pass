@@ -12,6 +12,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/passkit-test",
+      "destination": "/api/health?mode=pass"
+    },
+    {
       "source": "/api/client-pass",
       "destination": "/api/pass"
     },
