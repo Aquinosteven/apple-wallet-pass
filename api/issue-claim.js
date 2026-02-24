@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
-import { readJsonBodyStrict, isValidEmail } from "../lib/requestValidation.js";
+import { isValidEmail } from "../lib/requestValidation.js";
 import { buildClaimUrl } from "../lib/baseUrl.js";
 import { IssueClaimError, issueClaimTokenForRegistrant } from "../lib/issueClaimCore.js";
 import { limiters } from "../lib/rateLimit.js";
@@ -64,22 +64,209 @@ function normalizeOptionalText(value) {
   return normalized || null;
 }
 
-function validateBody(body) {
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return { ok: false, error: "Invalid JSON body", fields: [] };
+function shouldDebugWebhookLogs() {
+  const value = String(process.env.DEBUG_GHL_WEBHOOKS || "").trim().toLowerCase();
+  return value === "1" || value === "true" || value === "yes";
+}
+
+function maskEmail(value) {
+  const email = normalizeText(value);
+  if (!email || !email.includes("@")) return "";
+  const [local, domain] = email.split("@");
+  if (!domain) return "";
+  const first = local.slice(0, 1);
+  return `${first || "*"}***@${domain}`;
+}
+
+function maskPhone(value) {
+  const phone = normalizeText(value);
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return "";
+  const tail = digits.slice(-2);
+  return `***${tail}`;
+}
+
+function getContentType(req) {
+  const contentType = normalizeText(getHeader(req, "content-type")).toLowerCase();
+  if (!contentType) return "";
+  return contentType.split(";")[0].trim();
+}
+
+function parseBoundary(contentTypeHeader) {
+  const match = String(contentTypeHeader || "").match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+  if (!match) return "";
+  return (match[1] || match[2] || "").trim();
+}
+
+function parseMultipartFormData(rawText, contentTypeHeader) {
+  const boundary = parseBoundary(contentTypeHeader);
+  if (!boundary) {
+    return { ok: false, status: 400, error: "Invalid multipart/form-data boundary" };
   }
 
-  const eventId = normalizeText(body.eventId);
-  const name = normalizeText(body.name);
-  const email = normalizeText(body.email).toLowerCase();
-  const phone = normalizeOptionalText(body.phone);
-  const metadata = body.metadata;
+  const parts = rawText.split(`--${boundary}`);
+  const parsed = {};
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed || trimmed === "--") continue;
+    const separatorIndex = part.indexOf("\r\n\r\n");
+    if (separatorIndex < 0) continue;
+
+    const headerSection = part.slice(0, separatorIndex);
+    let valueSection = part.slice(separatorIndex + 4);
+    valueSection = valueSection.replace(/\r\n$/, "");
+
+    const nameMatch = headerSection.match(/name="([^"]+)"/i);
+    if (!nameMatch?.[1]) continue;
+    const fieldName = nameMatch[1].trim();
+    if (!fieldName) continue;
+
+    parsed[fieldName] = valueSection;
+  }
+
+  return { ok: true, body: parsed };
+}
+
+function maybeParseJsonString(value) {
+  const text = normalizeText(value);
+  if (!text) return null;
+  if (!(text.startsWith("{") || text.startsWith("["))) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function readBodyWithContentType(req) {
+  if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
+    return {
+      ok: true,
+      body: req.body,
+      rawLength: JSON.stringify(req.body).length,
+      contentType: getContentType(req),
+    };
+  }
+
+  const contentTypeHeader = normalizeText(getHeader(req, "content-type"));
+  const contentType = contentTypeHeader.toLowerCase();
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const rawText = Buffer.concat(chunks).toString("utf8");
+  const trimmed = rawText.trim();
+
+  if (!trimmed) {
+    return { ok: false, status: 400, error: "Request body is required", rawLength: 0, contentType };
+  }
+
+  if (contentType.includes("application/json")) {
+    try {
+      return { ok: true, body: JSON.parse(trimmed), rawLength: rawText.length, contentType };
+    } catch {
+      return { ok: false, status: 400, error: "Invalid JSON body", rawLength: rawText.length, contentType };
+    }
+  }
+
+  if (contentType.includes("application/x-www-form-urlencoded")) {
+    const params = new URLSearchParams(trimmed);
+    const body = Object.fromEntries(params.entries());
+    return { ok: true, body, rawLength: rawText.length, contentType };
+  }
+
+  if (contentType.includes("multipart/form-data")) {
+    const parsedMultipart = parseMultipartFormData(rawText, contentTypeHeader);
+    if (!parsedMultipart.ok) {
+      return { ...parsedMultipart, rawLength: rawText.length, contentType };
+    }
+    return { ok: true, body: parsedMultipart.body, rawLength: rawText.length, contentType };
+  }
+
+  // Fallback for providers that omit/incorrectly set content-type.
+  const maybeJson = maybeParseJsonString(trimmed);
+  if (maybeJson && typeof maybeJson === "object" && !Array.isArray(maybeJson)) {
+    return { ok: true, body: maybeJson, rawLength: rawText.length, contentType };
+  }
+  const params = new URLSearchParams(trimmed);
+  const body = Object.fromEntries(params.entries());
+  if (Object.keys(body).length > 0) {
+    return { ok: true, body, rawLength: rawText.length, contentType };
+  }
+
+  return { ok: false, status: 415, error: "Unsupported Content-Type", rawLength: rawText.length, contentType };
+}
+
+function asObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value;
+}
+
+function findValueInSources(sources, keys) {
+  for (const source of sources) {
+    if (!source) continue;
+    for (const key of keys) {
+      if (typeof source[key] === "string" || typeof source[key] === "number") {
+        return String(source[key]);
+      }
+    }
+  }
+  return "";
+}
+
+function normalizeIncomingBody(body) {
+  const root = asObject(body);
+  if (!root) return null;
+
+  const maybeCustomData = asObject(root.customData) || asObject(maybeParseJsonString(root.customData));
+  const maybeCustomDataSnake = asObject(root.custom_data) || asObject(maybeParseJsonString(root.custom_data));
+  const maybeData = asObject(root.data);
+  const maybePayload = asObject(root.payload);
+  const maybeBody = asObject(root.body);
+  const maybeContact = asObject(root.contact);
+
+  const sources = [
+    root,
+    maybeCustomData,
+    maybeCustomDataSnake,
+    maybeData,
+    maybePayload,
+    maybeBody,
+    maybeContact,
+    asObject(maybeContact?.customData),
+    asObject(maybeContact?.custom_data),
+  ];
+
+  const eventId = normalizeText(findValueInSources(sources, ["eventId", "eventID", "event_id", "EventId", "EVENT_ID"]));
+  const name = normalizeText(findValueInSources(sources, ["name", "fullName", "full_name"]));
+  const email = normalizeText(findValueInSources(sources, ["email", "emailAddress", "email_address", "contactEmail", "contact_email"])).toLowerCase();
+  const phone = normalizeOptionalText(findValueInSources(sources, ["phone", "phoneNumber", "phone_number"]));
+
+  let metadata = asObject(root.metadata)
+    || asObject(root.meta)
+    || asObject(maybeCustomData?.metadata)
+    || asObject(maybeCustomDataSnake?.metadata)
+    || null;
+  if (!metadata) {
+    const parsedMetadata = maybeParseJsonString(root.metadata);
+    if (asObject(parsedMetadata)) metadata = parsedMetadata;
+  }
+
+  return { eventId, name, email, phone, metadata };
+}
+
+function validateBody(body) {
+  const normalized = normalizeIncomingBody(body);
+  if (!normalized) {
+    return { ok: false, error: "Invalid body", fields: [] };
+  }
+
   const fields = [];
 
-  if (!eventId) fields.push("eventId");
-  if (!email) fields.push("email");
-  if (email && !isValidEmail(email)) fields.push("email (invalid)");
-  if (metadata !== undefined && (typeof metadata !== "object" || metadata === null || Array.isArray(metadata))) {
+  if (!normalized.eventId) fields.push("eventId");
+  if (!normalized.email) fields.push("email");
+  if (normalized.email && !isValidEmail(normalized.email)) fields.push("email (invalid)");
+  if (normalized.metadata !== undefined && normalized.metadata !== null && (typeof normalized.metadata !== "object" || Array.isArray(normalized.metadata))) {
     fields.push("metadata (must be object)");
   }
 
@@ -90,13 +277,27 @@ function validateBody(body) {
   return {
     ok: true,
     data: {
-      eventId,
-      name,
-      email,
-      phone,
-      metadata: metadata || null,
+      eventId: normalized.eventId,
+      name: normalized.name,
+      email: normalized.email,
+      phone: normalized.phone,
+      metadata: normalized.metadata || null,
     },
   };
+}
+
+function debugLogWebhookRequest(req, body, rawLength, contentType) {
+  if (!shouldDebugWebhookLogs()) return;
+  const keys = body && typeof body === "object" && !Array.isArray(body) ? Object.keys(body).slice(0, 30) : [];
+  const normalized = normalizeIncomingBody(body);
+  console.log("[issue-claim][debug]", {
+    contentType: contentType || getContentType(req) || "(empty)",
+    rawBodyLength: Number.isFinite(rawLength) ? rawLength : 0,
+    parsedBodyKeys: keys,
+    eventIdPresent: Boolean(normalized?.eventId),
+    email: maskEmail(normalized?.email),
+    phone: maskPhone(normalized?.phone),
+  });
 }
 
 function enforceRateLimit(req, res) {
@@ -134,7 +335,8 @@ export function createIssueClaimHandler(deps = {}) {
       return res.status(auth.status).json({ ok: false, error: auth.error });
     }
 
-    const parsedBody = await readJsonBodyStrict(req);
+    const parsedBody = await readBodyWithContentType(req);
+    debugLogWebhookRequest(req, parsedBody.body, parsedBody.rawLength, parsedBody.contentType);
     if (!parsedBody.ok) {
       return res.status(parsedBody.status).json({ ok: false, error: parsedBody.error });
     }

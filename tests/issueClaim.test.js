@@ -120,3 +120,36 @@ test("issue-claim returns 200 for happy path", async () => {
     `https://example.com/claim/${encodeURIComponent("a".repeat(64))}`
   );
 });
+
+test("issue-claim accepts x-www-form-urlencoded payload (GHL style)", async () => {
+  const handler = createIssueClaimHandler({
+    getSupabaseAdmin: () => ({ fake: true }),
+    issueClaim: async () => ({
+      eventId: "event-encoded",
+      registrantId: "reg-encoded",
+      claimToken: "c".repeat(64),
+    }),
+  });
+
+  const req = createMockRequest({
+    headers: {
+      "x-ghl-secret": "test-secret",
+      host: "example.com",
+      "x-forwarded-proto": "https",
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    rawBody: "eventId=event-encoded&email=test%40example.com&name=Test+User&phone=%2B15551234567",
+  });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body?.ok, true);
+  assert.equal(res.body?.eventId, "event-encoded");
+  assert.equal(res.body?.claimToken, "c".repeat(64));
+  assert.equal(
+    res.body?.claimUrl,
+    `https://example.com/claim/${encodeURIComponent("c".repeat(64))}`
+  );
+});
