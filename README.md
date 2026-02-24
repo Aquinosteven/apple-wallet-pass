@@ -241,6 +241,24 @@ GET /api/test-pass
 BrowserRouter requires SPA rewrites on Vercel.
 Keep `/api/*` and `/functions/api/*` pass-through, and rewrite all other paths to `/` so deep links like `/pass`, `/login`, and `/dashboard/*` do not 404 on refresh.
 
+## Thank You Page Embed
+
+Use the hosted script to render a claim button into a container with id `showfi-claim`.
+
+Example A (URL param):
+
+```html
+<div id="showfi-claim"></div>
+<script src="https://<YOUR_DOMAIN>/showfi-claim.js"></script>
+```
+
+Example B (merge field):
+
+```html
+<div id="showfi-claim" data-token="{{CLAIM_TOKEN}}"></div>
+<script src="https://<YOUR_DOMAIN>/showfi-claim.js"></script>
+```
+
 ## Supabase Setup (Auth + DB + Storage)
 
 Run the SQL migration in `/docs/supabase-schema.sql` in your Supabase project:

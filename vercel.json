@@ -24,7 +24,7 @@
       "destination": "/functions/api/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!api/|functions/api/|showfi-claim\\.js$).*)",
       "destination": "/"
     }
   ]
