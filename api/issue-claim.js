@@ -5,11 +5,14 @@ import { buildClaimUrl } from "../lib/baseUrl.js";
 import { IssueClaimError, issueClaimTokenForRegistrant } from "../lib/issueClaimCore.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
+import {
+  ensureShowfiContactCustomFields,
+  ensureValidAccessTokenForLocation,
+  updateGhlContactCustomFields,
+} from "../lib/ghlOAuth.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const GHL_API_BASE_URL = "https://services.leadconnectorhq.com";
-const GHL_API_VERSION = "2021-07-28";
 
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -277,46 +280,6 @@ function extractGhlContactContext(body) {
   return { contactId, locationId };
 }
 
-async function writebackGhlContact({
-  fetchImpl,
-  contactId,
-  locationId,
-  claimUrl,
-  claimToken,
-  integrationKey,
-}) {
-  if (!fetchImpl || !contactId || !locationId || !integrationKey) {
-    return { attempted: false, ok: false };
-  }
-
-  try {
-    const response = await fetchImpl(`${GHL_API_BASE_URL}/contacts/${encodeURIComponent(contactId)}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${integrationKey}`,
-        Version: GHL_API_VERSION,
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        locationId,
-        customFields: [
-          { key: "contact.showfi_claim_url", field_value: claimUrl },
-          { key: "contact.showfi_claim_token", field_value: claimToken },
-        ],
-      }),
-    });
-
-    return {
-      attempted: true,
-      ok: response.ok,
-      status: Number.isFinite(response.status) ? response.status : undefined,
-    };
-  } catch {
-    return { attempted: true, ok: false };
-  }
-}
-
 function findValueInSources(sources, keys) {
   for (const source of sources) {
     if (!source) continue;
@@ -468,20 +431,48 @@ export function createIssueClaimHandler(deps = {}) {
       const issued = await issueClaim(supabase, data);
       const claimUrl = buildClaimUrl(req, issued.claimToken);
       const { contactId, locationId } = extractGhlContactContext(parsedBody.body);
-      const integrationKey = normalizeText(process.env.GHL_PRIVATE_INTEGRATION_KEY || "");
-      const ghlWriteback = await writebackGhlContact({
-        fetchImpl,
-        contactId,
-        locationId,
-        claimUrl,
-        claimToken: issued.claimToken,
-        integrationKey,
-      });
+      let noInstallationForLocation = false;
+      let ghlWriteback = { attempted: false, ok: false };
+
+      if (contactId && locationId) {
+        try {
+          const installation = await ensureValidAccessTokenForLocation({
+            supabase,
+            locationId,
+            fetchImpl,
+          });
+
+          if (!installation?.access_token) {
+            noInstallationForLocation = true;
+          } else {
+            await ensureShowfiContactCustomFields({
+              fetchImpl,
+              accessToken: installation.access_token,
+              locationId,
+            });
+            ghlWriteback = await updateGhlContactCustomFields({
+              fetchImpl,
+              accessToken: installation.access_token,
+              contactId,
+              locationId,
+              claimUrl,
+              claimToken: issued.claimToken,
+            });
+          }
+        } catch (error) {
+          ghlWriteback = {
+            attempted: true,
+            ok: false,
+            ...(Number.isInteger(error?.status) ? { status: error.status } : {}),
+          };
+        }
+      }
 
       if (shouldDebugWebhookLogs()) {
         console.log("[issue-claim][debug][ghl-writeback]", {
           contactId: maskIdentifier(contactId),
           locationId: maskIdentifier(locationId),
+          noInstallationForLocation,
           attempted: ghlWriteback.attempted,
           ok: ghlWriteback.ok,
           status: Number.isFinite(ghlWriteback.status) ? ghlWriteback.status : undefined,
@@ -499,6 +490,7 @@ export function createIssueClaimHandler(deps = {}) {
         responseBody.ghlWriteback = {
           attempted: ghlWriteback.attempted,
           ok: ghlWriteback.ok,
+          ...(noInstallationForLocation ? { reason: "no_installation_for_location" } : {}),
           ...(Number.isFinite(ghlWriteback.status) ? { status: ghlWriteback.status } : {}),
         };
       }

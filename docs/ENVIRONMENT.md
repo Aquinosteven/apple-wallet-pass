@@ -38,9 +38,16 @@ Supported fallback in health endpoint only:
 
 - `GHL_PASS_SECRET`
 
-### GHL issue-claim writeback (`api/issue-claim.js`)
+### GHL OAuth install + claim writeback (`api/ghl/oauth/start.js`, `api/ghl/oauth/callback.js`, `api/issue-claim.js`)
 
-- `GHL_PRIVATE_INTEGRATION_KEY` (optional; when set with contact/location IDs present, `/api/issue-claim` updates contact custom fields in LeadConnector)
+- `GHL_OAUTH_CLIENT_ID`
+- `GHL_OAUTH_CLIENT_SECRET`
+- `GHL_OAUTH_REDIRECT_URI` (must match Marketplace app redirect URI)
+- `GHL_OAUTH_SCOPES` (optional; space-separated scopes, defaults to contacts/custom-fields read+write scope set in code)
+
+Legacy/deprecated for single-tenant setups:
+
+- `GHL_PRIVATE_INTEGRATION_KEY` (no longer used by `/api/issue-claim` in OAuth SaaS mode)
 
 ### Selftest endpoint (`/api/selftest-issue-claim` via `api/health.js?mode=selftest-issue-claim`)
 

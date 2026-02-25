@@ -40,10 +40,57 @@ function createMockRequest(options = {}) {
   };
 }
 
+function createSupabaseAdminMock({ installation, upsertInstallation } = {}) {
+  const state = {
+    installation: installation || null,
+    upsertPayload: null,
+  };
+
+  function buildInstallationsQuery() {
+    return {
+      _eq: {},
+      select() {
+        return this;
+      },
+      eq(column, value) {
+        this._eq[column] = value;
+        return this;
+      },
+      async maybeSingle() {
+        if (this._eq.location_id && state.installation && this._eq.location_id === state.installation.location_id) {
+          return { data: state.installation, error: null };
+        }
+        return { data: null, error: null };
+      },
+      upsert(payload) {
+        state.upsertPayload = payload;
+        return {
+          select() {
+            return {
+              async single() {
+                const mapped = upsertInstallation || payload;
+                state.installation = mapped;
+                return { data: mapped, error: null };
+              },
+            };
+          },
+        };
+      },
+    };
+  }
+
+  return {
+    state,
+    from(table) {
+      if (table === "ghl_installations") return buildInstallationsQuery();
+      throw new Error(`Unexpected table: ${table}`);
+    },
+  };
+}
+
 test.beforeEach(() => {
   clearAllLimiters();
   process.env.GHL_PASS_SECRET = "test-secret";
-  delete process.env.GHL_PRIVATE_INTEGRATION_KEY;
   delete process.env.DEBUG_GHL_WEBHOOKS;
 });
 
@@ -156,12 +203,22 @@ test("issue-claim accepts x-www-form-urlencoded payload (GHL style)", async () =
   );
 });
 
-test("issue-claim writes back to LeadConnector contact when IDs and integration key are present", async () => {
-  process.env.GHL_PRIVATE_INTEGRATION_KEY = "test-private-key";
-
+test("issue-claim writes back using installation token scoped to location", async () => {
   const fetchCalls = [];
+  const supabase = createSupabaseAdminMock({
+    installation: {
+      id: "inst_1",
+      location_id: "98765",
+      access_token: "oauth-access-token",
+      refresh_token: "oauth-refresh-token",
+      token_expires_at: "2099-01-01T00:00:00.000Z",
+      scopes: ["contacts.write"],
+      installed_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+    },
+  });
   const handler = createIssueClaimHandler({
-    getSupabaseAdmin: () => ({ fake: true }),
+    getSupabaseAdmin: () => supabase,
     issueClaim: async () => ({
       eventId: "event-123",
       registrantId: "reg-123",
@@ -169,7 +226,27 @@ test("issue-claim writes back to LeadConnector contact when IDs and integration 
     }),
     fetchImpl: async (url, options) => {
       fetchCalls.push({ url, options });
-      return { ok: true, status: 200 };
+      if (url.includes("/customFields") && options?.method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              customFields: [
+                { fieldKey: "contact.showfi_claim_url" },
+                { fieldKey: "contact.showfi_claim_token" },
+              ],
+            };
+          },
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {};
+        },
+      };
     },
   });
 
@@ -192,16 +269,23 @@ test("issue-claim writes back to LeadConnector contact when IDs and integration 
 
   assert.equal(res.statusCode, 200);
   assert.equal(res.body?.ok, true);
-  assert.equal(fetchCalls.length, 1);
-  assert.equal(fetchCalls[0].url, "https://services.leadconnectorhq.com/contacts/contact_123");
-  assert.equal(fetchCalls[0].options?.method, "PUT");
-  assert.equal(fetchCalls[0].options?.headers?.Version, "2021-07-28");
-  assert.equal(fetchCalls[0].options?.headers?.Accept, "application/json");
-  assert.equal(fetchCalls[0].options?.headers?.["Content-Type"], "application/json");
-  assert.equal(typeof fetchCalls[0].options?.headers?.Authorization, "string");
-  assert.equal(fetchCalls[0].options?.headers?.Authorization.startsWith("Bearer "), true);
+  assert.equal(fetchCalls.length, 2);
 
-  const requestBody = JSON.parse(fetchCalls[0].options?.body || "{}");
+  const getCustomFieldsCall = fetchCalls.find((call) => call.url.includes("/customFields"));
+  assert.equal(Boolean(getCustomFieldsCall), true);
+  assert.equal(getCustomFieldsCall.options?.method, "GET");
+  assert.equal(getCustomFieldsCall.options?.headers?.Version, "2021-07-28");
+  assert.equal(getCustomFieldsCall.options?.headers?.Authorization, "Bearer oauth-access-token");
+
+  const updateCall = fetchCalls.find((call) => call.url.includes("/contacts/"));
+  assert.equal(updateCall.url, "https://services.leadconnectorhq.com/contacts/contact_123");
+  assert.equal(updateCall.options?.method, "PUT");
+  assert.equal(updateCall.options?.headers?.Version, "2021-07-28");
+  assert.equal(updateCall.options?.headers?.Accept, "application/json");
+  assert.equal(updateCall.options?.headers?.["Content-Type"], "application/json");
+  assert.equal(updateCall.options?.headers?.Authorization, "Bearer oauth-access-token");
+
+  const requestBody = JSON.parse(updateCall.options?.body || "{}");
   assert.equal(requestBody.locationId, "98765");
   assert.equal(Array.isArray(requestBody.customFields), true);
   assert.deepEqual(
@@ -214,12 +298,10 @@ test("issue-claim writes back to LeadConnector contact when IDs and integration 
   assert.equal(claimTokenField.field_value, "d".repeat(64));
 });
 
-test("issue-claim skips LeadConnector writeback when contactId or locationId is missing", async () => {
-  process.env.GHL_PRIVATE_INTEGRATION_KEY = "test-private-key";
-
+test("issue-claim skips writeback when contactId or locationId is missing", async () => {
   let fetchCalled = false;
   const handler = createIssueClaimHandler({
-    getSupabaseAdmin: () => ({ fake: true }),
+    getSupabaseAdmin: () => createSupabaseAdminMock(),
     issueClaim: async () => ({
       eventId: "event-123",
       registrantId: "reg-123",
@@ -253,17 +335,50 @@ test("issue-claim skips LeadConnector writeback when contactId or locationId is 
 });
 
 test("issue-claim swallows LeadConnector writeback non-2xx and returns debug writeback status", async () => {
-  process.env.GHL_PRIVATE_INTEGRATION_KEY = "test-private-key";
   process.env.DEBUG_GHL_WEBHOOKS = "true";
 
+  const supabase = createSupabaseAdminMock({
+    installation: {
+      id: "inst_1",
+      location_id: "location_nested",
+      access_token: "oauth-access-token",
+      refresh_token: "oauth-refresh-token",
+      token_expires_at: "2099-01-01T00:00:00.000Z",
+      scopes: ["contacts.write"],
+      installed_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+    },
+  });
   const handler = createIssueClaimHandler({
-    getSupabaseAdmin: () => ({ fake: true }),
+    getSupabaseAdmin: () => supabase,
     issueClaim: async () => ({
       eventId: "event-123",
       registrantId: "reg-123",
       claimToken: "f".repeat(64),
     }),
-    fetchImpl: async () => ({ ok: false, status: 422 }),
+    fetchImpl: async (url, options) => {
+      if (url.includes("/customFields") && options?.method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              customFields: [
+                { fieldKey: "contact.showfi_claim_url" },
+                { fieldKey: "contact.showfi_claim_token" },
+              ],
+            };
+          },
+        };
+      }
+      return {
+        ok: false,
+        status: 422,
+        async json() {
+          return { message: "unprocessable" };
+        },
+      };
+    },
   });
 
   const req = createMockRequest({
@@ -290,4 +405,110 @@ test("issue-claim swallows LeadConnector writeback non-2xx and returns debug wri
   assert.equal(res.body?.ghlWriteback?.attempted, true);
   assert.equal(res.body?.ghlWriteback?.ok, false);
   assert.equal(res.body?.ghlWriteback?.status, 422);
+});
+
+test("issue-claim refreshes expired token before writeback", async () => {
+  const fetchCalls = [];
+  const supabase = createSupabaseAdminMock({
+    installation: {
+      id: "inst_1",
+      location_id: "location_nested",
+      access_token: "expired-token",
+      refresh_token: "refresh-token",
+      token_expires_at: "2000-01-01T00:00:00.000Z",
+      scopes: ["contacts.write"],
+      installed_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+    },
+    upsertInstallation: {
+      id: "inst_1",
+      location_id: "location_nested",
+      access_token: "fresh-token",
+      refresh_token: "fresh-refresh",
+      token_expires_at: "2099-01-01T00:00:00.000Z",
+      scopes: ["contacts.write"],
+      installed_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+    },
+  });
+
+  process.env.GHL_OAUTH_CLIENT_ID = "client-id";
+  process.env.GHL_OAUTH_CLIENT_SECRET = "client-secret";
+  process.env.GHL_OAUTH_REDIRECT_URI = "https://www.showfi.io/api/ghl/oauth/callback";
+
+  const handler = createIssueClaimHandler({
+    getSupabaseAdmin: () => supabase,
+    issueClaim: async () => ({
+      eventId: "event-123",
+      registrantId: "reg-123",
+      claimToken: "f".repeat(64),
+    }),
+    fetchImpl: async (url, options) => {
+      fetchCalls.push({ url, options });
+      if (url.endsWith("/oauth/token")) {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              access_token: "fresh-token",
+              refresh_token: "fresh-refresh",
+              expires_in: 86400,
+              companyId: "location_nested",
+              scope: "contacts.write",
+            };
+          },
+        };
+      }
+      if (url.includes("/customFields") && options?.method === "GET") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              customFields: [
+                { fieldKey: "contact.showfi_claim_url" },
+                { fieldKey: "contact.showfi_claim_token" },
+              ],
+            };
+          },
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {};
+        },
+      };
+    },
+  });
+
+  const req = createMockRequest({
+    headers: {
+      "x-ghl-secret": "test-secret",
+      host: "example.com",
+      "x-forwarded-proto": "https",
+    },
+    body: {
+      eventId: "event-123",
+      email: "casey@example.com",
+      payload: {
+        contact: { id: "contact_nested" },
+        location: { id: "location_nested" },
+      },
+    },
+  });
+  const res = createMockResponse();
+
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body?.ok, true);
+  const tokenRefreshCall = fetchCalls.find((call) => call.url.endsWith("/oauth/token"));
+  assert.equal(Boolean(tokenRefreshCall), true);
+  assert.equal(String(tokenRefreshCall.options?.body || "").includes("grant_type=refresh_token"), true);
+
+  const contactCall = fetchCalls.find((call) => call.url.includes("/contacts/"));
+  assert.equal(contactCall.options?.headers?.Authorization, "Bearer fresh-token");
 });
