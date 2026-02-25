@@ -27,6 +27,51 @@ export interface ApiTicketDesign {
   stripUrl?: string | null;
 }
 
+export interface GhlWebhookLog {
+  id: string;
+  processing_status: 'received' | 'processed' | 'failed' | 'duplicate';
+  is_test: boolean;
+  webhook_received: boolean;
+  pass_created: boolean;
+  claim_link_created: boolean;
+  ghl_writeback_ok: boolean;
+  error_message: string | null;
+  contact_id: string | null;
+  location_id: string | null;
+  event_id: string | null;
+  tag: string | null;
+  claim_url: string | null;
+  created_at: string;
+}
+
+export interface GhlIntegrationStatus {
+  connected: boolean;
+  locationId: string | null;
+  apiKeyMasked: string | null;
+  defaultEventId: string | null;
+  lastWebhookAt: string | null;
+  lastError: string | null;
+  logs: GhlWebhookLog[];
+}
+
+export interface GhlTestResult {
+  webhookReceived: boolean;
+  passCreated: boolean;
+  claimLinkCreated: boolean;
+  ghlWriteback: {
+    attempted: boolean;
+    ok: boolean;
+    error: string | null;
+  };
+  claimUrl?: string | null;
+  passId?: string | null;
+  claimToken?: string | null;
+  eventId?: string | null;
+  locationId?: string | null;
+  contactId?: string | null;
+  isSelfTest?: boolean;
+}
+
 interface ApiRequestInit extends RequestInit {
   body?: string;
 }
@@ -95,6 +140,27 @@ async function authedRequestJson<T>(url: string, init: ApiRequestInit): Promise<
     ...init,
     headers,
   });
+}
+
+async function authedRequestOrThrow<T>(url: string, init: ApiRequestInit): Promise<T> {
+  const token = await getAccessTokenOrThrow();
+  const headers = new Headers(init.headers || {});
+  headers.set('Authorization', `Bearer ${token}`);
+  if (init.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(url, { ...init, headers });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = (payload && typeof payload === 'object' && 'error' in payload)
+      ? String(payload.error)
+      : `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return payload as T;
 }
 
 function toIsoDate(dateValue: string): string | undefined {
@@ -207,5 +273,38 @@ export async function updateTicketDesign(ticketDesign: ApiTicketDesign): Promise
   return authedRequestJson<ApiTicketDesign>('/api/ticket-designs', {
     method: 'PUT',
     body: JSON.stringify(ticketDesign),
+  });
+}
+
+export async function connectGhlApiKey(input: {
+  apiKey?: string;
+  verify?: boolean;
+  defaultEventId?: string | null;
+}): Promise<{
+  connected: boolean;
+  locationId: string | null;
+  apiKeyMasked: string | null;
+  verifiedAt?: string | null;
+}> {
+  return authedRequestOrThrow('/api/integrations/ghl/connect', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function getGhlIntegrationStatus(): Promise<GhlIntegrationStatus> {
+  return authedRequestOrThrow<GhlIntegrationStatus>('/api/integrations/ghl/status', {
+    method: 'GET',
+  });
+}
+
+export async function runGhlIntegrationTest(input: {
+  contactId?: string;
+  locationId?: string;
+  eventId?: string;
+}): Promise<{ ok: boolean; result: GhlTestResult }> {
+  return authedRequestOrThrow('/api/integrations/ghl/test', {
+    method: 'POST',
+    body: JSON.stringify(input),
   });
 }
