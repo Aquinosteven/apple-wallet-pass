@@ -38,4 +38,5 @@ tmp/
 # Supabase CLI temp files
 supabase/.temp/
 supabase/**/.temp/
+supabase/supabase/
 **/.temp/

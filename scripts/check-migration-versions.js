@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const migrationsDir = path.join(process.cwd(), "supabase", "supabase", "migrations");
+const migrationsDir = path.join(process.cwd(), "supabase", "migrations");
 
 if (!fs.existsSync(migrationsDir)) {
   console.error(`missing migrations directory: ${migrationsDir}`);
@@ -41,4 +41,3 @@ if (duplicates.length > 0) {
 }
 
 console.log(`PASS: ${files.length} migration file(s), all versions unique in ${migrationsDir}`);
-

@@ -65,8 +65,9 @@ Apply pending migrations for the target Supabase project, then verify tables/pol
 
 ### Migration filename policy
 
-- Use one unique numeric version per file in the active workdir migration dir (`supabase/supabase/migrations`).
+- Use one unique numeric version per file in the canonical migration dir (`supabase/migrations`).
 - Do not create multiple files with the same leading numeric version.
+- Keep historical/conflicting legacy SQL files in `supabase/legacy-migrations` (not in active migration path).
 - CI/local guard:
 
 ```bash
