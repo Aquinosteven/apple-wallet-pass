@@ -6,6 +6,7 @@ import { readJsonBodyStrict } from "../lib/requestValidation.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 import { trackClaimEventFromRequest } from "../lib/claimEvents.js";
+import { getHostGuardContext, nonProdForbiddenResponse } from "../lib/hostGuard.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -174,6 +175,10 @@ export default async function handler(req, res) {
     "POST",
   ].includes(req.method || "")) {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
+  }
+  if (req.method === "POST") {
+    const guard = getHostGuardContext(req);
+    if (!guard.allowed) return nonProdForbiddenResponse(res, guard);
   }
   if (!enforceLimits(req, res, "")) return;
 

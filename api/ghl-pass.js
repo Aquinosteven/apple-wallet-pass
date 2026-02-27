@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { createSignedToken, verifySignedToken } from "../lib/token.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded } from "../lib/security.js";
+import { getHostGuardContext, nonProdForbiddenResponse } from "../lib/hostGuard.js";
 
 const { PKPass } = passkitModule;
 const __filename = fileURLToPath(import.meta.url);
@@ -260,6 +261,8 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return handleOptions(res);
   setNoStore(res);
   maybeLogSuspiciousRequest(req, { endpoint: "/api/ghl-pass" });
+  const guard = getHostGuardContext(req);
+  if (!guard.allowed) return nonProdForbiddenResponse(res, guard);
   if (!enforceLimits(req, res, "")) return;
 
   const secret = process.env.GHL_PASS_SECRET;

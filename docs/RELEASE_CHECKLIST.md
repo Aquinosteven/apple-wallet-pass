@@ -40,6 +40,10 @@ UPTIME_MONITOR_PING_TOKEN
 
 # Selftest allowlist
 SELFTEST_KEY
+
+# Canonical production host guard
+PROD_DOMAIN
+ALLOW_NONPROD_WALLET
 ```
 
 Quick check:
@@ -47,6 +51,13 @@ Quick check:
 ```bash
 vercel env ls
 ```
+
+Canonical production surface:
+
+- `www.showfi.io` is the only canonical production host for wallet issuance.
+- Set `PROD_DOMAIN=www.showfi.io` in production.
+- Keep `ALLOW_NONPROD_WALLET` unset or `false` in production.
+- For staging wallet tests only, set `ALLOW_NONPROD_WALLET=true` in that non-prod project.
 
 ## 2) Supabase Migration Verification
 
