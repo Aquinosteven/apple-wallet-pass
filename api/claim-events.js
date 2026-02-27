@@ -2,6 +2,12 @@ import { readJsonBodyStrict, validateStringField } from "../lib/requestValidatio
 import { isAllowedClaimEventType, trackClaimEventFromRequest } from "../lib/claimEvents.js";
 import { limiters } from "../lib/rateLimit.js";
 import { maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
+import {
+  ensureShowfiContactCustomFields,
+  ensureValidAccessTokenForLocation,
+  updateGhlContactCustomFields,
+} from "../lib/ghlOAuth.js";
+import { getSupabaseAdmin } from "../lib/ghlIntegration.js";
 
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -13,6 +19,74 @@ function getIp(req) {
   return String(req?.headers?.["x-forwarded-for"] || req?.socket?.remoteAddress || "unknown")
     .split(",")[0]
     .trim();
+}
+
+function toIsoOrNull(value) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+async function maybePersistWalletAddWriteback(eventType, body) {
+  const passId = typeof body?.passId === "string" ? body.passId.trim() : "";
+  if (!passId) return;
+
+  if (eventType !== "apple_wallet_added" && eventType !== "google_wallet_saved") return;
+  const nowIso = new Date().toISOString();
+  const supabase = getSupabaseAdmin();
+  const walletAddedAt = toIsoOrNull(body?.metadata?.walletAddedAt) || nowIso;
+
+  const { data: existing } = await supabase
+    .from("pass_writeback_state")
+    .select("pass_id,event_id,contact_id,location_id,pass_issued_at,join_click_first_at,join_click_latest_at,join_click_count")
+    .eq("pass_id", passId)
+    .maybeSingle();
+
+  const payload = {
+    pass_id: passId,
+    event_id: typeof body?.eventId === "string" ? body.eventId : existing?.event_id || null,
+    contact_id: existing?.contact_id || null,
+    location_id: existing?.location_id || null,
+    pass_issued_at: existing?.pass_issued_at || null,
+    wallet_added_at: walletAddedAt,
+    join_click_first_at: existing?.join_click_first_at || null,
+    join_click_latest_at: existing?.join_click_latest_at || null,
+    join_click_count: Number.isFinite(Number(existing?.join_click_count)) ? Number(existing.join_click_count) : 0,
+    last_writeback_at: nowIso,
+    updated_at: nowIso,
+  };
+  await supabase.from("pass_writeback_state").upsert(payload, { onConflict: "pass_id" });
+
+  if (!existing?.contact_id || !existing?.location_id) return;
+  const installation = await ensureValidAccessTokenForLocation({
+    supabase,
+    locationId: existing.location_id,
+  });
+  if (!installation?.access_token) return;
+
+  await ensureShowfiContactCustomFields({
+    accessToken: installation.access_token,
+    locationId: existing.location_id,
+    onError: (error, details) => {
+      console.warn("[claim-events][ghl-writeback] custom field provisioning warning", {
+        locationId: existing.location_id,
+        phase: details?.phase,
+        fieldKey: details?.fieldKey || null,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    },
+  });
+  await updateGhlContactCustomFields({
+    accessToken: installation.access_token,
+    contactId: existing.contact_id,
+    locationId: existing.location_id,
+    passIssuedAt: existing.pass_issued_at || "",
+    walletAddedAt,
+    joinClickFirstAt: existing.join_click_first_at || "",
+    joinClickLatestAt: existing.join_click_latest_at || "",
+    joinClickCount: Number.isFinite(Number(existing.join_click_count)) ? Number(existing.join_click_count) : 0,
+  });
 }
 
 export default async function handler(req, res) {
@@ -61,6 +135,15 @@ export default async function handler(req, res) {
 
   if (!tracked.ok && !tracked.skipped) {
     return res.status(500).json({ ok: false, error: tracked.error || "Failed to track event" });
+  }
+
+  try {
+    await maybePersistWalletAddWriteback(eventTypeValidation.value, body);
+  } catch (error) {
+    console.warn("[claim-events] writeback warning (event tracking continues)", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Keep analytics success path non-blocking for best-effort writebacks.
   }
 
   return res.status(200).json({ ok: true });

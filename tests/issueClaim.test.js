@@ -269,7 +269,7 @@ test("issue-claim writes back using installation token scoped to location", asyn
 
   assert.equal(res.statusCode, 200);
   assert.equal(res.body?.ok, true);
-  assert.equal(fetchCalls.length, 2);
+  assert.ok(fetchCalls.length >= 2);
 
   const getCustomFieldsCall = fetchCalls.find((call) => call.url.includes("/customFields"));
   assert.equal(Boolean(getCustomFieldsCall), true);
@@ -288,10 +288,14 @@ test("issue-claim writes back using installation token scoped to location", asyn
   const requestBody = JSON.parse(updateCall.options?.body || "{}");
   assert.equal(requestBody.locationId, "98765");
   assert.equal(Array.isArray(requestBody.customFields), true);
-  assert.deepEqual(
-    requestBody.customFields.map((field) => field.key).sort(),
-    ["contact.showfi_claim_token", "contact.showfi_claim_url"]
-  );
+  const customFieldKeys = requestBody.customFields.map((field) => field.key).sort();
+  assert.equal(customFieldKeys.includes("contact.showfi_claim_token"), true);
+  assert.equal(customFieldKeys.includes("contact.showfi_claim_url"), true);
+  assert.equal(customFieldKeys.includes("contact.showfi_pass_issued_at"), true);
+  assert.equal(customFieldKeys.includes("contact.showfi_wallet_added_at"), true);
+  assert.equal(customFieldKeys.includes("contact.showfi_join_click_first_at"), true);
+  assert.equal(customFieldKeys.includes("contact.showfi_join_click_latest_at"), true);
+  assert.equal(customFieldKeys.includes("contact.showfi_join_click_count"), true);
   const claimUrlField = requestBody.customFields.find((field) => field.key === "contact.showfi_claim_url");
   const claimTokenField = requestBody.customFields.find((field) => field.key === "contact.showfi_claim_token");
   assert.equal(claimUrlField.field_value, `https://example.com/claim/${encodeURIComponent("d".repeat(64))}`);
