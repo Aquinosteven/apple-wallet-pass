@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { buildClaimUrl } from "../lib/baseUrl.js";
 import { IssueClaimError, issueClaimTokenForRegistrant } from "../lib/issueClaimCore.js";
+import { getHostGuardContext, nonProdHealthResponse } from "../lib/hostGuard.js";
 
 const PASS_REQUIRED_ENV_VARS = [
   "SIGNER_CERT_PEM",
@@ -357,6 +358,10 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
 
   const mode = getMode(req);
+  if (mode === "pass" || mode === "gwallet") {
+    const guard = getHostGuardContext(req);
+    if (!guard.allowed) return nonProdHealthResponse(res, guard);
+  }
   if (mode === "pass") return handlePassMode(req, res);
   if (mode === "gwallet") return handleGwalletMode(req, res);
   if (mode === "selftest-issue-claim") return handleSelftestIssueClaimMode(req, res);

@@ -1,4 +1,11 @@
 import { verifySignedToken } from "../lib/token.js";
+import { mergeJoinClickMetrics } from "../lib/walletOps.js";
+import {
+  ensureShowfiContactCustomFields,
+  ensureValidAccessTokenForLocation,
+  updateGhlContactCustomFields,
+} from "../lib/ghlOAuth.js";
+import { getSupabaseAdmin } from "../lib/ghlIntegration.js";
 
 const MAX_SHORT_JOIN_URL_LENGTH = 1900;
 
@@ -34,6 +41,71 @@ function getBaseUrl(req) {
     return `https://${host}`;
   }
   return `${protocol}://${host}`;
+}
+
+async function persistJoinClickMetrics(payload) {
+  const passId = payload?.passId ? String(payload.passId).trim() : "";
+  if (!passId) return;
+
+  const supabase = getSupabaseAdmin();
+  const nowIso = new Date().toISOString();
+  const { data: existing } = await supabase
+    .from("pass_writeback_state")
+    .select("pass_id,event_id,contact_id,location_id,pass_issued_at,wallet_added_at,join_click_first_at,join_click_latest_at,join_click_count")
+    .eq("pass_id", passId)
+    .maybeSingle();
+
+  const merged = mergeJoinClickMetrics({
+    first_at: existing?.join_click_first_at || "",
+    latest_at: existing?.join_click_latest_at || "",
+    count: existing?.join_click_count || 0,
+  }, nowIso);
+
+  const writebackPayload = {
+    pass_id: passId,
+    event_id: payload?.eventId ? String(payload.eventId).trim() : existing?.event_id || null,
+    contact_id: payload?.contactId ? String(payload.contactId).trim() : existing?.contact_id || null,
+    location_id: payload?.locationId ? String(payload.locationId).trim() : existing?.location_id || null,
+    pass_issued_at: existing?.pass_issued_at || null,
+    wallet_added_at: existing?.wallet_added_at || null,
+    join_click_first_at: merged.first_at,
+    join_click_latest_at: merged.latest_at,
+    join_click_count: merged.count,
+    last_writeback_at: nowIso,
+    updated_at: nowIso,
+  };
+
+  await supabase.from("pass_writeback_state").upsert(writebackPayload, { onConflict: "pass_id" });
+
+  if (!writebackPayload.contact_id || !writebackPayload.location_id) return;
+  const installation = await ensureValidAccessTokenForLocation({
+    supabase,
+    locationId: writebackPayload.location_id,
+  });
+  if (!installation?.access_token) return;
+
+  await ensureShowfiContactCustomFields({
+    accessToken: installation.access_token,
+    locationId: writebackPayload.location_id,
+    onError: (error, details) => {
+      console.warn("[join][ghl-writeback] custom field provisioning warning", {
+        locationId: writebackPayload.location_id,
+        phase: details?.phase,
+        fieldKey: details?.fieldKey || null,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    },
+  });
+  await updateGhlContactCustomFields({
+    accessToken: installation.access_token,
+    contactId: writebackPayload.contact_id,
+    locationId: writebackPayload.location_id,
+    passIssuedAt: writebackPayload.pass_issued_at || "",
+    walletAddedAt: writebackPayload.wallet_added_at || "",
+    joinClickFirstAt: writebackPayload.join_click_first_at || "",
+    joinClickLatestAt: writebackPayload.join_click_latest_at || "",
+    joinClickCount: writebackPayload.join_click_count || 0,
+  });
 }
 
 export default async function handler(req, res) {
@@ -72,6 +144,15 @@ export default async function handler(req, res) {
     new URL(joinUrl);
   } catch {
     return jsonError(res, 400);
+  }
+
+  try {
+    await persistJoinClickMetrics(verified.payload || {});
+  } catch (error) {
+    console.warn("[join] writeback warning (continuing redirect)", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Join redirect must remain highly available even if analytics/writeback fails.
   }
 
   res.statusCode = 302;

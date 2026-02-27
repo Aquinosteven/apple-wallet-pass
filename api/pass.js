@@ -8,6 +8,7 @@ import {
   readJsonBodyStrict,
   validateStringField,
 } from "../lib/requestValidation.js";
+import { getHostGuardContext, nonProdForbiddenResponse } from "../lib/hostGuard.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 import { trackClaimEventFromRequest } from "../lib/claimEvents.js";
@@ -89,6 +90,8 @@ export default async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method || "")) {
     return res.status(405).json({ ok: false, message: "Use GET or POST" });
   }
+  const guard = getHostGuardContext(req);
+  if (!guard.allowed) return nonProdForbiddenResponse(res, guard);
   if (!enforceLimits(req, res)) return;
 
   try {

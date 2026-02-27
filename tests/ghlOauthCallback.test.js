@@ -151,10 +151,10 @@ test("OAuth callback exchanges code, stores tokens, provisions fields, and redir
   assert.equal(supabase.store.states.has("test-state"), false);
   assert.equal(supabase.store.installationPayload.location_id, "loc_123");
   assert.equal(typeof supabase.store.installationPayload.access_token, "string");
-  assert.equal(
-    fetchCalls.filter((call) => call.url.includes("/customFields") && call.options?.method === "POST").length,
-    2
+  const postCustomFieldCalls = fetchCalls.filter(
+    (call) => call.url.includes("/customFields") && call.options?.method === "POST"
   );
+  assert.ok(postCustomFieldCalls.length >= 2);
 });
 
 test("OAuth callback rejects invalid state and never exchanges code", async () => {

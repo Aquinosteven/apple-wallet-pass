@@ -1,12 +1,22 @@
 import { Plug, Webhook, Zap, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const integrations = [
+  {
+    name: 'GoHighLevel',
+    description: 'Wizard setup via Location API key',
+    icon: Plug,
+    color: 'bg-emerald-600',
+    status: 'setup',
+    href: '/dashboard/integrations/ghl',
+  },
   {
     name: 'Zapier',
     description: 'Connect to 5,000+ apps',
     icon: Zap,
     color: 'bg-orange-500',
     status: 'available',
+    href: '#',
   },
   {
     name: 'Webhooks',
@@ -14,6 +24,7 @@ const integrations = [
     icon: Webhook,
     color: 'bg-gblue',
     status: 'available',
+    href: '#',
   },
   {
     name: 'Custom API',
@@ -21,6 +32,7 @@ const integrations = [
     icon: Plug,
     color: 'bg-gray-700',
     status: 'available',
+    href: '#',
   },
 ];
 
@@ -49,10 +61,20 @@ export default function IntegrationsPage() {
                 <p className="text-xs text-gray-500">{integration.description}</p>
               </div>
             </div>
-            <button className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gblue bg-gblue/10 rounded-lg hover:bg-gblue/20 transition-colors">
-              Configure
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {integration.href.startsWith('/') ? (
+              <Link
+                to={integration.href}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gblue bg-gblue/10 rounded-lg hover:bg-gblue/20 transition-colors"
+              >
+                Configure
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <button className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gblue bg-gblue/10 rounded-lg hover:bg-gblue/20 transition-colors">
+                Configure
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ))}
       </div>

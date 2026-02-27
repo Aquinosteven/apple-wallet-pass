@@ -387,6 +387,38 @@ function enforceRateLimit(req, res) {
   return true;
 }
 
+async function upsertPassWritebackState(supabase, input) {
+  const passId = normalizeText(input?.passId);
+  const eventId = normalizeText(input?.eventId);
+  if (!passId || !eventId) return;
+
+  const payload = {
+    pass_id: passId,
+    event_id: eventId,
+    contact_id: normalizeText(input?.contactId) || null,
+    location_id: normalizeText(input?.locationId) || null,
+    pass_issued_at: toIsoString(input?.passIssuedAt),
+    wallet_added_at: toIsoString(input?.walletAddedAt),
+    join_click_first_at: toIsoString(input?.joinClickFirstAt),
+    join_click_latest_at: toIsoString(input?.joinClickLatestAt),
+    join_click_count: Number.isFinite(Number(input?.joinClickCount)) ? Number(input.joinClickCount) : 0,
+    last_writeback_at: toIsoString(input?.lastWritebackAt),
+    last_error: normalizeText(input?.lastError) || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  await supabase.from("pass_writeback_state").upsert(payload, {
+    onConflict: "pass_id",
+  });
+}
+
+function toIsoString(input) {
+  if (!input) return null;
+  const parsed = new Date(input);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
 export function createIssueClaimHandler(deps = {}) {
   const getSupabase = deps.getSupabaseAdmin || getSupabaseAdmin;
   const issueClaim = deps.issueClaim || issueClaimTokenForRegistrant;
@@ -433,6 +465,16 @@ export function createIssueClaimHandler(deps = {}) {
       const { contactId, locationId } = extractGhlContactContext(parsedBody.body);
       let noInstallationForLocation = false;
       let ghlWriteback = { attempted: false, ok: false };
+      const nowIso = new Date().toISOString();
+
+      await upsertPassWritebackState(supabase, {
+        passId: issued.passId,
+        eventId: issued.eventId,
+        contactId,
+        locationId,
+        passIssuedAt: nowIso,
+        lastWritebackAt: nowIso,
+      });
 
       if (contactId && locationId) {
         try {
@@ -445,11 +487,29 @@ export function createIssueClaimHandler(deps = {}) {
           if (!installation?.access_token) {
             noInstallationForLocation = true;
           } else {
-            await ensureShowfiContactCustomFields({
+            const ensureResult = await ensureShowfiContactCustomFields({
               fetchImpl,
               accessToken: installation.access_token,
               locationId,
+              onError: (error, details) => {
+                console.warn("[issue-claim][ghl-writeback] custom field provisioning warning", {
+                  locationId: maskIdentifier(locationId),
+                  phase: details?.phase,
+                  fieldKey: details?.fieldKey || null,
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              },
             });
+            if (!ensureResult.ok) {
+              await upsertPassWritebackState(supabase, {
+                passId: issued.passId,
+                eventId: issued.eventId,
+                contactId,
+                locationId,
+                lastWritebackAt: nowIso,
+                lastError: "custom_field_provisioning_warning",
+              });
+            }
             ghlWriteback = await updateGhlContactCustomFields({
               fetchImpl,
               accessToken: installation.access_token,
@@ -457,9 +517,19 @@ export function createIssueClaimHandler(deps = {}) {
               locationId,
               claimUrl,
               claimToken: issued.claimToken,
+              passIssuedAt: nowIso,
+              joinClickCount: 0,
             });
           }
         } catch (error) {
+          await upsertPassWritebackState(supabase, {
+            passId: issued.passId,
+            eventId: issued.eventId,
+            contactId,
+            locationId,
+            lastWritebackAt: nowIso,
+            lastError: error instanceof Error ? error.message : String(error),
+          });
           ghlWriteback = {
             attempted: true,
             ok: false,
@@ -483,6 +553,7 @@ export function createIssueClaimHandler(deps = {}) {
         ok: true,
         claimUrl,
         claimToken: issued.claimToken,
+        passId: issued.passId,
         eventId: issued.eventId,
         registrantId: issued.registrantId,
       };

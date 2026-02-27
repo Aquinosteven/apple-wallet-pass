@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
+import { getHostGuardContext, nonProdForbiddenResponse } from "../lib/hostGuard.js";
 
 const { PKPass } = passkitModule;
 const __filename = fileURLToPath(import.meta.url);
@@ -129,6 +130,8 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, message: "Use POST" });
   }
+  const guard = getHostGuardContext(req);
+  if (!guard.allowed) return nonProdForbiddenResponse(res, guard);
   if (!enforceLimits(req, res)) return;
 
   const APPLE_PASS_TYPE_ID = firstNonEmpty(process.env.APPLE_PASS_TYPE_ID);

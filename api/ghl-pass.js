@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { createSignedToken, verifySignedToken } from "../lib/token.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded } from "../lib/security.js";
+import { getHostGuardContext, nonProdForbiddenResponse } from "../lib/hostGuard.js";
 
 const { PKPass } = passkitModule;
 const __filename = fileURLToPath(import.meta.url);
@@ -260,6 +261,8 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return handleOptions(res);
   setNoStore(res);
   maybeLogSuspiciousRequest(req, { endpoint: "/api/ghl-pass" });
+  const guard = getHostGuardContext(req);
+  if (!guard.allowed) return nonProdForbiddenResponse(res, guard);
   if (!enforceLimits(req, res, "")) return;
 
   const secret = process.env.GHL_PASS_SECRET;
@@ -280,6 +283,7 @@ export default async function handler(req, res) {
 
     const attendee = body.attendee && typeof body.attendee === "object" ? body.attendee : {};
     const event = body.event && typeof body.event === "object" ? body.event : {};
+    const writeback = body.writeback && typeof body.writeback === "object" ? body.writeback : {};
 
     const payload = {
       attendee: {
@@ -291,6 +295,12 @@ export default async function handler(req, res) {
         title: event.title ? String(event.title).trim() : "",
         startsAt: event.startsAt ? String(event.startsAt).trim() : "",
         joinUrl: event.joinUrl ? String(event.joinUrl).trim() : "",
+      },
+      writeback: {
+        passId: writeback.passId ? String(writeback.passId).trim() : "",
+        eventId: writeback.eventId ? String(writeback.eventId).trim() : "",
+        contactId: writeback.contactId ? String(writeback.contactId).trim() : "",
+        locationId: writeback.locationId ? String(writeback.locationId).trim() : "",
       },
     };
 
@@ -318,6 +328,10 @@ export default async function handler(req, res) {
       {
         type: "join_redirect",
         joinUrl: payload.event.joinUrl,
+        passId: payload.writeback.passId || "",
+        eventId: payload.writeback.eventId || "",
+        contactId: payload.writeback.contactId || "",
+        locationId: payload.writeback.locationId || "",
         exp: joinExp,
       },
       secret

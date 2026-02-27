@@ -3,6 +3,7 @@ import { readJsonBodyStrict, validateStringField } from "../lib/requestValidatio
 import { trackClaimEventFromRequest } from "../lib/claimEvents.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
+import { getHostGuardContext, nonProdForbiddenResponse } from "../lib/hostGuard.js";
 
 const REQUIRED_ENV_VARS = [
   "GOOGLE_WALLET_ISSUER_ID",
@@ -200,6 +201,8 @@ export default async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method || "")) {
     return res.status(405).json({ ok: false, error: "Use GET or POST" });
   }
+  const guard = getHostGuardContext(req);
+  if (!guard.allowed) return nonProdForbiddenResponse(res, guard);
   if (!enforceLimits(req, res, "")) return;
 
   try {

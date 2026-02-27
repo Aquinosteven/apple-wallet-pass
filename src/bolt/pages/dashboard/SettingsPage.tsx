@@ -1,16 +1,43 @@
-import { useState } from 'react';
-import { User, Key, Bell, CreditCard, Building } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { User, Key, Bell, CreditCard, Building, AlertTriangle } from 'lucide-react';
+import { getOpsErrorFeed, OpsErrorItem } from '../../utils/backendApi';
 
 const tabs = [
   { id: 'account', label: 'Account', icon: User },
   { id: 'api', label: 'API Keys', icon: Key },
   { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'operations', label: 'Operations', icon: AlertTriangle },
   { id: 'billing', label: 'Billing', icon: CreditCard },
   { id: 'team', label: 'Team', icon: Building },
 ];
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('account');
+  const [opsErrors, setOpsErrors] = useState<OpsErrorItem[]>([]);
+  const [opsLoading, setOpsLoading] = useState(false);
+  const [opsErrorMessage, setOpsErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadOpsErrors() {
+      setOpsLoading(true);
+      setOpsErrorMessage(null);
+      try {
+        const items = await getOpsErrorFeed();
+        if (!mounted) return;
+        setOpsErrors(items);
+      } catch (error) {
+        if (!mounted) return;
+        setOpsErrorMessage(error instanceof Error ? error.message : 'Failed to load operations errors.');
+      } finally {
+        if (mounted) setOpsLoading(false);
+      }
+    }
+    void loadOpsErrors();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="max-w-4xl">
@@ -147,6 +174,38 @@ export default function SettingsPage() {
                   </label>
                 ))}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'operations' && (
+            <div className="bg-white rounded-xl border border-gray-100 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 mb-4">Error Feed</h3>
+              {opsLoading && <p className="text-sm text-gray-500">Loading operation errors...</p>}
+              {!opsLoading && opsErrorMessage && <p className="text-sm text-red-600">{opsErrorMessage}</p>}
+              {!opsLoading && !opsErrorMessage && opsErrors.length === 0 && (
+                <p className="text-sm text-gray-500">No active operation errors.</p>
+              )}
+              {!opsLoading && !opsErrorMessage && opsErrors.length > 0 && (
+                <div className="space-y-3">
+                  {opsErrors.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`rounded-lg border p-3 ${
+                        item.severity === 'error' ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-gray-900">{item.scope}</p>
+                        <span className="text-[11px] text-gray-500">
+                          {new Date(item.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-700">{item.message}</p>
+                      {item.pass_id && <p className="mt-1 text-xs text-gray-500">Pass: {item.pass_id}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
