@@ -29,6 +29,15 @@ GOOGLE_WALLET_SERVICE_ACCOUNT_JSON
 # GHL pass flow
 GHL_PASS_SECRET
 
+# GHL OAuth install + claim writeback
+GHL_OAUTH_CLIENT_ID
+GHL_OAUTH_CLIENT_SECRET
+GHL_OAUTH_REDIRECT_URI
+
+# Monitoring / uptime
+UPTIME_MONITOR_ENABLED
+UPTIME_MONITOR_PING_TOKEN
+
 # Selftest allowlist
 SELFTEST_KEY
 ```
@@ -127,6 +136,28 @@ npm test
 npm run typecheck
 npm run lint
 npm run build
+npm run integration:pack
 ```
 
 All commands must pass before release.
+
+## 5) Launch Ops Metrics Check
+
+Verify launch-critical visibility in dashboard metrics:
+
+```bash
+curl -s -H "Authorization: Bearer <supabase-user-access-token>" \
+  "https://<your-deployment-domain>/api/dashboard-metrics" | jq
+```
+
+Expected fields in response:
+
+- `totals.claimThroughput`
+- `totals.claimErrors`
+- `totals.issuanceFailures`
+- `totals.ghlWritebackAttempts`
+- `totals.ghlWritebackSuccesses`
+- `totals.supportTicketsCreated`
+- `totals.supportTicketsOpen`
+- `ops.writebackSuccessRate`
+- `ops.warnings` (empty preferred; populated means schema gap/fallbacks)

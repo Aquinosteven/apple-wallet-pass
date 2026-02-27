@@ -1,8 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Calendar, Plug, Settings, Wallet } from 'lucide-react';
+import { Calendar, Plug, Settings, Wallet, BarChart3, Shield, LifeBuoy } from 'lucide-react';
 
 const navItems = [
   { icon: Calendar, label: 'Events', path: '/dashboard' },
+  { icon: BarChart3, label: 'Reporting', path: '/dashboard/reporting' },
+  { icon: Shield, label: 'Admin', path: '/dashboard/admin' },
+  { icon: LifeBuoy, label: 'Support', path: '/dashboard/support' },
   { icon: Plug, label: 'Integrations', path: '/dashboard/integrations' },
   { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
 ];

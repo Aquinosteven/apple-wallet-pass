@@ -72,6 +72,124 @@ export interface GhlTestResult {
   isSelfTest?: boolean;
 }
 
+export interface OpsHealthBadge {
+  key: string;
+  label: string;
+  value: number;
+  tone: 'ok' | 'warn' | 'error';
+}
+
+export interface OpsHealthSummary {
+  severity: 'healthy' | 'warn' | 'error';
+  badges: OpsHealthBadge[];
+  issuedCount: number;
+  eventId: string | null;
+}
+
+export interface OpsErrorItem {
+  id: string;
+  event_id: string | null;
+  pass_id: string | null;
+  scope: string;
+  severity: 'warn' | 'error';
+  message: string;
+  metadata: Record<string, unknown>;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+export interface DashboardMetricPoint {
+  date: string;
+  passesIssued: number;
+  walletAdds: number;
+  reminderSends: number;
+}
+
+export interface DashboardMetrics {
+  range: {
+    start: string;
+    end: string;
+    defaultWindow: string;
+  };
+  totals: {
+    passesIssued: number;
+    walletAdds: number;
+    reminderSends: number;
+  };
+  series: DashboardMetricPoint[];
+}
+
+export interface DataExportHistoryItem {
+  id: string;
+  format: 'csv' | 'xlsx';
+  scope: 'filtered' | 'full';
+  filters: Record<string, unknown>;
+  rowCount: number;
+  createdAt: string;
+  expiresAt: string;
+  status: 'ready' | 'failed' | 'expired';
+}
+
+export interface AdminJob {
+  id: string;
+  owner_user_id: string;
+  job_type: string;
+  status: string;
+  error_message: string | null;
+  attempt_count: number;
+  created_at: string;
+  updated_at: string;
+  replayed_from_id: string | null;
+}
+
+export interface AuditLogRow {
+  id: string;
+  actor_user_id: string | null;
+  owner_user_id: string | null;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface AdminPanelResponse {
+  role: 'owner' | 'support_internal';
+  ownerScope: string;
+  promoCounter: {
+    claimed: number;
+    cap: number;
+    remaining: number;
+    source: {
+      baselineClaimed: number;
+      claimedFromData: number;
+    };
+  };
+  planHooks: Record<string, unknown>;
+  failedJobs: AdminJob[];
+  auditLogs: AuditLogRow[];
+}
+
+export interface SupportTicketInput {
+  requesterName: string;
+  requesterEmail: string;
+  subject: string;
+  message: string;
+}
+
+export interface SupportTicketRow {
+  id: string;
+  owner_user_id: string;
+  requester_name: string;
+  requester_email: string;
+  subject: string;
+  message: string;
+  status: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at?: string;
+}
+
 interface ApiRequestInit extends RequestInit {
   body?: string;
 }
@@ -161,6 +279,26 @@ async function authedRequestOrThrow<T>(url: string, init: ApiRequestInit): Promi
   }
 
   return payload as T;
+}
+
+async function authedDownloadBlob(url: string): Promise<Blob> {
+  const token = await getAccessTokenOrThrow();
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    const message = (payload && typeof payload === 'object' && 'error' in payload)
+      ? String(payload.error)
+      : `Download failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return response.blob();
 }
 
 function toIsoDate(dateValue: string): string | undefined {
@@ -307,4 +445,177 @@ export async function runGhlIntegrationTest(input: {
     method: 'POST',
     body: JSON.stringify(input),
   });
+}
+
+export async function getOpsHealthSummary(eventId?: string): Promise<OpsHealthSummary | null> {
+  const suffix = eventId ? `?eventId=${encodeURIComponent(eventId)}` : '';
+  return authedRequestJson<OpsHealthSummary>(`/api/ops/health${suffix}`, {
+    method: 'GET',
+  });
+}
+
+export async function getOpsErrorFeed(eventId?: string): Promise<OpsErrorItem[]> {
+  const suffix = eventId ? `?eventId=${encodeURIComponent(eventId)}` : '';
+  const payload = await authedRequestJson<{ ok: boolean; items?: OpsErrorItem[] }>(
+    `/api/ops/errors${suffix}`,
+    { method: 'GET' },
+  );
+  if (!payload || !Array.isArray(payload.items)) return [];
+  return payload.items;
+}
+
+export async function getDashboardMetrics(input?: {
+  start?: string;
+  end?: string;
+  ownerUserId?: string;
+}): Promise<DashboardMetrics> {
+  const params = new URLSearchParams();
+  if (input?.start) params.set('start', input.start);
+  if (input?.end) params.set('end', input.end);
+  if (input?.ownerUserId) params.set('ownerUserId', input.ownerUserId);
+  const query = params.toString();
+  const payload = await authedRequestOrThrow<{ ok: boolean } & DashboardMetrics>(
+    `/api/dashboard-metrics${query ? `?${query}` : ''}`,
+    { method: 'GET' },
+  );
+  return {
+    range: payload.range,
+    totals: payload.totals,
+    series: payload.series,
+  };
+}
+
+export async function listDataExports(ownerUserId?: string): Promise<DataExportHistoryItem[]> {
+  const params = new URLSearchParams();
+  if (ownerUserId) params.set('ownerUserId', ownerUserId);
+  const payload = await authedRequestOrThrow<{ ok: boolean; history: DataExportHistoryItem[] }>(
+    `/api/exports${params.toString() ? `?${params.toString()}` : ''}`,
+    { method: 'GET' },
+  );
+  return payload.history || [];
+}
+
+export async function createDataExport(input: {
+  format: 'csv' | 'xlsx';
+  scope: 'filtered' | 'full';
+  filters?: {
+    start?: string;
+    end?: string;
+    eventId?: string;
+  };
+  ownerUserId?: string;
+}): Promise<DataExportHistoryItem> {
+  const payload = await authedRequestOrThrow<{ ok: boolean; export: DataExportHistoryItem }>(
+    '/api/exports',
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );
+  return payload.export;
+}
+
+export async function downloadDataExport(exportId: string, ownerUserId?: string): Promise<Blob> {
+  const params = new URLSearchParams();
+  params.set('downloadId', exportId);
+  if (ownerUserId) params.set('ownerUserId', ownerUserId);
+  return authedDownloadBlob(`/api/exports?${params.toString()}`);
+}
+
+export async function getAdminPanel(ownerUserId?: string): Promise<AdminPanelResponse> {
+  const params = new URLSearchParams();
+  if (ownerUserId) params.set('ownerUserId', ownerUserId);
+  const payload = await authedRequestOrThrow<{ ok: boolean } & AdminPanelResponse>(
+    `/api/admin${params.toString() ? `?${params.toString()}` : ''}`,
+    { method: 'GET' },
+  );
+  return {
+    role: payload.role,
+    ownerScope: payload.ownerScope,
+    promoCounter: payload.promoCounter,
+    planHooks: payload.planHooks,
+    failedJobs: payload.failedJobs,
+    auditLogs: payload.auditLogs,
+  };
+}
+
+export async function updatePromoCounter(input: { claimed: number; cap?: number }): Promise<{
+  claimed: number;
+  cap: number;
+}> {
+  const payload = await authedRequestOrThrow<{
+    ok: boolean;
+    promoCounter: { claimed: number; cap: number };
+  }>('/api/admin', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'promo.override',
+      ...input,
+    }),
+  });
+  return payload.promoCounter;
+}
+
+export async function updatePlanHooks(value: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const payload = await authedRequestOrThrow<{
+    ok: boolean;
+    planHooks: Record<string, unknown>;
+  }>('/api/admin', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'plan_limits.update',
+      value,
+    }),
+  });
+  return payload.planHooks;
+}
+
+export async function retryAdminJob(jobId: string): Promise<{ id: string; status: string }> {
+  const payload = await authedRequestOrThrow<{
+    ok: boolean;
+    queuedJob: { id: string; status: string };
+  }>('/api/admin', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'jobs.retry',
+      jobId,
+    }),
+  });
+  return payload.queuedJob;
+}
+
+export async function listSupportTickets(ownerUserId?: string): Promise<SupportTicketRow[]> {
+  const params = new URLSearchParams();
+  if (ownerUserId) params.set('ownerUserId', ownerUserId);
+  const payload = await authedRequestOrThrow<{ ok: boolean; tickets: SupportTicketRow[] }>(
+    `/api/support${params.toString() ? `?${params.toString()}` : ''}`,
+    { method: 'GET' },
+  );
+  return payload.tickets || [];
+}
+
+export async function createSupportTicket(input: SupportTicketInput & { ownerUserId?: string }): Promise<{
+  ticket: SupportTicketRow;
+  mail: {
+    ok: boolean;
+    provider: string;
+    error: string | null;
+  };
+}> {
+  const payload = await authedRequestOrThrow<{
+    ok: boolean;
+    ticket: SupportTicketRow;
+    mail: {
+      ok: boolean;
+      provider: string;
+      error: string | null;
+    };
+  }>('/api/support', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return {
+    ticket: payload.ticket,
+    mail: payload.mail,
+  };
 }

@@ -12,6 +12,9 @@ const GlobalTicketsPage = lazy(() => import('./bolt/pages/dashboard/GlobalTicket
 const IntegrationsPage = lazy(() => import('./bolt/pages/dashboard/IntegrationsPage'));
 const GhlConnectPage = lazy(() => import('./bolt/pages/dashboard/GhlConnectPage'));
 const NewEventWizard = lazy(() => import('./bolt/pages/dashboard/NewEventWizard'));
+const ReportingPage = lazy(() => import('./bolt/pages/dashboard/ReportingPage'));
+const AdminPanelPage = lazy(() => import('./bolt/pages/dashboard/AdminPanelPage'));
+const SupportPage = lazy(() => import('./bolt/pages/dashboard/SupportPage'));
 const SettingsPage = lazy(() => import('./bolt/pages/dashboard/SettingsPage'));
 const HomePage = lazy(() => import('./bolt/pages/home/HomePage'));
 const ClaimPage = lazy(() => import('./bolt/pages/claim/ClaimPage'));
@@ -111,6 +114,9 @@ export default function AppRoutes() {
           <Route path="events/new" element={<NewEventWizard />} />
           <Route path="events/:eventId" element={<EventDetailPage />} />
           <Route path="tickets" element={<GlobalTicketsPage />} />
+          <Route path="reporting" element={<ReportingPage />} />
+          <Route path="admin" element={<AdminPanelPage />} />
+          <Route path="support" element={<SupportPage />} />
           <Route path="integrations" element={<IntegrationsPage />} />
           <Route path="integrations/ghl" element={<GhlConnectPage />} />
           <Route path="settings" element={<SettingsPage />} />

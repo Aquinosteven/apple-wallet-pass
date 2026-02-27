@@ -8,6 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "test": "node --test tests/*.test.js",
+    "test:thread-c:smoke": "node scripts/thread-c-smoke.js",
+    "test:thread-c:load": "node scripts/thread-c-load.js",
+    "integration:pack": "./scripts/integration-command-pack.sh",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },

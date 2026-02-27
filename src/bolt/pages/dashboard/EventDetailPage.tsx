@@ -11,7 +11,9 @@ import Toast from '../../components/Toast';
 import {
   ApiTicketDesign,
   getEventById,
+  getOpsHealthSummary,
   getTicketDesignByEventId,
+  OpsHealthSummary,
   updateEvent,
   updateTicketDesign,
 } from '../../utils/backendApi';
@@ -57,6 +59,7 @@ export default function EventDetailPage() {
   const [ticketDesign, setTicketDesign] = useState<ApiTicketDesign | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [opsHealth, setOpsHealth] = useState<OpsHealthSummary | null>(null);
   const [showToast, setShowToast] = useState(isNew || justPublished);
   const [showNextSteps, setShowNextSteps] = useState(justPublished);
 
@@ -88,11 +91,16 @@ export default function EventDetailPage() {
 
         setEvent(loadedEvent);
         setTicketDesign(loadedDesign);
+        const summary = await getOpsHealthSummary(eventId);
+        if (mounted) {
+          setOpsHealth(summary);
+        }
       } catch (error) {
         if (!mounted) return;
         setEvent(null);
         setTicketDesign(null);
         setLoadError(error instanceof Error ? error.message : 'Failed to load event.');
+        setOpsHealth(null);
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -272,6 +280,24 @@ export default function EventDetailPage() {
             )}
           </div>
         </div>
+
+        {opsHealth && (
+          <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {opsHealth.badges.map((badge) => {
+              const toneClass = badge.tone === 'error'
+                ? 'border-red-200 bg-red-50 text-red-700'
+                : badge.tone === 'warn'
+                  ? 'border-amber-200 bg-amber-50 text-amber-700'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-700';
+              return (
+                <div key={badge.key} className={`rounded-lg border px-3 py-2 ${toneClass}`}>
+                  <p className="text-[11px] font-medium uppercase tracking-wide">{badge.label}</p>
+                  <p className="mt-1 text-lg font-semibold">{badge.value}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="border-b border-gray-200 mb-6">
           <nav className="flex gap-6">
