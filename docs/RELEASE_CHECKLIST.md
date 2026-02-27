@@ -63,6 +63,16 @@ Canonical production surface:
 
 Apply pending migrations for the target Supabase project, then verify tables/policies.
 
+### Migration filename policy
+
+- Use one unique numeric version per file in the active workdir migration dir (`supabase/supabase/migrations`).
+- Do not create multiple files with the same leading numeric version.
+- CI/local guard:
+
+```bash
+npm run check:migration-versions
+```
+
 ### Verify required tables exist
 
 Run in Supabase SQL editor:
@@ -99,6 +109,14 @@ order by policyname;
 
 ```bash
 node scripts/verify-claim-events.js
+```
+
+### Verify production runtime schema contract
+
+Requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in env.
+
+```bash
+npm run check:prod-schema
 ```
 
 ## 3) Deployed End-to-End Smoke Test
@@ -172,3 +190,12 @@ Expected fields in response:
 - `totals.supportTicketsOpen`
 - `ops.writebackSuccessRate`
 - `ops.warnings` (empty preferred; populated means schema gap/fallbacks)
+
+## 6) Release Artifacts
+
+For production rollouts, attach these generated files to release notes/runbook:
+
+- `tmp/prod_safety_snapshot.json`
+- `tmp/prod_patch_verification.json`
+- `tmp/post_migration_e2e_validation.json`
+- `tmp/post_migration_join_click_validation.json`

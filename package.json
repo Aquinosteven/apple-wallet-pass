@@ -8,6 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "test": "node --test tests/*.test.js",
+    "check:prod-schema": "node scripts/check-prod-schema.js",
+    "check:migration-versions": "node scripts/check-migration-versions.js",
     "test:thread-c:smoke": "node scripts/thread-c-smoke.js",
     "test:thread-c:load": "node scripts/thread-c-load.js",
     "integration:pack": "./scripts/integration-command-pack.sh",
