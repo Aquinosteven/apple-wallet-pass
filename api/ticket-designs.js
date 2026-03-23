@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { readJsonBodyStrict } from "../lib/requestValidation.js";
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { getEnv, loadLocalEnvFiles } from "../scripts/env-loader.js";
 
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -11,10 +9,14 @@ function setCors(res) {
 }
 
 function getSupabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  loadLocalEnvFiles();
+  const supabaseUrl = getEnv("SUPABASE_URL", ["VITE_SUPABASE_URL"]);
+  const supabaseServiceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
     throw new Error("Missing SUPABASE_URL/VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

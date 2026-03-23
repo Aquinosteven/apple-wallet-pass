@@ -5,6 +5,14 @@ import { buildCsvBuffer, buildSpreadsheetXmlBuffer } from "../lib/exportFormatte
 import { writeAuditLog } from "../lib/auditLog.js";
 import { captureMonitoringError } from "../lib/monitoring.js";
 
+function isMissingRelationError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  const details = String(error?.details || "").toLowerCase();
+  return message.includes("does not exist")
+    || message.includes("could not find the table")
+    || details.includes("does not exist");
+}
+
 function normalizeFormat(value) {
   const format = String(value || "csv").trim().toLowerCase();
   return format === "xlsx" ? "xlsx" : "csv";
@@ -152,7 +160,12 @@ export function createExportsHandler(deps = {}) {
 
         if (!exportId) {
           const { data, error } = await historyQuery;
-          if (error) return res.status(500).json({ ok: false, error: error.message });
+          if (error) {
+            if (isMissingRelationError(error)) {
+              return res.status(200).json({ ok: true, history: [] });
+            }
+            return res.status(500).json({ ok: false, error: error.message });
+          }
           return res.status(200).json({ ok: true, history: (data || []).map(toHistoryRow) });
         }
 
@@ -163,7 +176,12 @@ export function createExportsHandler(deps = {}) {
           .limit(1);
         if (ownerUserId) downloadQuery = downloadQuery.eq("owner_user_id", ownerUserId);
         const { data: row, error } = await downloadQuery.maybeSingle();
-        if (error) return res.status(500).json({ ok: false, error: error.message });
+        if (error) {
+          if (isMissingRelationError(error)) {
+            return res.status(503).json({ ok: false, error: "Exports unavailable until the latest schema patch is applied" });
+          }
+          return res.status(500).json({ ok: false, error: error.message });
+        }
         if (!row) return res.status(404).json({ ok: false, error: "Export not found" });
         if (new Date(row.expires_at).getTime() < Date.now()) {
           return res.status(410).json({ ok: false, error: "Export expired (30-day retention)" });
@@ -212,7 +230,12 @@ export function createExportsHandler(deps = {}) {
         .insert(insertPayload)
         .select("id,owner_user_id,format,scope,row_count,status,created_at,expires_at")
         .single();
-      if (createError) return res.status(500).json({ ok: false, error: createError.message });
+      if (createError) {
+        if (isMissingRelationError(createError)) {
+          return res.status(503).json({ ok: false, error: "Exports unavailable until the latest schema patch is applied" });
+        }
+        return res.status(500).json({ ok: false, error: createError.message });
+      }
 
       await writeAuditLogImpl(supabase, {
         actorUserId: access.context.user.id,

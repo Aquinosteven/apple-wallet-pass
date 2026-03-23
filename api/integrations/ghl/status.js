@@ -1,6 +1,14 @@
 import { getAuthenticatedUser, setJsonCors } from "../../../lib/apiAuth.js";
 import { getGhlIntegrationByUserId, getSupabaseAdmin } from "../../../lib/ghlIntegration.js";
 
+function isMissingRelationError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  const details = String(error?.details || "").toLowerCase();
+  return message.includes("does not exist")
+    || message.includes("could not find the table")
+    || details.includes("does not exist");
+}
+
 export default async function handler(req, res) {
   setJsonCors(res, ["GET", "OPTIONS"]);
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -25,6 +33,18 @@ export default async function handler(req, res) {
       .limit(25);
 
     if (logsError) {
+      if (isMissingRelationError(logsError)) {
+        return res.status(200).json({
+          ok: true,
+          connected: Boolean(integration?.verified_at),
+          locationId: integration?.location_id || null,
+          apiKeyMasked: integration?.api_key_last4 ? `••••${integration.api_key_last4}` : null,
+          defaultEventId: integration?.default_event_id || null,
+          lastWebhookAt: integration?.last_webhook_at || null,
+          lastError: integration?.last_error || null,
+          logs: [],
+        });
+      }
       return res.status(500).json({ ok: false, error: logsError.message });
     }
 

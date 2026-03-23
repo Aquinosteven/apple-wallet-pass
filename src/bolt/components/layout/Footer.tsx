@@ -3,6 +3,9 @@ import { Wallet } from 'lucide-react';
 
 const links = [
   { to: '/', label: 'Product' },
+  { to: '/pricing', label: 'Pricing' },
+  { to: '/apple-wallet-pass-software', label: 'Apple Wallet' },
+  { to: '/google-wallet-pass-software', label: 'Google Wallet' },
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/login', label: 'Login' },
 ];
@@ -16,7 +19,7 @@ export default function Footer() {
             <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
               <Wallet className="w-3.5 h-3.5 text-white" />
             </div>
-            <span className="text-sm font-semibold text-gray-900 tracking-tight">ShowFi</span>
+            <span className="text-sm font-semibold text-gray-900 tracking-tight">ShowFi.io</span>
           </div>
 
           <div className="flex items-center gap-6">
@@ -32,7 +35,7 @@ export default function Footer() {
           </div>
 
           <p className="text-xs text-gray-400">
-            {new Date().getFullYear()} ShowFi
+            {new Date().getFullYear()} ShowFi.io
           </p>
         </div>
       </div>

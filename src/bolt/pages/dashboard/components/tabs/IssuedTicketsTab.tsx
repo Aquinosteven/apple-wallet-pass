@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Send, Search, Upload, Code, UserPlus, Eye, XCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface IssuedTicket {
   id: string;
@@ -17,6 +18,8 @@ const sampleTickets: IssuedTicket[] = [
   { id: '5', attendeeName: 'Jordan Lee', email: 'jordan@tech.io', issuedAt: 'Mar 10, 2:15 PM', status: 'added' },
   { id: '6', attendeeName: 'Taylor Swift', email: 'taylor@music.com', issuedAt: 'Mar 9, 4:00 PM', status: 'expired' },
 ];
+
+const csvTemplateHref = `data:text/csv;charset=utf-8,${encodeURIComponent('name,email\nJohn Smith,john@example.com\nJane Doe,jane@example.com\n')}`;
 
 const statusConfig = {
   issued: { label: 'Issued', color: 'text-gray-500', bg: 'bg-gray-100' },
@@ -187,7 +190,7 @@ export default function IssuedTicketsTab({ eventId }: IssuedTicketsTabProps) {
                     </button>
                   </div>
                 </div>
-                <a href="#" className="inline-block mt-4 text-xs text-gblue hover:underline">View API documentation</a>
+                <Link to="/dashboard/support" className="inline-block mt-4 text-xs text-gblue hover:underline">View API documentation</Link>
               </div>
             ) : issueMethod === 'csv' ? (
               <div className="p-5">
@@ -197,7 +200,7 @@ export default function IssuedTicketsTab({ eventId }: IssuedTicketsTabProps) {
                   <span className="text-xs text-gray-400 mt-1">Required columns: name, email</span>
                   <input type="file" className="hidden" accept=".csv" />
                 </label>
-                <a href="#" className="inline-block mt-3 text-xs text-gblue hover:underline">Download template CSV</a>
+                <a href={csvTemplateHref} download="showfi-ticket-import-template.csv" className="inline-block mt-3 text-xs text-gblue hover:underline">Download template CSV</a>
               </div>
             ) : (
               <div className="p-5 space-y-4">

@@ -66,12 +66,12 @@ export default function HeroSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           <div>
             <h1 className="text-[44px] sm:text-[54px] lg:text-[60px] font-bold text-gray-900 leading-[1.02] tracking-tight">
-              The Native Way to
-              <span className="text-gblue"> Increase Show Rate</span>
+              ShowFi.io helps you
+              <span className="text-gblue"> increase show rate</span>
             </h1>
 
             <p className="mt-4 text-[17px] text-gray-600 leading-relaxed max-w-xl">
-              Reinforce high-intent moments — sales calls, webinars, and challenges — using Apple Wallet, the only channel that surfaces automatically when timing matters.
+              ShowFi.io is wallet pass software for sales calls, webinars, challenges, and live events. Reinforce high-intent moments with Apple Wallet and Google Wallet reminders that surface automatically when timing matters.
             </p>
 
             <p className="mt-3 text-[13px] text-gray-400">
@@ -83,7 +83,7 @@ export default function HeroSection() {
                 to="/dashboard"
                 className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gblue rounded-lg hover:bg-gblue-dark shadow-md shadow-gblue/25 transition-all"
               >
-                Add Wallet to My Funnel
+                Start with ShowFi.io
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
@@ -92,6 +92,21 @@ export default function HeroSection() {
               >
                 View Example Passes
               </a>
+              <Link
+                to="/pricing"
+                className="inline-flex items-center px-5 py-2.5 text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"
+              >
+                See pricing
+              </Link>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500">
+              <Link to="/apple-wallet-pass-software" className="hover:text-gray-900 transition-colors">
+                Apple Wallet pass software
+              </Link>
+              <Link to="/google-wallet-pass-software" className="hover:text-gray-900 transition-colors">
+                Google Wallet pass software
+              </Link>
             </div>
           </div>
 
@@ -99,7 +114,7 @@ export default function HeroSection() {
             <div className="relative">
               <PassStack />
               <p className="absolute -bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-gray-400 whitespace-nowrap tracking-wide">
-                Surfaces automatically. No inbox required.
+                ShowFi.io surfaces automatically. No inbox required.
               </p>
             </div>
           </div>

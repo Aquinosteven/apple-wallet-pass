@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /login
+Disallow: /billing/
+Disallow: /claim/
+Disallow: /pass
+
+Sitemap: https://www.showfi.io/sitemap.xml

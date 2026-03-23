@@ -1,30 +1,7 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
-import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-
-function loadEnvLocal(filePath) {
-  if (!fs.existsSync(filePath)) return;
-  const text = fs.readFileSync(filePath, "utf8");
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const eq = line.indexOf("=");
-    if (eq < 0) continue;
-
-    const key = line.slice(0, eq).trim();
-    let value = line.slice(eq + 1).trim();
-
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
-  }
-}
+import { getEnv, loadLocalEnvFiles } from "./env-loader.js";
 
 function asRequiredEnv(name) {
   const value = String(process.env[name] || "").trim();
@@ -35,7 +12,8 @@ function asRequiredEnv(name) {
 }
 
 function asOptionalEnv(name) {
-  const value = String(process.env[name] || "").trim();
+  const fallbackNames = name === "SUPABASE_URL" ? ["VITE_SUPABASE_URL"] : [];
+  const value = getEnv(name, fallbackNames);
   return value || "";
 }
 
@@ -205,7 +183,7 @@ async function verifyClaimEvents(claimToken) {
 }
 
 async function main() {
-  loadEnvLocal(path.join(process.cwd(), ".env.local"));
+  loadLocalEnvFiles();
 
   const results = [];
   const pushResult = (name, ok, detail) => {
@@ -220,7 +198,9 @@ async function main() {
   let eventId = asOptionalEnv("EVENT_ID");
 
   try {
-    baseUrl = normalizeBaseUrl(asRequiredEnv("BASE_URL"));
+    baseUrl = normalizeBaseUrl(
+      getEnv("BASE_URL", ["NEXT_PUBLIC_API_BASE_URL", "VITE_APP_URL"])
+    );
     pushResult("Base URL parsed", true, baseUrl);
   } catch (error) {
     pushResult("Base URL parsed", false, error instanceof Error ? error.message : String(error));

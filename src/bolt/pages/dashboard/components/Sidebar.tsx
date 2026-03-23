@@ -55,14 +55,14 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-3 border-t border-gray-100">
-        <a
-          href="#"
+        <Link
+          to="/dashboard/support"
           className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
           <span>API Docs</span>
           <span className="text-gray-300">-</span>
           <span>Support</span>
-        </a>
+        </Link>
       </div>
     </aside>
   );

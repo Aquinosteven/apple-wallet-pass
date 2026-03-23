@@ -38,6 +38,14 @@ Supported fallback in health endpoint only:
 
 - `GHL_PASS_SECRET`
 
+### Billing / Square checkout (`api/billing/status.js`, `api/billing/checkout-session.js`, `api/webhooks/square.js`)
+
+- `CHECKOUT_PROVIDER` or `BILLING_PROVIDER`
+- `SQUARE_ACCESS_TOKEN`
+- `SQUARE_LOCATION_ID`
+- `SQUARE_ENVIRONMENT` (`sandbox` or `production`)
+- `SQUARE_WEBHOOK_SIGNATURE_KEY`
+
 ### GHL OAuth install + claim writeback (`api/ghl/oauth/start.js`, `api/ghl/oauth/callback.js`, `api/issue-claim.js`)
 
 - `GHL_OAUTH_CLIENT_ID`

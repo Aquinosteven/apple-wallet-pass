@@ -11,13 +11,24 @@ const APP_CONFIG_KEYS = {
   planLimits: "plan.limits",
 };
 
+function isMissingRelationError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  const details = String(error?.details || "").toLowerCase();
+  return message.includes("does not exist")
+    || message.includes("could not find the table")
+    || details.includes("does not exist");
+}
+
 async function fetchAppConfig(supabase, key) {
   const { data, error } = await supabase
     .from("app_config")
     .select("key,value,updated_at")
     .eq("key", key)
     .maybeSingle();
-  if (error) throw new Error(error.message || `Failed to load config: ${key}`);
+  if (error) {
+    if (isMissingRelationError(error)) return null;
+    throw new Error(error.message || `Failed to load config: ${key}`);
+  }
   return data || null;
 }
 
@@ -79,7 +90,10 @@ async function listFailedJobs(supabase, ownerUserId) {
     .limit(100);
   if (ownerUserId) query = query.eq("owner_user_id", ownerUserId);
   const { data, error } = await query;
-  if (error) throw new Error(error.message || "Failed to load jobs");
+  if (error) {
+    if (isMissingRelationError(error)) return [];
+    throw new Error(error.message || "Failed to load jobs");
+  }
   return data || [];
 }
 
@@ -114,7 +128,12 @@ async function retryFailedJob(supabase, actorUserId, jobId) {
     .select("id,owner_user_id,job_type,payload,status,error_message,attempt_count")
     .eq("id", jobId)
     .maybeSingle();
-  if (loadError) throw new Error(loadError.message || "Failed to load job");
+  if (loadError) {
+    if (isMissingRelationError(loadError)) {
+      return { ok: false, status: 503, error: "Admin jobs unavailable until the latest schema patch is applied" };
+    }
+    throw new Error(loadError.message || "Failed to load job");
+  }
   if (!job) return { ok: false, status: 404, error: "Job not found" };
   if (job.status !== "failed") return { ok: false, status: 400, error: "Only failed jobs can be retried" };
 

@@ -26,6 +26,9 @@ dist-ssr
 *.pkpass
 
 tmp/
+output/playwright/
+output/qa/
+.playwright-cli/
 
 # secrets
 .secrets/

@@ -2,6 +2,14 @@ import { getAuthenticatedUser, setJsonCors } from "../../lib/apiAuth.js";
 import { getSupabaseAdmin } from "../../lib/ghlIntegration.js";
 import { buildOpsHealthBadges } from "../../lib/walletOps.js";
 
+function isMissingRelationError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  const details = String(error?.details || "").toLowerCase();
+  return message.includes("does not exist")
+    || message.includes("could not find the table")
+    || details.includes("does not exist");
+}
+
 function parseEventId(req) {
   const eventId = req?.query?.eventId;
   if (typeof eventId === "string") return eventId.trim();
@@ -11,7 +19,10 @@ function parseEventId(req) {
 
 async function countRows(query) {
   const { count, error } = await query;
-  if (error) throw new Error(error.message || "Failed to load operations summary");
+  if (error) {
+    if (isMissingRelationError(error)) return 0;
+    throw new Error(error.message || "Failed to load operations summary");
+  }
   return Number.isFinite(Number(count)) ? Number(count) : 0;
 }
 

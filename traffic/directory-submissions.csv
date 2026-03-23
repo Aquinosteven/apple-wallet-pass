@@ -1,0 +1,101 @@
+directory_name,url,category,authority_estimate,submission_method,status,notes,submitted_url_if_approved,follow_up_date,relevance_score,dofollow_visibility,acceptance_likelihood,estimated_referral_traffic,submission_type
+G2,https://www.g2.com/,SaaS reviews,95,Vendor onboarding / profile claim,in progress,Highest-leverage software review property,,2026-03-24,5,Mixed,Medium,High,Editorial
+Capterra,https://www.capterra.com/,SaaS reviews,94,Vendor onboarding / editorial,in progress,Strong category SEO and buyer traffic,,2026-03-24,5,Mixed,Medium,High,Editorial
+GetApp,https://www.getapp.com/,SaaS reviews,92,Vendor onboarding / editorial,in progress,Gartner network; SMB software fit,,2026-03-24,5,Mixed,Medium,High,Editorial
+Software Advice,https://www.softwareadvice.com/,SaaS reviews,91,Vendor onboarding / editorial,in progress,Strong search visibility,,2026-03-24,4,Mixed,Medium,High,Editorial
+TrustRadius,https://www.trustradius.com/,SaaS reviews,90,Vendor claim / editorial,in progress,Trust-led software buyer audience,,2026-03-25,4,Mixed,Medium,Medium,Editorial
+Crozdesk,https://crozdesk.com/,SaaS reviews,86,Vendor listing / claim,in progress,Good software category pages,,2026-03-25,4,Unknown,Medium,Medium,Freemium
+SaaSHub,https://www.saashub.com/,SaaS discovery,85,Self-serve / claim,in progress,Good alternatives visibility,,2026-03-25,4,Mixed,High,Medium,Free
+AlternativeTo,https://alternativeto.net/,Alternatives,88,Community / editorial,in progress,Good alternative-to intent,,2026-03-25,4,Mixed,Medium,Medium,Editorial
+SourceForge,https://sourceforge.net/software/,Software directory,89,Self-serve / editorial,in progress,Strong indexing; screenshots help,,2026-03-25,4,Mixed,Medium,Medium,Free
+GoodFirms,https://www.goodfirms.co/software/,Software reviews,82,Vendor listing / editorial,in progress,Useful long-tail software directory,,2026-03-26,4,Unknown,Medium,Medium,Editorial
+FinancesOnline,https://financesonline.com/,Software reviews,84,Editorial outreach,in progress,Good search presence; likely outreach-led,,2026-03-26,4,Unknown,Medium,Medium,Editorial
+SoftwareSuggest,https://www.softwaresuggest.com/,Software reviews,81,Vendor listing,in progress,Good SMB software audience,,2026-03-26,4,Unknown,Medium,Medium,Freemium
+Tekpon,https://tekpon.com/,Software reviews,78,Vendor listing / editorial,in progress,Growing reviews property,,2026-03-26,4,Unknown,Medium,Medium,Editorial
+Serchen,https://www.serchen.com/,Software reviews,76,Vendor listing,in progress,Legacy directory with indexed profile pages,,2026-03-26,4,Unknown,Medium,Medium,Free
+Slashdot Software,https://slashdot.org/software/,Software directory,83,Vendor / editorial,in progress,Technical audience; useful citations,,2026-03-26,3,Unknown,Medium,Medium,Editorial
+SaaSworthy,https://www.saasworthy.com/,SaaS reviews,79,Vendor listing,in progress,Comparison-led software traffic,,2026-03-27,4,Unknown,Medium,Medium,Editorial
+Findstack,https://findstack.com/,Software comparisons,80,Editorial / vendor outreach,in progress,Good comparison intent,,2026-03-27,4,Unknown,Medium,Medium,Editorial
+Appvizer,https://www.appvizer.com/,Software reviews,77,Editorial / vendor outreach,in progress,EU-facing software visibility,,2026-03-27,3,Unknown,Medium,Low,Editorial
+SelectHub,https://www.selecthub.com/,Software selection,78,Editorial,not started,Vendor-research workflow likely slower,,2026-04-02,3,Unknown,Low,Medium,Editorial
+SoftwareWorld,https://softwareworld.co/,Software reviews,74,Editorial,not started,Long-tail opportunity,,2026-04-02,3,Unknown,Medium,Low,Editorial
+CompareCamp,https://comparecamp.com/,Software reviews,72,Editorial,not started,Comparison-focused content site,,2026-04-02,3,Unknown,Medium,Low,Editorial
+Cuspera,https://www.cuspera.com/,Software intelligence,73,Editorial,not started,Vendor-profile potential; verify path,,2026-04-03,3,Unknown,Low,Low,Editorial
+PeerSpot,https://www.peerspot.com/,Software reviews,79,Editorial,not started,More enterprise-IT skewed,,2026-04-03,2,Unknown,Low,Low,Editorial
+Toolfinder,https://toolfinder.co/,Tool discovery,67,Editorial,not started,Lower relevance but clean audience,,2026-04-03,3,Unknown,Medium,Low,Editorial
+Top Business Software,https://www.topbusinesssoftware.com/,Software directory,65,Free form,not started,Long-tail SEO only,,2026-04-03,3,Unknown,Medium,Low,Free
+Gartner Peer Insights,https://www.gartner.com/reviews/home,Enterprise reviews,88,Editorial,not started,Harder fit for current maturity,,2026-04-04,2,No,Low,Low,Editorial
+StackShare,https://stackshare.io/,Product and stack discovery,81,Self-serve,not started,Better if API story becomes stronger,,2026-04-04,2,Mixed,Low,Low,Free
+OpenAlternative,https://openalternative.co/,Alternatives,63,Self-serve,not started,Useful against generic reminder tooling,,2026-04-04,3,Yes,Medium,Low,Free
+Alternative.me,https://alternative.me/,Alternatives,69,Free form,not started,Long-tail alternatives play,,2026-04-04,3,Unknown,Medium,Low,Free
+Moreofit,https://moreofit.com/,Similar-sites,60,Free form,not started,Very low priority,,2026-04-07,1,Unknown,Low,Low,Free
+DiscoverCloud,https://www.discovercloud.com/,Software directory,62,Free form,not started,Long-tail citation value,,2026-04-07,3,Unknown,Medium,Low,Free
+Technology Evaluation Centers,https://www3.technologyevaluation.com/,Software research,70,Editorial,not started,Enterprise-heavy and slower,,2026-04-07,2,Unknown,Low,Low,Editorial
+Expert Insights,https://expertinsights.com/,Software reviews,73,Editorial,not started,Mostly security and IT; low fit,,2026-04-07,2,Unknown,Low,Low,Editorial
+SaaS Genius,https://www.saasgenius.com/,SaaS reviews,68,Editorial,not started,Long-tail review site,,2026-04-08,3,Unknown,Medium,Low,Editorial
+Reviano,https://www.reviano.com/,Software reviews,61,Free form,not started,Long-tail citation play,,2026-04-08,3,Unknown,Medium,Low,Free
+PAT Research,https://www.predictiveanalyticstoday.com/,Software directory,71,Editorial,not started,Broad software library,,2026-04-08,2,Unknown,Medium,Low,Editorial
+OMR Reviews,https://omr.com/en/reviews,Software reviews,77,Editorial,not started,Better for EU/DACH if traction grows,,2026-04-08,2,Unknown,Low,Low,Editorial
+Trustpilot,https://www.trustpilot.com/,Company reviews,93,Self-serve,not started,Brand trust more than buyer-intent directory,,2026-04-09,2,No,Medium,Low,Free
+Crunchbase,https://www.crunchbase.com/,Company database,92,Company profile claim,in progress,Strong entity citation value,,2026-03-27,4,No,High,Medium,Free
+Wellfound,https://wellfound.com/,Startup and company profile,86,Profile claim,not started,Good startup visibility,,2026-04-09,3,Mixed,Medium,Low,Free
+F6S,https://www.f6s.com/,Startup platform,84,Profile claim,not started,Good startup ecosystem citation,,2026-04-09,3,Mixed,Medium,Low,Free
+Dealroom,https://dealroom.co/,Startup database,82,Editorial,not started,Useful only if profile claim path exists,,2026-04-10,2,No,Low,Low,Editorial
+StartupBlink,https://www.startupblink.com/,Startup database,79,Profile claim,not started,Startup SEO and citation value,,2026-04-10,3,Unknown,Medium,Low,Free
+Owler,https://www.owler.com/,Company profile,83,Profile claim,not started,Entity citation only,,2026-04-10,2,No,Medium,Low,Free
+Tracxn,https://tracxn.com/,Startup database,81,Editorial,not started,Harder to control listing quality,,2026-04-10,2,No,Low,Low,Editorial
+Product Hunt,https://www.producthunt.com/,Startup launch,91,Maker account launch,in progress,Great brand signal and launch proof,,2026-03-28,4,No,Medium,High,Free
+BetaList,https://betalist.com/,Startup launch,83,Paid or editorial startup submission,in progress,Good maker traffic; paid fast path available,,2026-03-28,4,Mixed,Medium,Medium,Paid
+Startup Stash,https://startupstash.com/,Startup tools directory,78,Editorial submission,in progress,Great topical-tool collection fit,,2026-03-31,4,Unknown,Medium,Medium,Editorial
+Launching Next,https://www.launchingnext.com/submit/,Startup launch,74,Public form/manual review,needs follow-up,Public form asks for marketing-budget answer not yet approved,,2026-03-24,4,Mixed,High,Medium,Free
+Startup Ranking,https://www.startupranking.com/,Startup ranking,76,Profile claim,not started,Citation value more than referral value,,2026-04-01,3,Unknown,Medium,Low,Free
+StartupBase,https://startupbase.io/,Startup launch,71,Profile claim,not started,Good long-tail launch directory,,2026-04-01,3,Unknown,Medium,Low,Free
+Peerlist Launchpad,https://peerlist.io/launchpad,Startup launch,77,Account launch,in progress,Good founder and operator audience,,2026-03-31,4,Mixed,Medium,Medium,Free
+Dev Hunt,https://devhunt.org/,Launch gallery,73,Account launch / community,in progress,Indie product audience; relevance moderate,,2026-03-31,3,Mixed,Medium,Low,Free
+Uneed,https://www.uneed.best/,Startup launch,72,Launch submission,in progress,Growing product-launch audience,,2026-03-31,3,Mixed,Medium,Low,Free
+Microlaunch,https://microlaunch.net/,Startup launch,70,Launch submission,in progress,Indie launch audience,,2026-04-01,3,Mixed,Medium,Low,Freemium
+Fazier,https://fazier.com/,Startup launch,69,Launch submission,in progress,Product discovery and backlink opportunity,,2026-04-01,3,Mixed,Medium,Low,Free
+Indie Hackers Products,https://www.indiehackers.com/products,Product directory,86,Product profile,not started,Strong founder audience; weaker direct SEO,,2026-04-01,3,No,Medium,Medium,Free
+KillerStartups,https://killerstartups.com/,Startup directory,75,Editorial,not started,Long-running startup listing site,,2026-04-02,3,Unknown,Medium,Low,Editorial
+Tiny Startups,https://tinystartups.com/,Startup directory,62,Free form,not started,Long-tail maker directory,,2026-04-02,3,Unknown,Medium,Low,Free
+StartupBuffer,https://startupbuffer.com/,Startup launch,68,Public form,not started,Cloudflare challenge blocks immediate automation,,2026-04-02,3,Unknown,Medium,Low,Free
+Startup Inspire,https://www.startupinspire.com/,Startup directory,64,Free form,not started,Long-tail citation opportunity,,2026-04-03,3,Unknown,Medium,Low,Free
+GreatStartups,https://greatstartups.com/,Startup directory,67,Public form,needs follow-up,Public form requires author photo upload,,2026-03-24,3,Unknown,Medium,Low,Free
+Spot Startups,https://spotstartups.com/,Startup directory,66,Public form,needs follow-up,Requires live-site badge verification before submission,,2026-03-24,3,Yes,Medium,Low,Free
+Startup Collections,https://startupcollections.com/,Startup tools directory,60,Free form,not started,Long-tail only,,2026-04-03,2,Unknown,Medium,Low,Free
+CtrlAlt.CC,https://ctrlalt.cc/,Startup launch,61,Free form,not started,Verify live submission path before outreach,,2026-04-04,3,Unknown,Medium,Low,Free
+Launched,https://launched.io/,Startup launch,64,Free form,not started,Long-tail launch directory,,2026-04-04,3,Unknown,Medium,Low,Free
+LaunchHunt,https://launchhunt.co/,Startup launch,58,Free form,not started,Lower-trust launch directory,,2026-04-04,2,Unknown,Medium,Low,Free
+Startuptoolslist,https://startuptoolslist.com/,Startup tools directory,57,Free form,not started,Verify quality before time investment,,2026-04-07,2,Unknown,Medium,Low,Free
+Startup Fame,https://startupfa.me/,Startup directory,55,Free form,not started,Very low priority,,2026-04-07,2,Unknown,Medium,Low,Free
+All Startups Info,https://allstartups.info/,Startup directory,54,Free form,not started,Very low priority,,2026-04-07,2,Unknown,Medium,Low,Free
+Findly Tools,https://findly.tools/,Tools directory,59,Free form,not started,Mentioned by other launch directories; verify editorial quality,,2026-04-07,2,Unknown,Medium,Low,Free
+Aback Launch,https://abacklaunch.com/,Launch directory,55,Free form,not started,Low-trust until manually checked,,2026-04-08,2,Unknown,Medium,Low,Free
+B2B SaaS Market,https://www.b2bsaasmarket.com/,SaaS directory,56,Free form,not started,Good thematic fit and lower authority,,2026-04-08,3,Unknown,Medium,Low,Free
+Launch Boosts,https://www.launchboosts.com/,Launch directory,52,Free form,not started,Low-trust long tail,,2026-04-08,2,Unknown,Medium,Low,Free
+NxGn Tools,https://nxgntools.com/,Tool directory,53,Free form,not started,Verify quality before submitting,,2026-04-08,2,Unknown,Medium,Low,Free
+GoHighLevel Marketplace,https://marketplace.gohighlevel.com/,CRM ecosystem,79,Partner / app marketplace submission,in progress,Highest-fit ecosystem because ShowFi already integrates with GoHighLevel,,2026-03-28,5,Unknown,Medium,Medium,Integration-gated
+Cvent Marketplace,https://www.cvent.com/en/marketplace,Event-tech marketplace,85,Marketplace or vendor application,in progress,Strong event software relevance,,2026-04-01,4,Unknown,Low,Medium,Editorial
+EventMB,https://www.eventmanagerblog.com/,Event-tech media and directory,80,Editorial or vendor outreach,in progress,Event-operator audience; likely outreach-led,,2026-04-01,4,Unknown,Low,Medium,Editorial
+Eventective,https://www.eventective.com/,Event directory,76,Vendor listing,in progress,Relevant live-event operator audience,,2026-04-02,4,Unknown,Medium,Medium,Free
+10times Vendors,https://10times.com/vendors,Event directory,82,Editorial,not started,Verify software-only fit before pitching,,2026-04-03,3,Unknown,Low,Medium,Editorial
+Event Industry News Suppliers,https://www.eventindustrynews.com/suppliers,Event directory,72,Editorial,not started,Solid category fit,,2026-04-03,4,Unknown,Medium,Low,Editorial
+EventPlanner.net,https://www.eventplanner.net/,Event directory,73,Free or editorial,not started,Could fit event operators well,,2026-04-03,4,Unknown,Medium,Low,Free
+TSNN,https://www.tsnn.com/,Trade show directory,75,Editorial,not started,Better for expo and trade-show angle only,,2026-04-04,3,Unknown,Low,Low,Editorial
+BizBash,https://www.bizbash.com/,Event industry media,84,Editorial,not started,Better for PR than listing,,2026-04-04,3,Unknown,Low,Medium,Editorial
+The Vendry,https://thevendry.com/,Vendor marketplace,78,Editorial,not started,Verify software listing fit,,2026-04-04,3,Unknown,Low,Low,Editorial
+Event Marketer,https://www.eventmarketer.com/,Event and experiential media,80,Editorial,not started,Better for editorial placement than directory,,2026-04-07,3,Unknown,Low,Medium,Editorial
+ConferenceSource,https://www.conferencesource.com/,Conference directory,67,Editorial,not started,Mostly venue and event discovery; low software fit,,2026-04-07,2,Unknown,Low,Low,Editorial
+EventMobi Partners,https://www.eventmobi.com/partners/,Event platform ecosystem,74,Partner program,not started,Only pursue if formal partner fit makes sense,,2026-04-07,2,Unknown,Very low,Low,Integration-gated
+Bizzabo Partners,https://www.bizzabo.com/partners,Event platform ecosystem,76,Partner program,not started,Only if direct integration is added,,2026-04-08,2,Unknown,Very low,Low,Integration-gated
+vFairs Integrations,https://www.vfairs.com/integrations/,Event platform ecosystem,72,Integration marketplace,not started,Not suitable without native integration,,2026-04-08,2,Unknown,Very low,Low,Integration-gated
+Whova Integrations,https://whova.com/integrations/,Event platform ecosystem,76,Integration marketplace,not started,Not suitable without native integration,,2026-04-08,2,Unknown,Very low,Low,Integration-gated
+Swoogo Partners,https://swoogo.events/partners,Event platform ecosystem,71,Partner program,not started,Not suitable without native integration,,2026-04-08,2,Unknown,Very low,Low,Integration-gated
+Glue Up Partners,https://www.glueup.com/partners,Event platform ecosystem,73,Partner program,not started,Not suitable without native integration,,2026-04-09,2,Unknown,Very low,Low,Integration-gated
+EventsAir Partners,https://www.eventsair.com/partners/,Event platform ecosystem,70,Partner program,not started,Not suitable without native integration,,2026-04-09,2,Unknown,Very low,Low,Integration-gated
+Splash Integrations,https://splashthat.com/integrations,Event marketing ecosystem,75,Integration marketplace,not started,Only pursue if direct integration is built,,2026-04-09,3,Unknown,Very low,Low,Integration-gated
+HubSpot App Marketplace,https://ecosystem.hubspot.com/marketplace/apps,CRM ecosystem,92,App marketplace,not started,Future target only; do not submit without real integration,,2026-04-10,2,Unknown,Very low,Medium,Integration-gated
+Zapier App Directory,https://zapier.com/apps,Automation ecosystem,94,App directory,not started,Future target only; do not submit without real integration,,2026-04-10,2,Unknown,Very low,Medium,Integration-gated
+Make Integrations,https://www.make.com/en/integrations,Automation ecosystem,88,App directory,not started,Future target only; do not submit without real integration,,2026-04-10,2,Unknown,Very low,Medium,Integration-gated
+Pabbly Connect Integrations,https://www.pabbly.com/connect/integrations/,Automation ecosystem,80,App directory,not started,Future target only; do not submit without real integration,,2026-04-10,2,Unknown,Very low,Low,Integration-gated
+Integrately,https://integrately.com/integrations,Automation ecosystem,78,App directory,not started,Future target only; do not submit without real integration,,2026-04-10,2,Unknown,Very low,Low,Integration-gated

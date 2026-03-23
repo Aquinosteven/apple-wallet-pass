@@ -16,7 +16,7 @@ const integrations = [
     icon: Zap,
     color: 'bg-orange-500',
     status: 'available',
-    href: '#',
+    href: '/dashboard/support',
   },
   {
     name: 'Webhooks',
@@ -24,7 +24,7 @@ const integrations = [
     icon: Webhook,
     color: 'bg-gblue',
     status: 'available',
-    href: '#',
+    href: '/dashboard/support',
   },
   {
     name: 'Custom API',
@@ -32,7 +32,7 @@ const integrations = [
     icon: Plug,
     color: 'bg-gray-700',
     status: 'available',
-    href: '#',
+    href: '/dashboard/support',
   },
 ];
 
@@ -61,20 +61,13 @@ export default function IntegrationsPage() {
                 <p className="text-xs text-gray-500">{integration.description}</p>
               </div>
             </div>
-            {integration.href.startsWith('/') ? (
-              <Link
-                to={integration.href}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gblue bg-gblue/10 rounded-lg hover:bg-gblue/20 transition-colors"
-              >
-                Configure
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            ) : (
-              <button className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gblue bg-gblue/10 rounded-lg hover:bg-gblue/20 transition-colors">
-                Configure
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            )}
+            <Link
+              to={integration.href}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gblue bg-gblue/10 rounded-lg hover:bg-gblue/20 transition-colors"
+            >
+              {integration.name === 'GoHighLevel' ? 'Configure' : 'Contact support'}
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         ))}
       </div>
@@ -84,9 +77,9 @@ export default function IntegrationsPage() {
         <p className="text-xs text-gray-500 mb-3">
           Our API supports any integration. Check the documentation or contact support.
         </p>
-        <a href="#" className="text-xs font-medium text-gblue hover:underline">
+        <Link to="/dashboard/support" className="text-xs font-medium text-gblue hover:underline">
           View API documentation
-        </a>
+        </Link>
       </div>
     </div>
   );

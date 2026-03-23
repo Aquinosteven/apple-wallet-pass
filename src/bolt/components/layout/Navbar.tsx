@@ -43,6 +43,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-1">
             {[
               { to: '/', label: 'Home' },
+              { to: '/pricing', label: 'Pricing' },
               { to: '/dashboard', label: 'Dashboard' },
             ].map(({ to, label }) => (
               <Link
@@ -91,6 +92,7 @@ export default function Navbar() {
           <div className="px-4 py-3 space-y-1">
             {[
               { to: '/', label: 'Home' },
+              { to: '/pricing', label: 'Pricing' },
               { to: '/dashboard', label: 'Dashboard' },
               { to: '/login', label: 'Log in' },
             ].map(({ to, label }) => (

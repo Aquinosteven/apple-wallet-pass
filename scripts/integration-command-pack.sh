@@ -7,6 +7,39 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+load_env_file() {
+  local file="$1"
+  local line key value
+  [[ -f "$file" ]] || return 0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -n "$line" ]] || continue
+    [[ "${line:0:1}" == "#" ]] && continue
+    [[ "$line" == *=* ]] || continue
+
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="${key%"${key##*[![:space:]]}"}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+
+    if [[ "$value" == \"*\" && "$value" == *\" ]]; then
+      value="${value:1:${#value}-2}"
+    elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+
+    if [[ -n "$key" && -z "${!key:-}" ]]; then
+      export "$key=$value"
+    fi
+  done < "$file"
+}
+
+load_env_file "$ROOT_DIR/.env.local"
+load_env_file "$ROOT_DIR/.env.production.local"
+load_env_file "$ROOT_DIR/.env.development.local"
+
 GREEN="$(printf '\033[32m')"
 YELLOW="$(printf '\033[33m')"
 RED="$(printf '\033[31m')"
@@ -89,6 +122,7 @@ done
 
 echo
 echo "3) Deployed API checks (optional, requires BASE_URL and AUTH_TOKEN)"
+BASE_URL="${BASE_URL:-${NEXT_PUBLIC_API_BASE_URL:-${VITE_APP_URL:-}}}"
 if require_env BASE_URL && require_env AUTH_TOKEN; then
   run_cmd "GET /api/monitoring" \
     curl -fsS -H "Authorization: Bearer $AUTH_TOKEN" "$BASE_URL/api/monitoring" >/dev/null
@@ -107,7 +141,7 @@ fi
 
 echo
 echo "4) Claim and wallet smoke (optional)"
-if require_env BASE_URL && require_env SUPABASE_URL && require_env SUPABASE_SERVICE_ROLE_KEY; then
+if require_env BASE_URL && { require_env SUPABASE_URL || require_env VITE_SUPABASE_URL; } && require_env SUPABASE_SERVICE_ROLE_KEY; then
   if require_env CLAIM_TOKEN || (require_env AUTH_TOKEN && require_env EVENT_ID); then
     run_cmd "node scripts/smoke-claim-flow.js" node scripts/smoke-claim-flow.js
   else

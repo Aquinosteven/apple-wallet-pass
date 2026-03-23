@@ -12,6 +12,30 @@
   },
   "rewrites": [
     {
+      "source": "/pricing",
+      "destination": "/pricing/index.html"
+    },
+    {
+      "source": "/pricing/",
+      "destination": "/pricing/index.html"
+    },
+    {
+      "source": "/apple-wallet-pass-software",
+      "destination": "/apple-wallet-pass-software/index.html"
+    },
+    {
+      "source": "/apple-wallet-pass-software/",
+      "destination": "/apple-wallet-pass-software/index.html"
+    },
+    {
+      "source": "/google-wallet-pass-software",
+      "destination": "/google-wallet-pass-software/index.html"
+    },
+    {
+      "source": "/google-wallet-pass-software/",
+      "destination": "/google-wallet-pass-software/index.html"
+    },
+    {
       "source": "/api/selftest-issue-claim",
       "destination": "/api/health?mode=selftest-issue-claim"
     },

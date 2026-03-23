@@ -216,7 +216,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-gray-900">Pro Plan</p>
-                    <p className="text-xs text-gray-500">$49/month - Up to 10,000 tickets</p>
+                    <p className="text-xs text-gray-500">$97/month or $997/year</p>
                   </div>
                   <span className="px-2 py-0.5 text-[11px] font-medium text-ggreen bg-ggreen/10 rounded-full">Active</span>
                 </div>

@@ -1,5 +1,6 @@
 import { Copy, QrCode, Link as LinkIcon, ExternalLink, Info } from 'lucide-react';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface DistributionTabProps {
   eventId: string;
@@ -127,9 +128,9 @@ export default function DistributionTab({ eventId }: DistributionTabProps) {
             </pre>
           </div>
         </div>
-        <a href="#" className="inline-flex items-center gap-1 mt-4 text-xs text-gblue hover:underline">
+        <Link to="/dashboard/support" className="inline-flex items-center gap-1 mt-4 text-xs text-gblue hover:underline">
           View full API documentation <ExternalLink className="w-3 h-3" />
-        </a>
+        </Link>
       </div>
     </div>
   );

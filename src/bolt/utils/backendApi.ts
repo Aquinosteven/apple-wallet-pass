@@ -190,6 +190,30 @@ export interface SupportTicketRow {
   updated_at?: string;
 }
 
+export interface BillingStatus {
+  accountId: string;
+  accountSlug: string;
+  subscriptionId: string;
+  provider: string;
+  planCode: string;
+  canAccessDashboard: boolean;
+  requiresPayment: boolean;
+  trialActive: boolean;
+  trialEndsAt: string | null;
+  subscriptionStatus: string;
+  accountBillingState: string;
+}
+
+export interface CheckoutSessionResponse {
+  provider: string;
+  checkoutUrl: string | null;
+  sessionId: string | null;
+  live: boolean;
+  error?: string;
+  accountId: string;
+  planCode: string;
+}
+
 interface ApiRequestInit extends RequestInit {
   body?: string;
 }
@@ -478,6 +502,9 @@ export async function getDashboardMetrics(input?: {
     `/api/dashboard-metrics${query ? `?${query}` : ''}`,
     { method: 'GET' },
   );
+  if (!payload) {
+    throw new Error('Reporting metrics returned an empty response');
+  }
   return {
     range: payload.range,
     totals: payload.totals,
@@ -492,6 +519,9 @@ export async function listDataExports(ownerUserId?: string): Promise<DataExportH
     `/api/exports${params.toString() ? `?${params.toString()}` : ''}`,
     { method: 'GET' },
   );
+  if (!payload) {
+    throw new Error('Export history returned an empty response');
+  }
   return payload.history || [];
 }
 
@@ -512,6 +542,9 @@ export async function createDataExport(input: {
       body: JSON.stringify(input),
     },
   );
+  if (!payload?.export) {
+    throw new Error('Export creation returned an empty response');
+  }
   return payload.export;
 }
 
@@ -529,6 +562,9 @@ export async function getAdminPanel(ownerUserId?: string): Promise<AdminPanelRes
     `/api/admin${params.toString() ? `?${params.toString()}` : ''}`,
     { method: 'GET' },
   );
+  if (!payload) {
+    throw new Error('Admin panel returned an empty response');
+  }
   return {
     role: payload.role,
     ownerScope: payload.ownerScope,
@@ -591,6 +627,9 @@ export async function listSupportTickets(ownerUserId?: string): Promise<SupportT
     `/api/support${params.toString() ? `?${params.toString()}` : ''}`,
     { method: 'GET' },
   );
+  if (!payload) {
+    throw new Error('Support tickets returned an empty response');
+  }
   return payload.tickets || [];
 }
 
@@ -617,5 +656,49 @@ export async function createSupportTicket(input: SupportTicketInput & { ownerUse
   return {
     ticket: payload.ticket,
     mail: payload.mail,
+  };
+}
+
+export async function getBillingStatus(): Promise<BillingStatus> {
+  const payload = await authedRequestOrThrow<{ ok: boolean } & BillingStatus>('/api/billing/status', {
+    method: 'GET',
+  });
+
+  return {
+    accountId: payload.accountId,
+    accountSlug: payload.accountSlug,
+    subscriptionId: payload.subscriptionId,
+    provider: payload.provider,
+    planCode: payload.planCode,
+    canAccessDashboard: payload.canAccessDashboard,
+    requiresPayment: payload.requiresPayment,
+    trialActive: payload.trialActive,
+    trialEndsAt: payload.trialEndsAt,
+    subscriptionStatus: payload.subscriptionStatus,
+    accountBillingState: payload.accountBillingState,
+  };
+}
+
+export async function createBillingCheckoutSession(input: {
+  planCode: string;
+  successUrl: string;
+  cancelUrl: string;
+}): Promise<CheckoutSessionResponse> {
+  const payload = await authedRequestOrThrow<CheckoutSessionResponse & { ok: boolean }>(
+    '/api/billing/checkout-session',
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );
+
+  return {
+    provider: payload.provider,
+    checkoutUrl: payload.checkoutUrl,
+    sessionId: payload.sessionId,
+    live: payload.live,
+    error: payload.error,
+    accountId: payload.accountId,
+    planCode: payload.planCode,
   };
 }

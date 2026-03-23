@@ -15,6 +15,14 @@ function parseEventId(req) {
   return "";
 }
 
+function isMissingRelationError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  const details = String(error?.details || "").toLowerCase();
+  return message.includes("does not exist")
+    || message.includes("could not find the table")
+    || details.includes("does not exist");
+}
+
 export default async function handler(req, res) {
   setJsonCors(res, ["GET", "OPTIONS"]);
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -56,6 +64,9 @@ export default async function handler(req, res) {
       .limit(limit);
 
     if (error) {
+      if (isMissingRelationError(error)) {
+        return res.status(200).json({ ok: true, items: [] });
+      }
       return res.status(500).json({ ok: false, error: error.message });
     }
 

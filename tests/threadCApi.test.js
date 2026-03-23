@@ -252,6 +252,117 @@ test("exports download serves spreadsheet XML with matching mime and extension",
   );
 });
 
+test("exports GET degrades when data_exports is missing", async () => {
+  const handler = createExportsHandler({
+    getAccessContext: async () => ({
+      ok: true,
+      context: {
+        user: { id: "owner_1" },
+        role: "owner",
+        supabase: {
+          from() {
+            return {
+              select() {
+                return {
+                  order() {
+                    return this;
+                  },
+                  limit() {
+                    return this;
+                  },
+                  eq() {
+                    return this;
+                  },
+                  then(resolve) {
+                    return Promise.resolve(
+                      resolve({
+                        data: null,
+                        error: { message: "Could not find the table 'public.data_exports' in the schema cache" },
+                      })
+                    );
+                  },
+                };
+              },
+            };
+          },
+        },
+      },
+    }),
+    resolveOwnerScope: () => "owner_1",
+  });
+
+  const req = createMockRequest({ method: "GET" });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body?.ok, true);
+  assert.deepEqual(res.body?.history, []);
+});
+
+test("exports create returns 503 when data_exports is unavailable", async () => {
+  const handler = createExportsHandler({
+    getAccessContext: async () => ({
+      ok: true,
+      context: {
+        user: { id: "owner_1" },
+        role: "owner",
+        supabase: {
+          from(table) {
+            if (table === "events") {
+              return {
+                select() {
+                  return {
+                    eq() {
+                      return Promise.resolve({ data: [], error: null });
+                    },
+                  };
+                },
+              };
+            }
+            if (table === "data_exports") {
+              return {
+                insert() {
+                  return {
+                    select() {
+                      return {
+                        async single() {
+                          return {
+                            data: null,
+                            error: { message: "Could not find the table 'public.data_exports' in the schema cache" },
+                          };
+                        },
+                      };
+                    },
+                  };
+                },
+              };
+            }
+            throw new Error(`Unexpected table: ${table}`);
+          },
+        },
+      },
+    }),
+    resolveOwnerScope: () => "owner_1",
+    buildExportDataset: async () => [],
+  });
+
+  const req = createMockRequest({
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: {
+      format: "csv",
+      scope: "filtered",
+    },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 503);
+  assert.equal(res.body?.ok, false);
+  assert.match(res.body?.error || "", /Exports unavailable/i);
+});
+
 test("admin blocks internal-only actions for owner role", async () => {
   const handler = createAdminHandler({
     getAccessContext: async () => ({
@@ -306,6 +417,71 @@ test("admin retries failed jobs", async () => {
   assert.equal(res.statusCode, 200);
   assert.equal(res.body?.ok, true);
   assert.equal(res.body?.queuedJob?.status, "queued");
+});
+
+test("admin GET degrades when admin_jobs is missing", async () => {
+  const handler = createAdminHandler({
+    getAccessContext: async () => ({
+      ok: true,
+      context: {
+        user: { id: "owner_1" },
+        role: "owner",
+        supabase: {},
+      },
+    }),
+    resolveOwnerScope: () => "owner_1",
+    getPromoCounter: async () => ({
+      claimed: 17,
+      cap: 100,
+      remaining: 83,
+      source: { baselineClaimed: 17, claimedFromData: 0 },
+    }),
+    listPlanHooks: async () => ({
+      plan: "v1",
+      limits: { monthly_passes: 10000, support_seats: 2 },
+    }),
+    listFailedJobs: async () => [],
+    listAuditLogs: async () => [],
+  });
+
+  const req = createMockRequest({ method: "GET" });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body?.ok, true);
+  assert.deepEqual(res.body?.failedJobs, []);
+});
+
+test("admin returns 503 for retry when admin_jobs is unavailable", async () => {
+  const handler = createAdminHandler({
+    getAccessContext: async () => ({
+      ok: true,
+      context: {
+        user: { id: "support_1" },
+        role: "support_internal",
+        supabase: {},
+      },
+    }),
+    assertInternalSupport: () => ({ ok: true }),
+    retryFailedJob: async () => ({
+      ok: false,
+      status: 503,
+      error: "Admin jobs unavailable until the latest schema patch is applied",
+    }),
+  });
+
+  const req = createMockRequest({
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: { action: "jobs.retry", jobId: "job_failed_1" },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 503);
+  assert.equal(res.body?.ok, false);
+  assert.match(res.body?.error || "", /Admin jobs unavailable/i);
 });
 
 test("support creates ticket and invokes mail abstraction", async () => {

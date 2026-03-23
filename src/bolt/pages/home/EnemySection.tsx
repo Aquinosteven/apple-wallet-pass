@@ -15,7 +15,7 @@ const channels = [
   },
   {
     icon: Wallet,
-    title: 'Apple Wallet',
+    title: 'Wallet passes',
     problems: ['Lives on the lock screen', 'Surfaces by time', 'Hard to miss'],
     highlight: true,
   },
@@ -74,7 +74,7 @@ export default function EnemySection() {
         </div>
 
         <p className="mt-10 text-center text-base font-semibold text-gray-900">
-          Wallet doesn't ask for attention. It takes its place.
+          Wallet passes do not ask for attention. They take their place.
         </p>
       </div>
     </section>

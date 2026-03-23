@@ -20,7 +20,7 @@ export default function MechanismSection() {
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-            Why Apple Wallet <span className="text-ggreen">Outperforms</span> Messages for Show Rate
+            Why wallet passes <span className="text-ggreen">outperform</span> messages for show rate
           </h2>
 
           <div className="mt-6 space-y-2.5">
