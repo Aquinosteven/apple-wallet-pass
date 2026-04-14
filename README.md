@@ -211,6 +211,62 @@ Google Wallet health check:
 curl -s "https://<your-vercel-domain>/api/health?mode=gwallet" | jq
 ```
 
+## Google Search Console Setup
+
+Use the local Search Console scripts if you want one-time auth and reusable ranking data for SEO work.
+
+1. Add these values to `.env.local`:
+
+```env
+GOOGLE_SEARCH_CONSOLE_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_SEARCH_CONSOLE_CLIENT_SECRET=your_google_oauth_client_secret
+GOOGLE_SEARCH_CONSOLE_SITE_URL=sc-domain:showfi.io
+```
+
+2. Run one-time auth:
+
+```bash
+npm run gsc:auth
+```
+
+This saves your refresh token locally to `.secrets/google-search-console-token.json`.
+
+3. List the properties available to the authenticated account:
+
+```bash
+npm run gsc:sites
+```
+
+4. Pull the top 25 ranking queries for the configured property:
+
+```bash
+npm run gsc:top-queries
+```
+
+JSON output is also supported:
+
+```bash
+npm run gsc:top-queries -- --json
+```
+
+## Site Analytics
+
+The app includes Vercel Web Analytics via `@vercel/analytics`, which automatically tracks page views for the deployed site.
+
+Google Analytics 4 is also supported. To enable it, set `VITE_GA_MEASUREMENT_ID` in your frontend environment with your GA4 Measurement ID (for example `G-ABCDEFG123`). The client injects the Google tag only when that variable is present and sends page views on route changes.
+
+To view traffic:
+
+1. Open the Vercel project dashboard for this app.
+2. Enable **Analytics** if it is not already on.
+3. Deploy the latest build.
+4. Review visitors, page views, top pages, referrers, and geography in the Analytics tab.
+
+Notes:
+- Analytics does not send production pageview data while running locally in development mode.
+- Search Console scripts remain the best source for organic search queries and impressions.
+- GA4 stays disabled until `VITE_GA_MEASUREMENT_ID` is configured for the deployed frontend environment.
+
 ## Deployment Routing (Vercel)
 
 BrowserRouter requires SPA rewrites on Vercel.

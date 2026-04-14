@@ -5,6 +5,7 @@ import { trackClaimEvent } from '../../../lib/claimAnalytics';
 type ClaimPreview = {
   passId?: string;
   eventId?: string;
+  claimedAt?: string | null;
   event: {
     title: string;
     date: string | null;
@@ -54,6 +55,7 @@ export default function ClaimPage() {
   const [deviceKind, setDeviceKind] = useState<DeviceKind>('desktop');
 
   const safeToken = useMemo(() => token.trim(), [token]);
+  const alreadyClaimed = Boolean(claimPreview?.claimedAt);
 
   useEffect(() => {
     setDeviceKind(detectDevice());
@@ -245,12 +247,31 @@ export default function ClaimPage() {
 
   const isIOS = deviceKind === 'ios';
   const isAndroid = deviceKind === 'android';
+  const primaryButtonLabel = isAndroid
+    ? (googleLoading ? 'Opening Google Wallet...' : 'Add to Google Wallet')
+    : isIOS
+      ? 'Add to Apple Wallet'
+      : 'Download Apple Wallet pass';
+  const secondaryButtonLabel = isAndroid
+    ? 'Download Apple Wallet pass'
+    : googleLoading
+      ? 'Opening Google Wallet...'
+      : 'Add to Google Wallet';
+  const helperText = isIOS
+    ? 'Tap Add to Apple Wallet. If it does not open automatically, try again in Safari on iPhone.'
+    : isAndroid
+      ? 'Google Wallet opens in a new tab. Use the Apple pass download only if you need the .pkpass file.'
+      : 'Apple Wallet requires Safari on iPhone, so desktop downloads the .pkpass file for later use. Google Wallet opens in a new tab.';
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-[560px] bg-white rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-8">
         <h1 className="text-2xl font-semibold text-gray-900">
-          {claimState === 'claimed' ? 'Pass ready' : 'Claim your ShowFi pass'}
+          {claimState === 'claimed'
+            ? 'Pass ready'
+            : alreadyClaimed
+              ? 'Pass already claimed'
+              : 'Claim your ShowFi pass'}
         </h1>
 
         {loadState === 'loading' ? <p className="mt-4 text-sm text-gray-500">Loading claim details...</p> : null}
@@ -282,6 +303,12 @@ export default function ClaimPage() {
               </ol>
             </div>
 
+            {alreadyClaimed && claimState !== 'claimed' ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                This pass was already claimed. You can load it again and download the pass for this device.
+              </div>
+            ) : null}
+
             {claimState !== 'claimed' ? (
               <button
                 type="button"
@@ -289,7 +316,11 @@ export default function ClaimPage() {
                 disabled={claimState === 'submitting'}
                 className="btn-primary w-full min-h-12 disabled:cursor-not-allowed"
               >
-                {claimState === 'submitting' ? 'Preparing pass...' : 'Continue / Claim'}
+                {claimState === 'submitting'
+                  ? 'Preparing pass...'
+                  : alreadyClaimed
+                    ? 'Load pass again'
+                    : 'Continue / Claim'}
               </button>
             ) : (
               <div className="space-y-3">
@@ -304,11 +335,7 @@ export default function ClaimPage() {
                         : 'border border-gray-300 bg-white text-gray-900'
                     }`}
                   >
-                    {isAndroid
-                      ? googleLoading
-                        ? 'Opening Google Wallet...'
-                        : 'Add to Google Wallet'
-                      : 'Add to Apple Wallet'}
+                    {primaryButtonLabel}
                   </button>
                   <button
                     type="button"
@@ -320,11 +347,7 @@ export default function ClaimPage() {
                         : 'border border-gray-300 bg-white text-gray-900'
                     }`}
                   >
-                    {isAndroid
-                      ? 'Add to Apple Wallet'
-                      : googleLoading
-                        ? 'Opening Google Wallet...'
-                        : 'Add to Google Wallet'}
+                    {secondaryButtonLabel}
                   </button>
                 </div>
 
@@ -336,9 +359,7 @@ export default function ClaimPage() {
                   Download pass (.pkpass)
                 </button>
 
-                <p className="text-xs text-gray-500">
-                  Tap Add to Wallet. If it doesn&apos;t open, use Safari on iPhone. Google Wallet opens in a new tab.
-                </p>
+                <p className="text-xs text-gray-500">{helperText}</p>
               </div>
             )}
 

@@ -21,7 +21,7 @@ Set these server-side environment variables:
 - `GHL_OAUTH_CLIENT_SECRET`
 - `GHL_OAUTH_REDIRECT_URI`
 - `GHL_OAUTH_SCOPES` (optional override; defaults are applied in code)
-- `GHL_PASS_SECRET` (required for `/api/issue-claim` webhook auth)
+- `GHL_PASS_SECRET` (required for `/api/issue-claim` and `/api/webhooks/ghl` webhook auth)
 
 `/api/issue-claim` does location-level token lookup from `ghl_installations`, refreshes when expiring, ensures required contact custom fields exist, and writes claim URL/token to contact.
 
@@ -80,12 +80,14 @@ This keeps GHL side effects minimal while preserving claim-link traceability.
 
 1. Run one install flow through `/api/ghl/oauth/start`.
 2. Confirm row exists in `ghl_installations` for target `location_id`.
-3. Trigger one real webhook to `/api/issue-claim` with `contactId` + `locationId`.
-4. Confirm contact in HighLevel has:
+3. In the GHL workflow webhook action, add header:
+   - `x-ghl-secret: <your GHL_PASS_SECRET>`
+4. Trigger one real webhook to `/api/issue-claim` or `/api/webhooks/ghl` with `contactId` + `locationId`.
+5. Confirm contact in HighLevel has:
    - `contact.showfi_claim_url`
    - `contact.showfi_claim_token`
    - (optional telemetry) `contact.showfi_pass_issued_at`, `contact.showfi_wallet_added_at`, `contact.showfi_join_click_*`
-5. If `DEBUG_GHL_WEBHOOKS=true`, confirm logs show masked IDs and `ghlWriteback` status.
+6. If `DEBUG_GHL_WEBHOOKS=true`, confirm logs show masked IDs and `ghlWriteback` status.
 
 ## 5.1) Incident triage ladder (quick)
 
@@ -101,6 +103,16 @@ This keeps GHL side effects minimal while preserving claim-link traceability.
    - Expected fail-open behavior; claim delivery remains available. Investigate via `ghl_webhook_logs` and retry path.
 
 ## 6) LeadConnector API references used by this implementation
+
+## 6.1) Required webhook header for ShowFi endpoints
+
+For any GHL workflow posting to ShowFi webhook endpoints, include:
+
+```text
+x-ghl-secret: <your GHL_PASS_SECRET>
+```
+
+If this header is missing or does not match your server environment, ShowFi now rejects the request before issuance starts.
 
 - OAuth token exchange/refresh:
   - `POST https://services.leadconnectorhq.com/oauth/token`

@@ -1,5 +1,4 @@
 import { ArrowRight, Check } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { ctaTargets, featureGroups } from './pricingContent';
 
 export default function PricingDetails() {
@@ -12,10 +11,13 @@ export default function PricingDetails() {
               <h3 className="text-2xl font-semibold text-white tracking-tight">Running high-volume campaigns?</h3>
               <p className="mt-1 text-sm text-white/80">Get onboarding help, custom limits, and enterprise-grade support planning.</p>
             </div>
-            <Link to={ctaTargets.bookDemo} className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-white text-navy text-sm font-semibold hover:bg-gray-100 transition-colors">
-              Book demo
+            <a
+              href={ctaTargets.contactSales}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-white text-navy text-sm font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Email sales
               <ArrowRight className="w-4 h-4" />
-            </Link>
+            </a>
           </div>
         </div>
       </section>

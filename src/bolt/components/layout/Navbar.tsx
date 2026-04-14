@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Wallet, Menu, X } from 'lucide-react';
+import { trackSalesEvent, trackSalesSignupIntent } from '../../../lib/googleAnalytics';
 
 export default function Navbar() {
   const location = useLocation();
@@ -44,11 +45,19 @@ export default function Navbar() {
             {[
               { to: '/', label: 'Home' },
               { to: '/pricing', label: 'Pricing' },
+              { to: '/wallet-pass-software', label: 'Solutions' },
               { to: '/dashboard', label: 'Dashboard' },
             ].map(({ to, label }) => (
               <Link
                 key={to}
                 to={to}
+                onClick={() =>
+                  trackSalesEvent('sales_nav_click', {
+                    nav_label: label,
+                    destination: to,
+                    nav_location: 'desktop_primary',
+                  })
+                }
                 className={`
                   px-3.5 py-2 rounded-lg text-sm font-medium transition-colors
                   ${location.pathname === to
@@ -65,15 +74,43 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             <Link
               to="/login"
+              onClick={() =>
+                {
+                  trackSalesEvent('sales_nav_click', {
+                    nav_label: 'Log in',
+                    destination: '/login',
+                    nav_location: 'desktop_utility',
+                  });
+                  trackSalesSignupIntent({
+                    intent_type: 'login',
+                    intent_location: 'navbar_desktop',
+                    destination: '/login',
+                  });
+                }
+              }
               className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg transition-colors"
             >
               Log in
             </Link>
             <Link
-              to="/dashboard"
+              to="/waitlist"
+              onClick={() =>
+                {
+                  trackSalesEvent('sales_cta_click', {
+                    cta_name: 'join_waitlist',
+                    cta_location: 'navbar_desktop',
+                    destination: '/waitlist',
+                  });
+                  trackSalesSignupIntent({
+                    intent_type: 'waitlist',
+                    intent_location: 'navbar_desktop',
+                    destination: '/waitlist',
+                  });
+                }
+              }
               className="px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark shadow-sm hover:shadow-md transition-all"
             >
-              Get Started
+              Join Waitlist
             </Link>
           </div>
 
@@ -93,12 +130,20 @@ export default function Navbar() {
             {[
               { to: '/', label: 'Home' },
               { to: '/pricing', label: 'Pricing' },
+              { to: '/wallet-pass-software', label: 'Solutions' },
               { to: '/dashboard', label: 'Dashboard' },
               { to: '/login', label: 'Log in' },
             ].map(({ to, label }) => (
               <Link
                 key={to}
                 to={to}
+                onClick={() =>
+                  trackSalesEvent('sales_nav_click', {
+                    nav_label: label,
+                    destination: to,
+                    nav_location: 'mobile_menu',
+                  })
+                }
                 className={`
                   block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                   ${location.pathname === to
@@ -112,10 +157,24 @@ export default function Navbar() {
             ))}
             <div className="pt-2 pb-1">
               <Link
-                to="/dashboard"
+                to="/waitlist"
+                onClick={() =>
+                  {
+                    trackSalesEvent('sales_cta_click', {
+                      cta_name: 'join_waitlist',
+                      cta_location: 'navbar_mobile',
+                      destination: '/waitlist',
+                    });
+                    trackSalesSignupIntent({
+                      intent_type: 'waitlist',
+                      intent_location: 'navbar_mobile',
+                      destination: '/waitlist',
+                    });
+                  }
+                }
                 className="block w-full text-center px-4 py-2.5 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-all"
               >
-                Get Started
+                Join Waitlist
               </Link>
             </div>
           </div>

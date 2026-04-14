@@ -12,6 +12,30 @@
   },
   "rewrites": [
     {
+      "source": "/login",
+      "destination": "/login/index.html"
+    },
+    {
+      "source": "/login/",
+      "destination": "/login/index.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms/index.html"
+    },
+    {
+      "source": "/terms/",
+      "destination": "/terms/index.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy/index.html"
+    },
+    {
+      "source": "/privacy/",
+      "destination": "/privacy/index.html"
+    },
+    {
       "source": "/pricing",
       "destination": "/pricing/index.html"
     },
@@ -36,6 +60,66 @@
       "destination": "/google-wallet-pass-software/index.html"
     },
     {
+      "source": "/wallet-pass-software",
+      "destination": "/wallet-pass-software/index.html"
+    },
+    {
+      "source": "/wallet-pass-software/",
+      "destination": "/wallet-pass-software/index.html"
+    },
+    {
+      "source": "/webinar-reminder-software",
+      "destination": "/webinar-reminder-software/index.html"
+    },
+    {
+      "source": "/webinar-reminder-software/",
+      "destination": "/webinar-reminder-software/index.html"
+    },
+    {
+      "source": "/event-reminder-software",
+      "destination": "/event-reminder-software/index.html"
+    },
+    {
+      "source": "/event-reminder-software/",
+      "destination": "/event-reminder-software/index.html"
+    },
+    {
+      "source": "/gohighlevel-wallet-pass",
+      "destination": "/gohighlevel-wallet-pass/index.html"
+    },
+    {
+      "source": "/gohighlevel-wallet-pass/",
+      "destination": "/gohighlevel-wallet-pass/index.html"
+    },
+    {
+      "source": "/booked-call-reminders",
+      "destination": "/booked-call-reminders/index.html"
+    },
+    {
+      "source": "/booked-call-reminders/",
+      "destination": "/booked-call-reminders/index.html"
+    },
+    {
+      "source": "/demo",
+      "destination": "/demo/index.html"
+    },
+    {
+      "source": "/demo/",
+      "destination": "/demo/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/admin/index.html"
+    },
+    {
       "source": "/api/selftest-issue-claim",
       "destination": "/api/health?mode=selftest-issue-claim"
     },
@@ -46,6 +130,10 @@
     {
       "source": "/api/client-pass",
       "destination": "/api/pass"
+    },
+    {
+      "source": "/api/admin/(.*)",
+      "destination": "/api/admin?adminPath=$1"
     },
     {
       "source": "/api/(.*)",

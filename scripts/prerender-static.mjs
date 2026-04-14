@@ -11,7 +11,22 @@ const serverBundlePath = path.join(rootDir, 'dist-server', 'prerender.js');
 const template = await readFile(path.join(distDir, 'index.html'), 'utf8');
 const { renderHead, renderPath } = await import(pathToFileURL(serverBundlePath).href);
 
-const routes = ['/', '/pricing', '/apple-wallet-pass-software', '/google-wallet-pass-software'];
+const routes = [
+  '/',
+  '/login',
+  '/terms',
+  '/privacy',
+  '/pricing',
+  '/wallet-pass-software',
+  '/apple-wallet-pass-software',
+  '/google-wallet-pass-software',
+  '/webinar-reminder-software',
+  '/event-reminder-software',
+  '/gohighlevel-wallet-pass',
+  '/booked-call-reminders',
+  '/demo',
+  '/admin',
+];
 
 for (const route of routes) {
   const appHtml = renderPath(route);

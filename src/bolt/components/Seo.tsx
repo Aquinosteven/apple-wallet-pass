@@ -121,6 +121,16 @@ export function getSeoConfig(pathname: string): SeoConfig {
     };
   }
 
+  if (pathname === '/waitlist') {
+    return {
+      title: 'Join the Waitlist | ShowFi.io',
+      description:
+        'Join the ShowFi.io waitlist to get notified when new wallet pass onboarding spots reopen.',
+      path: '/waitlist',
+      robots: 'noindex, follow',
+    };
+  }
+
   if (pathname === '/apple-wallet-pass-software') {
     return {
       title: 'Apple Wallet Pass Software | ShowFi.io',
@@ -138,6 +148,28 @@ export function getSeoConfig(pathname: string): SeoConfig {
           'Attendance reminders',
           'Campaign automation',
           'GoHighLevel integration',
+        ],
+      },
+    };
+  }
+
+  if (pathname === '/wallet-pass-software') {
+    return {
+      title: 'Wallet Pass Software | ShowFi.io',
+      description:
+        'ShowFi.io is wallet pass software for events, webinars, booked calls, and attendance-focused campaigns across Apple Wallet and Google Wallet.',
+      path: '/wallet-pass-software',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'ShowFi.io',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        featureList: [
+          'Wallet pass delivery',
+          'Apple Wallet support',
+          'Google Wallet support',
+          'Attendance reminders',
         ],
       },
     };
@@ -165,11 +197,84 @@ export function getSeoConfig(pathname: string): SeoConfig {
     };
   }
 
+  if (pathname === '/webinar-reminder-software') {
+    return {
+      title: 'Webinar Reminder Software | ShowFi.io',
+      description:
+        'ShowFi.io helps improve webinar attendance with wallet-based reminders that keep the session visible closer to the moment someone needs to join.',
+      path: '/webinar-reminder-software',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'ShowFi.io',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+      },
+    };
+  }
+
+  if (pathname === '/event-reminder-software') {
+    return {
+      title: 'Event Reminder Software | ShowFi.io',
+      description:
+        'ShowFi.io is event reminder software for live attendance, helping teams keep tickets and event details visible through Apple Wallet and Google Wallet.',
+      path: '/event-reminder-software',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'ShowFi.io',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+      },
+    };
+  }
+
+  if (pathname === '/gohighlevel-wallet-pass') {
+    return {
+      title: 'GoHighLevel Wallet Pass | ShowFi.io',
+      description:
+        'ShowFi.io adds wallet pass delivery to GoHighLevel follow-up workflows for booked calls, webinars, and events that need stronger attendance visibility.',
+      path: '/gohighlevel-wallet-pass',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'ShowFi.io',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+      },
+    };
+  }
+
+  if (pathname === '/booked-call-reminders') {
+    return {
+      title: 'Booked Call Reminders | ShowFi.io',
+      description:
+        'ShowFi.io helps reduce no-shows with booked call reminders that stay visible through Apple Wallet and Google Wallet closer to the appointment.',
+      path: '/booked-call-reminders',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'ShowFi.io',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+      },
+    };
+  }
+
   if (pathname === '/login') {
     return {
       title: 'Log In | ShowFi.io',
       description: 'Log in to ShowFi.io to manage wallet pass campaigns, billing, and event operations.',
       path: '/login',
+      robots: 'noindex, nofollow',
+    };
+  }
+
+  if (pathname === '/demo') {
+    return {
+      title: 'Private Signup | ShowFi.io',
+      description: 'Private signup page for complimentary ShowFi.io account access.',
+      path: '/demo',
       robots: 'noindex, nofollow',
     };
   }

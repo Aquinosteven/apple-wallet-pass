@@ -4,10 +4,16 @@ import { Wallet } from 'lucide-react';
 const links = [
   { to: '/', label: 'Product' },
   { to: '/pricing', label: 'Pricing' },
+  { to: '/wallet-pass-software', label: 'Wallet Pass Software' },
+  { to: '/webinar-reminder-software', label: 'Webinar Reminders' },
+  { to: '/event-reminder-software', label: 'Event Reminders' },
+  { to: '/gohighlevel-wallet-pass', label: 'GoHighLevel' },
   { to: '/apple-wallet-pass-software', label: 'Apple Wallet' },
   { to: '/google-wallet-pass-software', label: 'Google Wallet' },
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/login', label: 'Login' },
+  { to: '/terms', label: 'Terms' },
+  { to: '/privacy', label: 'Privacy' },
 ];
 
 export default function Footer() {

@@ -26,9 +26,12 @@ CLAIM_TOKEN="<existing-claim-token>"
 EVENT_ID="<event-uuid>"
 
 # Square
+SQUARE_APPLICATION_ID="<square-application-id>"
 SQUARE_ACCESS_TOKEN="<square-token>"
 SQUARE_LOCATION_ID="<square-location-id>"
 SQUARE_WEBHOOK_SIGNATURE_KEY="<square-webhook-signature-key>"
+SQUARE_PLAN_VARIATION_ID_CORE_MONTHLY_V1="<square-plan-variation-id-monthly>"
+SQUARE_PLAN_VARIATION_ID_CORE_YEARLY_V1="<square-plan-variation-id-yearly>"
 
 # Mail
 MAIL_PROVIDER="resend" # or "smtp"
@@ -38,6 +41,7 @@ SMTP_CONFIG_JSON="<smtp-json>" # required when MAIL_PROVIDER=smtp
 # GHL test references
 GHL_TEST_LOCATION_ID="<ghl-location-id>"
 GHL_TEST_EVENT_ID="<ghl-event-id>"
+GHL_PASS_SECRET="<shared-secret-used-by-ghl-webhooks>"
 ```
 
 ## What It Runs

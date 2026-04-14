@@ -4,7 +4,10 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import passHandler from "./api/pass.js";
 import healthHandler from "./api/health.js";
 import googleSaveHandler from "./api/google-save.js";
+import claimHandler from "./api/claim.js";
+import claimEventsHandler from "./api/claim-events.js";
 import eventsHandler from "./api/events.js";
+import registrantsHandler from "./api/registrants.js";
 import ticketDesignsHandler from "./api/ticket-designs.js";
 import dashboardMetricsHandler from "./api/dashboard-metrics.js";
 import exportsHandler from "./api/exports.js";
@@ -12,7 +15,12 @@ import adminHandler from "./api/admin.js";
 import supportHandler from "./api/support.js";
 import billingStatusHandler from "./api/billing/status.js";
 import billingCheckoutSessionHandler from "./api/billing/checkout-session.js";
+import billingPaymentHandler from "./api/billing/payment.js";
+import billingPaymentMethodHandler from "./api/billing/payment-method.js";
+import authDemoAccessHandler from "./api/auth/demo-access.js";
 import authSignupHandler from "./api/auth/signup.js";
+import accountContextHandler from "./api/account/context.js";
+import workspacesHandler from "./api/workspaces.js";
 import ghlStatusHandler from "./api/integrations/ghl/status.js";
 import ghlConnectHandler from "./api/integrations/ghl/connect.js";
 import ghlTestHandler from "./api/integrations/ghl/test.js";
@@ -25,7 +33,10 @@ const vercelHandlers: Array<{ prefix: string; handler: Handler }>= [
   { prefix: "/api/pass", handler: passHandler },
   { prefix: "/api/health", handler: healthHandler },
   { prefix: "/api/google-save", handler: googleSaveHandler },
+  { prefix: "/api/claim-events", handler: claimEventsHandler },
+  { prefix: "/api/claim", handler: claimHandler },
   { prefix: "/api/events", handler: eventsHandler },
+  { prefix: "/api/registrants", handler: registrantsHandler },
   { prefix: "/api/ticket-designs", handler: ticketDesignsHandler },
   { prefix: "/api/dashboard-metrics", handler: dashboardMetricsHandler },
   { prefix: "/api/exports", handler: exportsHandler },
@@ -33,7 +44,12 @@ const vercelHandlers: Array<{ prefix: string; handler: Handler }>= [
   { prefix: "/api/support", handler: supportHandler },
   { prefix: "/api/billing/status", handler: billingStatusHandler },
   { prefix: "/api/billing/checkout-session", handler: billingCheckoutSessionHandler },
+  { prefix: "/api/billing/payment", handler: billingPaymentHandler },
+  { prefix: "/api/billing/payment-method", handler: billingPaymentMethodHandler },
+  { prefix: "/api/auth/demo-access", handler: authDemoAccessHandler },
   { prefix: "/api/auth/signup", handler: authSignupHandler },
+  { prefix: "/api/account/context", handler: accountContextHandler },
+  { prefix: "/api/workspaces", handler: workspacesHandler },
   { prefix: "/api/integrations/ghl/status", handler: ghlStatusHandler },
   { prefix: "/api/integrations/ghl/connect", handler: ghlConnectHandler },
   { prefix: "/api/integrations/ghl/test", handler: ghlTestHandler },
@@ -116,7 +132,9 @@ function localApiPlugin() {
     configureServer(server: { middlewares: { use: (fn: (req: IncomingMessage, res: ServerResponse, next: () => void) => void) => void } }) {
       server.middlewares.use((req: IncomingMessage, res: ServerResponse, next: () => void) => {
         const url = req.url || "";
-        const matched = vercelHandlers.find((entry) => url.startsWith(entry.prefix));
+        const matched = vercelHandlers.find((entry) =>
+          url === entry.prefix || url.startsWith(`${entry.prefix}?`) || url.startsWith(`${entry.prefix}/`)
+        );
         if (!matched) return next();
         const wrappedReq = withVercelRequest(req);
         const wrapped = withVercelResponse(res);

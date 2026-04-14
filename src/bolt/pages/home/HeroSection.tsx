@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { trackSalesEvent, trackSalesSignupIntent } from '../../../lib/googleAnalytics';
 
 interface PassCardProps {
   title: string;
@@ -80,20 +81,48 @@ export default function HeroSection() {
 
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <Link
-                to="/dashboard"
+                to="/waitlist"
+                onClick={() =>
+                  {
+                    trackSalesEvent('sales_cta_click', {
+                      cta_name: 'join_waitlist',
+                      cta_location: 'home_hero_primary',
+                      destination: '/waitlist',
+                    });
+                    trackSalesSignupIntent({
+                      intent_type: 'waitlist',
+                      intent_location: 'home_hero_primary',
+                      destination: '/waitlist',
+                    });
+                  }
+                }
                 className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gblue rounded-lg hover:bg-gblue-dark shadow-md shadow-gblue/25 transition-all"
               >
-                Start with ShowFi.io
+                Join Waitlist
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="#use-cases"
+                onClick={() =>
+                  trackSalesEvent('sales_cta_click', {
+                    cta_name: 'view_example_passes',
+                    cta_location: 'home_hero_secondary',
+                    destination: '#use-cases',
+                  })
+                }
                 className="inline-flex items-center px-5 py-2.5 text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"
               >
                 View Example Passes
               </a>
               <Link
                 to="/pricing"
+                onClick={() =>
+                  trackSalesEvent('sales_cta_click', {
+                    cta_name: 'see_pricing',
+                    cta_location: 'home_hero_tertiary',
+                    destination: '/pricing',
+                  })
+                }
                 className="inline-flex items-center px-5 py-2.5 text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"
               >
                 See pricing
@@ -101,11 +130,20 @@ export default function HeroSection() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500">
+              <Link to="/wallet-pass-software" className="hover:text-gray-900 transition-colors">
+                Wallet pass software
+              </Link>
               <Link to="/apple-wallet-pass-software" className="hover:text-gray-900 transition-colors">
                 Apple Wallet pass software
               </Link>
               <Link to="/google-wallet-pass-software" className="hover:text-gray-900 transition-colors">
                 Google Wallet pass software
+              </Link>
+              <Link to="/webinar-reminder-software" className="hover:text-gray-900 transition-colors">
+                Webinar reminder software
+              </Link>
+              <Link to="/gohighlevel-wallet-pass" className="hover:text-gray-900 transition-colors">
+                GoHighLevel wallet pass
               </Link>
             </div>
           </div>

@@ -39,10 +39,10 @@ export default function AppleWalletSoftwarePage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-                to="/dashboard"
+                to="/waitlist"
                 className="inline-flex items-center rounded-lg border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-50 transition-colors"
               >
-                Start with ShowFi.io
+                Join waitlist
               </Link>
             </div>
           </div>

@@ -11,6 +11,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.showfi.io/wallet-pass-software</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://www.showfi.io/apple-wallet-pass-software</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -19,5 +24,25 @@
     <loc>https://www.showfi.io/google-wallet-pass-software</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/webinar-reminder-software</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/event-reminder-software</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/gohighlevel-wallet-pass</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/booked-call-reminders</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

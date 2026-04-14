@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { trackSalesEvent, trackSalesSignupIntent } from '../../../lib/googleAnalytics';
 
 export default function CtaBlock() {
   return (
@@ -15,10 +16,24 @@ export default function CtaBlock() {
           </p>
           <div className="mt-8">
             <Link
-              to="/dashboard"
+              to="/waitlist"
+              onClick={() =>
+                {
+                  trackSalesEvent('sales_cta_click', {
+                    cta_name: 'join_waitlist',
+                    cta_location: 'home_footer_cta',
+                    destination: '/waitlist',
+                  });
+                  trackSalesSignupIntent({
+                    intent_type: 'waitlist',
+                    intent_location: 'home_footer_cta',
+                    destination: '/waitlist',
+                  });
+                }
+              }
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-gblue bg-white rounded-lg hover:bg-gray-50 shadow-lg shadow-black/10 transition-all"
             >
-              Add Wallet to My Funnel
+              Join Waitlist
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

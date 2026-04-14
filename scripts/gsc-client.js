@@ -9,6 +9,8 @@ import { loadLocalEnvFiles } from "./env-loader.js";
 const SEARCH_CONSOLE_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 const DEFAULT_PORT = 8734;
 const DEFAULT_TOKEN_FILE = path.join(".secrets", "google-search-console-token.json");
+const DEFAULT_RETRY_ATTEMPTS = 4;
+const DEFAULT_RETRY_BASE_DELAY_MS = 1500;
 
 function normalizeText(value) {
   if (typeof value !== "string") return "";
@@ -17,6 +19,58 @@ function normalizeText(value) {
 
 function getEnv(name, fallback = "") {
   return normalizeText(process.env[name] || fallback);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getRetryAttempts() {
+  const value = Number.parseInt(getEnv("GOOGLE_SEARCH_CONSOLE_RETRY_ATTEMPTS", String(DEFAULT_RETRY_ATTEMPTS)), 10);
+  return Number.isInteger(value) && value > 0 ? value : DEFAULT_RETRY_ATTEMPTS;
+}
+
+function getRetryBaseDelayMs() {
+  const value = Number.parseInt(
+    getEnv("GOOGLE_SEARCH_CONSOLE_RETRY_BASE_DELAY_MS", String(DEFAULT_RETRY_BASE_DELAY_MS)),
+    10
+  );
+  return Number.isInteger(value) && value > 0 ? value : DEFAULT_RETRY_BASE_DELAY_MS;
+}
+
+function isRetryableNetworkError(error) {
+  const code = normalizeText(error?.code || "");
+  return ["ENOTFOUND", "EAI_AGAIN", "ECONNRESET", "ETIMEDOUT", "ECONNREFUSED"].includes(code);
+}
+
+function isRetryableHttpStatus(status) {
+  return status === 429 || status === 408 || status >= 500;
+}
+
+async function withGoogleRetry(task, label) {
+  const attempts = getRetryAttempts();
+  const baseDelayMs = getRetryBaseDelayMs();
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await task();
+    } catch (error) {
+      lastError = error;
+      const shouldRetry = isRetryableNetworkError(error) || isRetryableHttpStatus(Number(error?.status || 0));
+      if (!shouldRetry || attempt === attempts) {
+        throw error;
+      }
+
+      const delayMs = baseDelayMs * 2 ** (attempt - 1);
+      console.error(
+        `${label} failed (${error.code || error.status || "retryable error"}). Retrying in ${delayMs}ms...`
+      );
+      await sleep(delayMs);
+    }
+  }
+
+  throw lastError;
 }
 
 function ensureTokenDir(filePath) {
@@ -123,7 +177,7 @@ export async function getAuthorizedClient(config = getGscConfig()) {
   }
 
   client.setCredentials(tokens);
-  const accessToken = await client.getAccessToken();
+  const accessToken = await withGoogleRetry(() => client.getAccessToken(), "Google OAuth token refresh");
   if (!accessToken?.token) {
     throw new Error("Unable to obtain a Google Search Console access token from the saved credentials.");
   }
@@ -136,7 +190,7 @@ export async function getAuthorizedClient(config = getGscConfig()) {
 }
 
 export async function getAccessToken(client) {
-  const result = await client.getAccessToken();
+  const result = await withGoogleRetry(() => client.getAccessToken(), "Google OAuth access token request");
   const token = typeof result === "string" ? result : result?.token || "";
   if (!token) {
     throw new Error("Failed to obtain access token.");
@@ -146,26 +200,28 @@ export async function getAccessToken(client) {
 
 export async function googleJsonRequest(url, { method = "GET", body, client }) {
   const accessToken = await getAccessToken(client);
-  const response = await fetch(url, {
-    method,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/json",
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  return withGoogleRetry(async () => {
+    const response = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/json",
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = payload?.error?.message || `Google API request failed with status ${response.status}`;
-    const error = new Error(message);
-    error.status = response.status;
-    error.payload = payload;
-    throw error;
-  }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = payload?.error?.message || `Google API request failed with status ${response.status}`;
+      const error = new Error(message);
+      error.status = response.status;
+      error.payload = payload;
+      throw error;
+    }
 
-  return payload;
+    return payload;
+  }, "Google Search Console request");
 }
 
 export function getSearchConsoleScope() {
