@@ -4,6 +4,7 @@ import { trackClaimEventFromRequest } from "../lib/claimEvents.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 import { getHostGuardContext, nonProdForbiddenResponse } from "../lib/hostGuard.js";
+import { parseGoogleServiceAccount } from "../lib/googleServiceAccount.js";
 
 const REQUIRED_ENV_VARS = [
   "GOOGLE_WALLET_ISSUER_ID",
@@ -40,21 +41,18 @@ function parseServiceAccount(rawValue) {
     ]);
   }
 
-  let parsed;
   try {
-    parsed = JSON.parse(String(rawValue).trim());
+    const parsed = parseGoogleServiceAccount(rawValue, "GOOGLE_WALLET_SERVICE_ACCOUNT_JSON");
+    if (!parsed.client_email) {
+      throw new HttpError(400, "Service account JSON is missing client_email");
+    }
+    if (!parsed.private_key) {
+      throw new HttpError(400, "Service account JSON is missing private_key");
+    }
+    return parsed;
   } catch {
     throw new HttpError(400, "GOOGLE_WALLET_SERVICE_ACCOUNT_JSON is not valid JSON");
   }
-
-  if (!parsed.client_email) {
-    throw new HttpError(400, "Service account JSON is missing client_email");
-  }
-  if (!parsed.private_key) {
-    throw new HttpError(400, "Service account JSON is missing private_key");
-  }
-
-  return parsed;
 }
 
 function signJwtRs256(header, payload, privateKeyPem) {

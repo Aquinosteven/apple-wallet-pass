@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { signWebhookPayload, verifyWebhookSignature } from "../lib/threadA/webhookSecurity.js";
 import { buildMappingConfig, normalizeWebhookPayload } from "../lib/threadA/webhookMapping.js";
+import { shouldBypassSignatureForLocalTesting } from "../api/webhooks/square.js";
 
 test("verifyWebhookSignature accepts current secret signature", () => {
   const rawBody = JSON.stringify({ hello: "world" });
@@ -64,4 +65,40 @@ test("normalizeWebhookPayload enforces dynamic joinLink requirement", () => {
 
   assert.equal(normalized.ok, false);
   assert.equal(normalized.errors.includes("joinLink is required from source data"), true);
+});
+
+test("square webhook local bypass stays disabled on production-like host", () => {
+  const originalBypass = process.env.ALLOW_LOCAL_WEBHOOK_SIGNATURE_BYPASS;
+  process.env.ALLOW_LOCAL_WEBHOOK_SIGNATURE_BYPASS = "true";
+
+  try {
+    const bypass = shouldBypassSignatureForLocalTesting({
+      headers: { host: "showfi.io" },
+    });
+    assert.equal(bypass, false);
+  } finally {
+    if (originalBypass === undefined) {
+      delete process.env.ALLOW_LOCAL_WEBHOOK_SIGNATURE_BYPASS;
+    } else {
+      process.env.ALLOW_LOCAL_WEBHOOK_SIGNATURE_BYPASS = originalBypass;
+    }
+  }
+});
+
+test("square webhook local bypass enables on localhost when flag is set", () => {
+  const originalBypass = process.env.ALLOW_LOCAL_WEBHOOK_SIGNATURE_BYPASS;
+  process.env.ALLOW_LOCAL_WEBHOOK_SIGNATURE_BYPASS = "true";
+
+  try {
+    const bypass = shouldBypassSignatureForLocalTesting({
+      headers: { host: "127.0.0.1:5173" },
+    });
+    assert.equal(bypass, true);
+  } finally {
+    if (originalBypass === undefined) {
+      delete process.env.ALLOW_LOCAL_WEBHOOK_SIGNATURE_BYPASS;
+    } else {
+      process.env.ALLOW_LOCAL_WEBHOOK_SIGNATURE_BYPASS = originalBypass;
+    }
+  }
 });

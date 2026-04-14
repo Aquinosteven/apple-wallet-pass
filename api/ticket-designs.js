@@ -1,12 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
+import { getAuthenticatedUser, rejectDisallowedOrigin, setJsonCors } from "../lib/apiAuth.js";
 import { readJsonBodyStrict } from "../lib/requestValidation.js";
 import { getEnv, loadLocalEnvFiles } from "../scripts/env-loader.js";
-
-function setCors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-}
+import { getRequestedAccountId, resolveOrganizationAccess } from "../lib/organizationAccess.js";
 
 function getSupabaseAdmin() {
   loadLocalEnvFiles();
@@ -19,39 +15,6 @@ function getSupabaseAdmin() {
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-}
-
-function getBearerToken(req) {
-  const authHeader = req.headers.authorization || req.headers.Authorization;
-  if (!authHeader || typeof authHeader !== "string") {
-    return null;
-  }
-
-  const [scheme, token] = authHeader.split(" ");
-  if (scheme?.toLowerCase() !== "bearer" || !token) {
-    return null;
-  }
-
-  return token.trim();
-}
-
-async function getAuthenticatedUser(req) {
-  const token = getBearerToken(req);
-  if (!token) {
-    return { user: null, error: "Missing Authorization bearer token", status: 401 };
-  }
-
-  try {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data?.user) {
-      return { user: null, error: "Invalid or expired auth token", status: 401 };
-    }
-
-    return { user: data.user, error: null, status: 200 };
-  } catch {
-    return { user: null, error: "Invalid or expired auth token", status: 401 };
-  }
 }
 
 function asOptionalString(value) {
@@ -72,13 +35,17 @@ function mapTicketDesignRowToApi(row) {
   };
 }
 
-async function ensureOwnedEventExists(supabase, userId, eventId) {
-  const { data, error } = await supabase
+async function ensureOwnedEventExists(supabase, userId, accountId, eventId) {
+  let query = supabase
     .from("events")
     .select("id")
-    .eq("id", eventId)
-    .eq("user_id", userId)
-    .maybeSingle();
+    .eq("id", eventId);
+
+  query = accountId
+    ? query.eq("account_id", accountId)
+    : query.eq("user_id", userId);
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     return { ok: false, status: 500, error: error.message };
@@ -132,8 +99,11 @@ async function resolveEventIdForUpdate(supabase, userId, body) {
 }
 
 export default async function handler(req, res) {
-  setCors(res);
-  if (req.method === "OPTIONS") return res.status(204).end();
+  const cors = setJsonCors(req, res, ["GET", "POST", "PUT", "OPTIONS"]);
+  if (req.method === "OPTIONS") return cors.originAllowed
+    ? res.status(204).end()
+    : res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (rejectDisallowedOrigin(res, cors)) return;
 
   if (!["GET", "POST", "PUT"].includes(req.method || "")) {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
@@ -147,6 +117,8 @@ export default async function handler(req, res) {
 
     const userId = authResult.user.id;
     const supabase = getSupabaseAdmin();
+    const access = await resolveOrganizationAccess(supabase, authResult.user, getRequestedAccountId(req));
+    const accountId = access.activeAccount?.id || null;
 
     if (req.method === "GET") {
       const eventId = asOptionalString(req.query?.eventId);
@@ -194,7 +166,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ ok: false, error: "eventId is required" });
       }
 
-      const ownsEvent = await ensureOwnedEventExists(supabase, userId, eventId);
+      const ownsEvent = await ensureOwnedEventExists(supabase, userId, accountId, eventId);
       if (!ownsEvent.ok) {
         return res.status(ownsEvent.status).json({ ok: false, error: ownsEvent.error });
       }
@@ -219,7 +191,7 @@ export default async function handler(req, res) {
       return res.status(eventIdResult.status).json({ ok: false, error: eventIdResult.error });
     }
 
-    const ownsEvent = await ensureOwnedEventExists(supabase, userId, eventIdResult.eventId);
+    const ownsEvent = await ensureOwnedEventExists(supabase, userId, accountId, eventIdResult.eventId);
     if (!ownsEvent.ok) {
       return res.status(ownsEvent.status).json({ ok: false, error: ownsEvent.error });
     }

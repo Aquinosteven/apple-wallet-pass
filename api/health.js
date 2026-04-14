@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { buildClaimUrl } from "../lib/baseUrl.js";
 import { IssueClaimError, issueClaimTokenForRegistrant } from "../lib/issueClaimCore.js";
+import { parseGoogleServiceAccount } from "../lib/googleServiceAccount.js";
 import { getHostGuardContext, nonProdHealthResponse } from "../lib/hostGuard.js";
 
 const PASS_REQUIRED_ENV_VARS = [
@@ -145,7 +146,7 @@ function parseServiceAccount(raw) {
     throw new HttpError(400, "Missing required environment variables", [ENV_SERVICE_ACCOUNT]);
   }
   try {
-    return JSON.parse(String(raw));
+    return parseGoogleServiceAccount(raw, ENV_SERVICE_ACCOUNT);
   } catch {
     throw new HttpError(400, `Invalid ${ENV_SERVICE_ACCOUNT}`);
   }

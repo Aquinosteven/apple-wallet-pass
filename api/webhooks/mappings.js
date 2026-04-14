@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, setJsonCors } from "../../lib/apiAuth.js";
+import { getAuthenticatedUser, rejectDisallowedOrigin, setJsonCors } from "../../lib/apiAuth.js";
 import { getSupabaseAdmin } from "../../lib/ghlIntegration.js";
 import { buildMappingConfig } from "../../lib/threadA/webhookMapping.js";
 import { readJsonBodyStrict } from "../../lib/requestValidation.js";
@@ -41,8 +41,11 @@ async function getLatestMapping(supabase, endpointId) {
 }
 
 export default async function handler(req, res) {
-  setJsonCors(res, ["GET", "PUT", "OPTIONS"]);
-  if (req.method === "OPTIONS") return res.status(204).end();
+  const cors = setJsonCors(req, res, ["GET", "PUT", "OPTIONS"]);
+  if (req.method === "OPTIONS") return cors.originAllowed
+    ? res.status(204).end()
+    : res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (rejectDisallowedOrigin(res, cors)) return;
 
   try {
     const auth = await getAuthenticatedUser(req);

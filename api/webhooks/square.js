@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { setJsonCors } from "../../lib/apiAuth.js";
+import { rejectDisallowedOrigin, setJsonCors } from "../../lib/apiAuth.js";
 import { getSupabaseAdmin } from "../../lib/ghlIntegration.js";
 import { createCheckoutProvider } from "../../lib/threadA/checkoutProvider.js";
 
@@ -16,7 +16,7 @@ function inferRequestUrl(req) {
   return `${proto}://${host}${req.url || "/api/webhooks/square"}`;
 }
 
-function isProductionRuntime(req) {
+export function isProductionRuntime(req) {
   const host = normalizeText(req.headers["x-forwarded-host"])
     || normalizeText(req.headers.host);
   const prodDomain = normalizeText(process.env.PROD_DOMAIN);
@@ -27,6 +27,17 @@ function isProductionRuntime(req) {
   if (vercelEnv === "production") return true;
   if (nodeEnv === "production" && host && !host.includes("localhost")) return true;
   return false;
+}
+
+export function isLocalHost(req) {
+  const host = normalizeText(req.headers["x-forwarded-host"])
+    || normalizeText(req.headers.host);
+  return host.includes("localhost") || host.startsWith("127.0.0.1");
+}
+
+export function shouldBypassSignatureForLocalTesting(req) {
+  const enabled = normalizeText(process.env.ALLOW_LOCAL_WEBHOOK_SIGNATURE_BYPASS).toLowerCase();
+  return enabled === "true" && !isProductionRuntime(req) && isLocalHost(req);
 }
 
 function verifySquareSignature({ signature, body, requestUrl, key }) {
@@ -179,8 +190,11 @@ async function findSubscriptionForEvent(supabase, parsedWebhook) {
 }
 
 export default async function handler(req, res) {
-  setJsonCors(res, ["POST", "OPTIONS"], false);
-  if (req.method === "OPTIONS") return res.status(204).end();
+  const cors = setJsonCors(req, res, ["POST", "OPTIONS"], false);
+  if (req.method === "OPTIONS") return cors.originAllowed
+    ? res.status(204).end()
+    : res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (rejectDisallowedOrigin(res, cors)) return;
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   }
@@ -219,15 +233,18 @@ export default async function handler(req, res) {
 
     const signature = normalizeText(req.headers["x-square-hmacsha256-signature"]);
     const signatureKey = normalizeText(process.env.SQUARE_WEBHOOK_SIGNATURE_KEY);
-    if (!signatureKey && isProductionRuntime(req)) {
+    const bypassSignature = shouldBypassSignatureForLocalTesting(req);
+    if (!signatureKey && isProductionRuntime(req) && !bypassSignature) {
       return res.status(500).json({ ok: false, error: "MISSING_WEBHOOK_SIGNATURE_KEY" });
     }
-    const verified = verifySquareSignature({
-      signature,
-      body: rawBody,
-      requestUrl: inferRequestUrl(req),
-      key: signatureKey,
-    });
+    const verified = bypassSignature
+      ? { ok: true, reason: "LOCAL_BYPASS" }
+      : verifySquareSignature({
+          signature,
+          body: rawBody,
+          requestUrl: inferRequestUrl(req),
+          key: signatureKey,
+        });
 
     if (!verified.ok) {
       return res.status(401).json({ ok: false, error: verified.reason });

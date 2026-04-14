@@ -1,5 +1,6 @@
-import { getAuthenticatedUser, setJsonCors } from "../../../lib/apiAuth.js";
-import { getGhlIntegrationByUserId, getSupabaseAdmin } from "../../../lib/ghlIntegration.js";
+import { getAuthenticatedUser, rejectDisallowedOrigin, setJsonCors } from "../../../lib/apiAuth.js";
+import { getGhlIntegrationByUserId, getSupabaseAdmin, getWorkspaceGhlIntegrationByAccountId } from "../../../lib/ghlIntegration.js";
+import { getRequestedAccountId, resolveOrganizationAccess } from "../../../lib/organizationAccess.js";
 
 function isMissingRelationError(error) {
   const message = String(error?.message || "").toLowerCase();
@@ -10,8 +11,11 @@ function isMissingRelationError(error) {
 }
 
 export default async function handler(req, res) {
-  setJsonCors(res, ["GET", "OPTIONS"]);
-  if (req.method === "OPTIONS") return res.status(204).end();
+  const cors = setJsonCors(req, res, ["GET", "OPTIONS"]);
+  if (req.method === "OPTIONS") return cors.originAllowed
+    ? res.status(204).end()
+    : res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (rejectDisallowedOrigin(res, cors)) return;
   if (req.method !== "GET") {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   }
@@ -23,12 +27,15 @@ export default async function handler(req, res) {
     }
 
     const supabase = getSupabaseAdmin();
-    const integration = await getGhlIntegrationByUserId(supabase, auth.user.id);
+    const access = await resolveOrganizationAccess(supabase, auth.user, getRequestedAccountId(req));
+    const integration = (access.activeAccount
+      ? await getWorkspaceGhlIntegrationByAccountId(supabase, access.activeAccount.id)
+      : null) || await getGhlIntegrationByUserId(supabase, auth.user.id);
 
     const { data: logs, error: logsError } = await supabase
       .from("ghl_webhook_logs")
       .select("id,processing_status,is_test,webhook_received,pass_created,claim_link_created,ghl_writeback_ok,error_message,contact_id,location_id,event_id,tag,claim_url,created_at")
-      .eq("user_id", auth.user.id)
+      .eq(access.activeAccount?.id ? "account_id" : "user_id", access.activeAccount?.id || auth.user.id)
       .order("created_at", { ascending: false })
       .limit(25);
 

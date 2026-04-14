@@ -8,11 +8,20 @@ import {
   runGhlIssueFlow,
   updateWebhookLog,
 } from "../../lib/ghlIntegration.js";
+import { createTokenBucketLimiter } from "../../lib/rateLimit.js";
+import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../../lib/security.js";
+import { validateSharedSecretHeader } from "../../lib/sharedSecret.js";
+
+const ghlWebhookLimiter = createTokenBucketLimiter({
+  scope: "ghl_webhook_ip",
+  capacity: 30,
+  windowSeconds: 60,
+});
 
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-ghl-secret");
 }
 
 function normalizeId(value) {
@@ -23,12 +32,29 @@ function normalizeId(value) {
 
 export default async function handler(req, res) {
   setCors(res);
+  setNoStore(res);
+  maybeLogSuspiciousRequest(req, { endpoint: "/api/webhooks/ghl" });
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   }
 
   try {
+    const byIp = ghlWebhookLimiter(getClientIp(req));
+    if (!byIp.allowed) {
+      return sendRateLimitExceeded(res, byIp.retryAfterSeconds);
+    }
+
+    const secret = String(process.env.GHL_PASS_SECRET || "").trim();
+    if (!secret) {
+      return res.status(500).json({ ok: false, error: "MISSING_GHL_PASS_SECRET" });
+    }
+
+    const auth = validateSharedSecretHeader(req, secret, "x-ghl-secret");
+    if (!auth.ok) {
+      return res.status(auth.status).json({ ok: false, error: auth.error });
+    }
+
     const parsed = await readJsonBodyStrict(req);
     if (!parsed.ok) {
       return res.status(parsed.status).json({ ok: false, error: parsed.error });
@@ -59,8 +85,9 @@ export default async function handler(req, res) {
     let log;
     try {
       log = await insertWebhookLog(supabase, {
-        user_id: integration.user_id,
-        integration_id: integration.id,
+        user_id: integration.user_id || null,
+        account_id: integration.account_id || null,
+        integration_id: integration.legacy_integration_id || integration.id,
         source: "ghl_tag_added",
         is_test: false,
         idempotency_key: idempotencyKey,
@@ -113,12 +140,12 @@ export default async function handler(req, res) {
       });
 
       await supabase
-        .from("integrations_ghl")
+        .from(integration.account_id ? "workspace_integrations_ghl" : "integrations_ghl")
         .update({
           last_webhook_at: new Date().toISOString(),
           last_error: result.writeback.ok ? null : result.writeback.error,
         })
-        .eq("id", integration.id);
+        .eq(integration.account_id ? "account_id" : "id", integration.account_id || integration.id);
 
       return res.status(200).json({
         ok: true,
@@ -138,11 +165,11 @@ export default async function handler(req, res) {
       });
 
       await supabase
-        .from("integrations_ghl")
+        .from(integration.account_id ? "workspace_integrations_ghl" : "integrations_ghl")
         .update({
           last_error: message,
         })
-        .eq("id", integration.id);
+        .eq(integration.account_id ? "account_id" : "id", integration.account_id || integration.id);
 
       return res.status(400).json({ ok: false, error: message, logId: log.id });
     }

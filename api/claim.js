@@ -7,9 +7,7 @@ import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
 import { trackClaimEventFromRequest } from "../lib/claimEvents.js";
 import { getHostGuardContext, nonProdForbiddenResponse } from "../lib/hostGuard.js";
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { getEnv, loadLocalEnvFiles } from "../scripts/env-loader.js";
 
 function setCors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -18,11 +16,15 @@ function setCors(res) {
 }
 
 function getSupabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  loadLocalEnvFiles();
+  const supabaseUrl = getEnv("SUPABASE_URL", ["VITE_SUPABASE_URL"]);
+  const supabaseServiceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
     throw new Error("Missing SUPABASE_URL/VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
 
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
@@ -31,6 +33,7 @@ function mapClaimPreview(row) {
   return {
     passId: row.id,
     eventId: row.event_id,
+    claimedAt: row.claimed_at || null,
     event: {
       title: row.event.name,
       date: row.event.starts_at,
@@ -203,11 +206,6 @@ export default async function handler(req, res) {
       if (!row || !row.event || !row.registrant) {
         await trackError(req, token, 404, "Claim token not found");
         return res.status(404).json({ ok: false, error: "Claim token not found" });
-      }
-
-      if (row.claimed_at) {
-        await trackError(req, token, 409, "Claim token has already been used");
-        return res.status(409).json({ ok: false, error: "Claim token has already been used" });
       }
 
       await trackClaimEventFromRequest(req, {

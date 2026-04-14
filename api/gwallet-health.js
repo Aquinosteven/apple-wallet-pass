@@ -1,4 +1,5 @@
 import { GoogleAuth } from "google-auth-library";
+import { parseGoogleServiceAccount } from "../lib/googleServiceAccount.js";
 
 const WALLET_SCOPE = "https://www.googleapis.com/auth/wallet_object.issuer";
 const CLASS_SUFFIX = "showfi.generic.v1";
@@ -27,7 +28,7 @@ function parseServiceAccount(raw) {
     throw new Error("Missing GOOGLE_WALLET_SA_JSON");
   }
   try {
-    return JSON.parse(String(raw));
+    return parseGoogleServiceAccount(raw, "GOOGLE_WALLET_SA_JSON");
   } catch {
     throw new Error("Invalid GOOGLE_WALLET_SA_JSON");
   }

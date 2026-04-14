@@ -5,6 +5,7 @@ import { buildClaimUrl } from "../lib/baseUrl.js";
 import { IssueClaimError, issueClaimTokenForRegistrant } from "../lib/issueClaimCore.js";
 import { limiters } from "../lib/rateLimit.js";
 import { getClientIp, maybeLogSuspiciousRequest, sendRateLimitExceeded, setNoStore } from "../lib/security.js";
+import { getHeader, secureEqual } from "../lib/sharedSecret.js";
 import {
   ensureShowfiContactCustomFields,
   ensureValidAccessTokenForLocation,
@@ -28,24 +29,6 @@ function getSupabaseAdmin() {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-}
-
-function secureEqual(left, right) {
-  const leftBuf = Buffer.from(String(left || ""), "utf8");
-  const rightBuf = Buffer.from(String(right || ""), "utf8");
-  if (leftBuf.length === 0 || rightBuf.length === 0) return false;
-  if (leftBuf.length !== rightBuf.length) return false;
-  return crypto.timingSafeEqual(leftBuf, rightBuf);
-}
-
-function getHeader(req, name) {
-  const direct = req?.headers?.[name];
-  if (typeof direct === "string") return direct;
-  const lower = req?.headers?.[name.toLowerCase()];
-  if (typeof lower === "string") return lower;
-  const upper = req?.headers?.[name.toUpperCase()];
-  if (typeof upper === "string") return upper;
-  return "";
 }
 
 function validateSecretHeader(req, expectedSecret) {

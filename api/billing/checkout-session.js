@@ -1,12 +1,16 @@
-import { getAuthenticatedUser, setJsonCors } from "../../lib/apiAuth.js";
+import { getAuthenticatedUser, rejectDisallowedOrigin, setJsonCors } from "../../lib/apiAuth.js";
 import { getSupabaseAdmin } from "../../lib/ghlIntegration.js";
 import { isValidHttpUrl, readJsonBodyStrict } from "../../lib/requestValidation.js";
 import {
   ensureAccountSubscription,
-  ensureOwnedAccount,
 } from "../../lib/threadA/accountSubscription.js";
+import {
+  getBillingCheckoutPauseMessage,
+  isBillingCheckoutDisabled,
+} from "../../lib/threadA/checkoutPause.js";
 import { createCheckoutProvider } from "../../lib/threadA/checkoutProvider.js";
 import { getDefaultPlanCode, getPlanByCode } from "../../lib/threadA/plans.js";
+import { getRequestedAccountId, resolveOrganizationAccess } from "../../lib/organizationAccess.js";
 
 function normalizeText(value) {
   if (typeof value !== "string") return "";
@@ -26,13 +30,25 @@ function inferBaseUrl(req) {
 }
 
 export default async function handler(req, res) {
-  setJsonCors(res, ["POST", "OPTIONS"]);
-  if (req.method === "OPTIONS") return res.status(204).end();
+  const cors = setJsonCors(req, res, ["POST", "OPTIONS"]);
+  if (req.method === "OPTIONS") return cors.originAllowed
+    ? res.status(204).end()
+    : res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (rejectDisallowedOrigin(res, cors)) return;
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   }
 
   try {
+    const baseUrl = inferBaseUrl(req);
+    if (isBillingCheckoutDisabled(process.env)) {
+      return res.status(409).json({
+        ok: false,
+        error: getBillingCheckoutPauseMessage(),
+        waitlistUrl: `${baseUrl}/waitlist`,
+      });
+    }
+
     const auth = await getAuthenticatedUser(req);
     if (!auth.user) {
       return res.status(auth.status).json({ ok: false, error: auth.error });
@@ -50,12 +66,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: "Unsupported planCode" });
     }
 
-    const baseUrl = inferBaseUrl(req);
     const successUrl = pickAllowedUrl(body.successUrl, `${baseUrl}/billing/success`);
     const cancelUrl = pickAllowedUrl(body.cancelUrl, `${baseUrl}/billing/cancel`);
 
     const supabase = getSupabaseAdmin();
-    const account = await ensureOwnedAccount(supabase, auth.user);
+    const access = await resolveOrganizationAccess(supabase, auth.user, getRequestedAccountId(req));
+    const account = access.activeAccount;
     const currentSubscription = await ensureAccountSubscription(supabase, account.id);
 
     const checkoutProvider = createCheckoutProvider({ env: process.env });
@@ -102,11 +118,17 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         provider: checkoutSession.provider,
+        checkoutMode: checkoutSession.checkoutMode || "embedded",
         checkoutUrl: checkoutSession.checkoutUrl,
         sessionId: checkoutSession.sessionId,
         live: checkoutSession.live,
         accountId: account.id,
         planCode: plan.code,
+        amountCents: checkoutSession.amountCents || plan.amountCents,
+        currency: checkoutSession.currency || "USD",
+        squareApplicationId: checkoutSession.squareApplicationId || null,
+        squareLocationId: checkoutSession.squareLocationId || null,
+        squareEnvironment: checkoutSession.squareEnvironment || null,
       });
     }
 
@@ -118,12 +140,18 @@ export default async function handler(req, res) {
     return res.status(409).json({
       ok: false,
       provider: checkoutSession.provider,
+      checkoutMode: checkoutSession.checkoutMode || "embedded",
       checkoutUrl: null,
       sessionId: checkoutSession.sessionId || null,
       live: false,
       error: checkoutSession.error || "CHECKOUT_NOT_AVAILABLE",
       accountId: account.id,
       planCode: plan.code,
+      amountCents: plan.amountCents,
+      currency: "USD",
+      squareApplicationId: null,
+      squareLocationId: null,
+      squareEnvironment: null,
     });
   } catch (error) {
     return res.status(500).json({

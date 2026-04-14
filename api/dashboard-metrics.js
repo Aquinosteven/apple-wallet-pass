@@ -1,4 +1,4 @@
-import { setJsonCors } from "../lib/apiAuth.js";
+import { rejectDisallowedOrigin, setJsonCors } from "../lib/apiAuth.js";
 import { getAccessContext, resolveOwnerScope } from "../lib/threadCAccess.js";
 import { captureMonitoringError } from "../lib/monitoring.js";
 
@@ -222,8 +222,11 @@ export function createDashboardMetricsHandler(deps = {}) {
   const collectMetricsImpl = deps.collectMetrics || collectMetrics;
 
   return async function handler(req, res) {
-    setJsonCors(res, ["GET", "OPTIONS"]);
-    if (req.method === "OPTIONS") return res.status(204).end();
+    const cors = setJsonCors(req, res, ["GET", "OPTIONS"]);
+    if (req.method === "OPTIONS") return cors.originAllowed
+      ? res.status(204).end()
+      : res.status(403).json({ ok: false, error: "Origin not allowed" });
+    if (rejectDisallowedOrigin(res, cors)) return;
     if (req.method !== "GET") return res.status(405).json({ ok: false, error: "Method Not Allowed" });
 
     try {

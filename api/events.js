@@ -1,12 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
+import { getAuthenticatedUser, rejectDisallowedOrigin, setJsonCors } from "../lib/apiAuth.js";
 import { readJsonBodyStrict } from "../lib/requestValidation.js";
 import { getEnv, loadLocalEnvFiles } from "../scripts/env-loader.js";
+import { getRequestedAccountId, resolveOrganizationAccess } from "../lib/organizationAccess.js";
 
-function setCors(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-}
+const WALLET_ADD_EVENT_TYPES = ["apple_wallet_added", "google_wallet_saved"];
 
 function getSupabaseAdmin() {
   loadLocalEnvFiles();
@@ -19,39 +17,6 @@ function getSupabaseAdmin() {
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-}
-
-function getBearerToken(req) {
-  const authHeader = req.headers.authorization || req.headers.Authorization;
-  if (!authHeader || typeof authHeader !== "string") {
-    return null;
-  }
-
-  const [scheme, token] = authHeader.split(" ");
-  if (scheme?.toLowerCase() !== "bearer" || !token) {
-    return null;
-  }
-
-  return token.trim();
-}
-
-async function getAuthenticatedUser(req) {
-  const token = getBearerToken(req);
-  if (!token) {
-    return { user: null, error: "Missing Authorization bearer token", status: 401 };
-  }
-
-  try {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data?.user) {
-      return { user: null, error: "Invalid or expired auth token", status: 401 };
-    }
-
-    return { user: data.user, error: null, status: 200 };
-  } catch {
-    return { user: null, error: "Invalid or expired auth token", status: 401 };
-  }
 }
 
 function mapStatusToDb(status) {
@@ -97,9 +62,82 @@ function formatDateTimeParts(startsAt, timezone) {
   return { date, time };
 }
 
-function mapEventRowToApi(row) {
+function formatLastIssuedAt(value, timezone) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: timezone || "America/Chicago",
+  }).format(parsed);
+}
+
+export async function buildEventStatsById(supabase, rows) {
+  const eventIds = (rows || []).map((row) => row.id).filter(Boolean);
+  if (!eventIds.length) return new Map();
+
+  const { data: passRows, error: passError } = await supabase
+    .from("passes")
+    .select("event_id,created_at,claimed_at,status")
+    .in("event_id", eventIds);
+
+  if (passError) {
+    throw new Error(passError.message || "Failed to load event pass metrics");
+  }
+
+  const { data: walletAddRows, error: walletAddError } = await supabase
+    .from("claim_events")
+    .select("event_id,event_type")
+    .in("event_id", eventIds)
+    .in("event_type", WALLET_ADD_EVENT_TYPES);
+
+  if (walletAddError) {
+    throw new Error(walletAddError.message || "Failed to load event wallet-add metrics");
+  }
+
+  const statsById = new Map(eventIds.map((eventId) => [
+    eventId,
+    {
+      ticketsIssued: 0,
+      walletAdds: 0,
+      checkIns: 0,
+      lastIssuedAt: null,
+    },
+  ]));
+
+  for (const passRow of passRows || []) {
+    const current = statsById.get(passRow.event_id);
+    if (!current) continue;
+
+    current.ticketsIssued += 1;
+    if (String(passRow.status || "").toLowerCase() === "checked_in") current.checkIns += 1;
+    if (!current.lastIssuedAt || new Date(passRow.created_at).getTime() > new Date(current.lastIssuedAt).getTime()) {
+      current.lastIssuedAt = passRow.created_at;
+    }
+  }
+
+  for (const eventRow of walletAddRows || []) {
+    const current = statsById.get(eventRow.event_id);
+    if (!current) continue;
+    current.walletAdds += 1;
+  }
+
+  return statsById;
+}
+
+function mapEventRowToApi(row, statsById = new Map()) {
   const { date, time } = formatDateTimeParts(row.starts_at, row.timezone);
   const status = row.status === "published" ? "published" : "draft";
+  const stats = statsById.get(row.id) || {
+    ticketsIssued: 0,
+    walletAdds: 0,
+    checkIns: 0,
+    lastIssuedAt: null,
+  };
 
   return {
     id: row.id,
@@ -110,15 +148,15 @@ function mapEventRowToApi(row) {
     description: row.description || undefined,
     status,
     ticketPublished: status === "published",
-    ticketsIssued: 0,
-    walletAdds: 0,
-    checkIns: 0,
-    lastIssuedAt: null,
-    starts_at: row.starts_at || null,
+    ticketsIssued: stats.ticketsIssued,
+    walletAdds: stats.walletAdds,
+    checkIns: stats.checkIns,
+    lastIssuedAt: formatLastIssuedAt(stats.lastIssuedAt, row.timezone),
+    startsAt: row.starts_at || null,
   };
 }
 
-function buildEventMutation(body, userId) {
+function buildEventMutation(body, userId, accountId) {
   const startsAt =
     coerceStartsAt(body?.starts_at) ||
     coerceStartsAt(body?.startDate) ||
@@ -126,6 +164,7 @@ function buildEventMutation(body, userId) {
 
   return {
     user_id: userId,
+    account_id: accountId,
     name: String(body?.name || "").trim(),
     description: body?.description ? String(body.description) : null,
     timezone: body?.timezone ? String(body.timezone) : "America/Chicago",
@@ -135,9 +174,12 @@ function buildEventMutation(body, userId) {
 }
 
 export default async function handler(req, res) {
-  setCors(res);
-  if (req.method === "OPTIONS") return res.status(204).end();
-  if (!["GET", "POST", "PUT"].includes(req.method || "")) {
+  const cors = setJsonCors(req, res, ["GET", "POST", "PUT", "DELETE", "OPTIONS"]);
+  if (req.method === "OPTIONS") return cors.originAllowed
+    ? res.status(204).end()
+    : res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (rejectDisallowedOrigin(res, cors)) return;
+  if (!["GET", "POST", "PUT", "DELETE"].includes(req.method || "")) {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   }
 
@@ -146,15 +188,17 @@ export default async function handler(req, res) {
     if (!authResult.user) {
       return res.status(authResult.status).json({ ok: false, error: authResult.error });
     }
-    const userId = authResult.user.id;
     const supabase = getSupabaseAdmin();
+    const access = await resolveOrganizationAccess(supabase, authResult.user, getRequestedAccountId(req));
+    const userId = authResult.user.id;
+    const accountId = access.activeAccount?.id || null;
 
     if (req.method === "GET") {
       const eventId = typeof req.query?.eventId === "string" ? req.query.eventId : null;
       let query = supabase
         .from("events")
         .select("id,user_id,name,starts_at,timezone,description,status,created_at,updated_at")
-        .eq("user_id", userId)
+        .eq(accountId ? "account_id" : "user_id", accountId || userId)
         .order("created_at", { ascending: false });
 
       if (eventId) {
@@ -166,11 +210,39 @@ export default async function handler(req, res) {
         return res.status(500).json({ ok: false, error: error.message });
       }
 
-      const mapped = (data || []).map(mapEventRowToApi);
+      const statsById = await buildEventStatsById(supabase, data || []);
+      const mapped = (data || []).map((row) => mapEventRowToApi(row, statsById));
       if (eventId) {
-        return res.status(200).json(mapped[0] || null);
+        if (!mapped.length) {
+          return res.status(404).json({ ok: false, error: "Event not found" });
+        }
+        return res.status(200).json(mapped[0]);
       }
       return res.status(200).json(mapped);
+    }
+
+    if (req.method === "DELETE") {
+      const eventId = typeof req.query?.eventId === "string" ? req.query.eventId.trim() : "";
+      if (!eventId) {
+        return res.status(400).json({ ok: false, error: "eventId is required for delete" });
+      }
+
+      const { data: deletedRows, error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", eventId)
+        .eq(accountId ? "account_id" : "user_id", accountId || userId)
+        .select("id");
+
+      if (error) {
+        return res.status(500).json({ ok: false, error: error.message });
+      }
+
+      if (!(deletedRows || []).length) {
+        return res.status(404).json({ ok: false, error: "Event not found" });
+      }
+
+      return res.status(200).json({ ok: true });
     }
 
     const parsedBody = await readJsonBodyStrict(req);
@@ -183,7 +255,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const payload = buildEventMutation(body, userId);
+      const payload = buildEventMutation(body, userId, accountId);
       if (!payload.name) {
         return res.status(400).json({ ok: false, error: "name is required" });
       }
@@ -206,7 +278,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: "id is required for update" });
     }
 
-    const payload = buildEventMutation(body, userId);
+    const payload = buildEventMutation(body, userId, accountId);
     if (!payload.name) {
       return res.status(400).json({ ok: false, error: "name is required" });
     }
@@ -215,7 +287,7 @@ export default async function handler(req, res) {
       .from("events")
       .update(payload)
       .eq("id", eventId)
-      .eq("user_id", userId)
+      .eq(accountId ? "account_id" : "user_id", accountId || userId)
       .select("id,user_id,name,starts_at,timezone,description,status,created_at,updated_at")
       .single();
 

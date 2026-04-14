@@ -1,4 +1,4 @@
-import { setJsonCors } from "../lib/apiAuth.js";
+import { rejectDisallowedOrigin, setJsonCors } from "../lib/apiAuth.js";
 import { readJsonBodyStrict, isValidEmail } from "../lib/requestValidation.js";
 import { getAccessContext, resolveOwnerScope } from "../lib/threadCAccess.js";
 import { writeAuditLog } from "../lib/auditLog.js";
@@ -31,8 +31,11 @@ export function createSupportHandler(deps = {}) {
   const sendSupportEmailImpl = deps.sendSupportEmail || sendSupportEmail;
 
   return async function handler(req, res) {
-    setJsonCors(res, ["GET", "POST", "OPTIONS"]);
-    if (req.method === "OPTIONS") return res.status(204).end();
+    const cors = setJsonCors(req, res, ["GET", "POST", "OPTIONS"]);
+    if (req.method === "OPTIONS") return cors.originAllowed
+      ? res.status(204).end()
+      : res.status(403).json({ ok: false, error: "Origin not allowed" });
+    if (rejectDisallowedOrigin(res, cors)) return;
     if (!["GET", "POST"].includes(req.method || "")) {
       return res.status(405).json({ ok: false, error: "Method Not Allowed" });
     }

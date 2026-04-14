@@ -1,4 +1,4 @@
-import { getAuthenticatedUser, setJsonCors } from "../../lib/apiAuth.js";
+import { getAuthenticatedUser, rejectDisallowedOrigin, setJsonCors } from "../../lib/apiAuth.js";
 import { getSupabaseAdmin } from "../../lib/ghlIntegration.js";
 import { createPassWithUniqueToken } from "../../lib/claimToken.js";
 import {
@@ -509,8 +509,11 @@ const ACTIONS = {
 };
 
 export default async function handler(req, res) {
-  setJsonCors(res, ["POST", "OPTIONS"]);
-  if (req.method === "OPTIONS") return res.status(204).end();
+  const cors = setJsonCors(req, res, ["POST", "OPTIONS"]);
+  if (req.method === "OPTIONS") return cors.originAllowed
+    ? res.status(204).end()
+    : res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (rejectDisallowedOrigin(res, cors)) return;
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   }

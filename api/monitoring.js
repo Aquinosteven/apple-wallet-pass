@@ -1,4 +1,4 @@
-import { setJsonCors } from "../lib/apiAuth.js";
+import { rejectDisallowedOrigin, setJsonCors } from "../lib/apiAuth.js";
 import { getMonitoringConfig } from "../lib/monitoring.js";
 
 function getPingToken(req) {
@@ -6,8 +6,11 @@ function getPingToken(req) {
 }
 
 export default async function handler(req, res) {
-  setJsonCors(res, ["GET", "POST", "OPTIONS"], false);
-  if (req.method === "OPTIONS") return res.status(204).end();
+  const cors = setJsonCors(req, res, ["GET", "POST", "OPTIONS"], false);
+  if (req.method === "OPTIONS") return cors.originAllowed
+    ? res.status(204).end()
+    : res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (rejectDisallowedOrigin(res, cors)) return;
   if (!["GET", "POST"].includes(req.method || "")) {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   }
@@ -34,4 +37,3 @@ export default async function handler(req, res) {
     uptimeEnabled: config.uptime.enabled,
   });
 }
-

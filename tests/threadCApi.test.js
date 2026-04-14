@@ -224,7 +224,7 @@ test("exports download serves spreadsheet XML with matching mime and extension",
       dataset: [{ pass_id: "p_1", status: "active" }],
       status: "ready",
       created_at: "2026-02-27T00:00:00.000Z",
-      expires_at: "2026-03-29T00:00:00.000Z",
+      expires_at: "2026-05-29T00:00:00.000Z",
     },
   });
   const handler = createExportsHandler({
@@ -408,8 +408,9 @@ test("admin retries failed jobs", async () => {
 
   const req = createMockRequest({
     method: "POST",
+    url: "/api/admin",
     headers: { "content-type": "application/json" },
-    body: { action: "jobs.retry", jobId: "job_failed_1" },
+    body: { action: "jobs.retry", jobId: "job_failed_1", reason: "Replay failed webhook processing" },
   });
   const res = createMockResponse();
   await handler(req, res);
@@ -419,17 +420,17 @@ test("admin retries failed jobs", async () => {
   assert.equal(res.body?.queuedJob?.status, "queued");
 });
 
-test("admin GET degrades when admin_jobs is missing", async () => {
+test("admin GET degrades when admin_jobs is missing for internal admin", async () => {
   const handler = createAdminHandler({
     getAccessContext: async () => ({
       ok: true,
       context: {
-        user: { id: "owner_1" },
-        role: "owner",
+        user: { id: "support_1" },
+        role: "support_internal",
         supabase: {},
       },
     }),
-    resolveOwnerScope: () => "owner_1",
+    resolveOwnerScope: () => null,
     getPromoCounter: async () => ({
       claimed: 17,
       cap: 100,
@@ -442,15 +443,126 @@ test("admin GET degrades when admin_jobs is missing", async () => {
     }),
     listFailedJobs: async () => [],
     listAuditLogs: async () => [],
+    listCustomerAccounts: async () => [],
   });
 
-  const req = createMockRequest({ method: "GET" });
+  const req = createMockRequest({ method: "GET", url: "/api/admin" });
   const res = createMockResponse();
   await handler(req, res);
 
   assert.equal(res.statusCode, 200);
   assert.equal(res.body?.ok, true);
   assert.deepEqual(res.body?.failedJobs, []);
+  assert.deepEqual(res.body?.customerAccounts, []);
+});
+
+test("admin GET returns customer accounts for support tooling", async () => {
+  const handler = createAdminHandler({
+    getAccessContext: async () => ({
+      ok: true,
+      context: {
+        user: { id: "support_1" },
+        role: "support_internal",
+        supabase: {},
+      },
+    }),
+    resolveOwnerScope: () => null,
+    getPromoCounter: async () => ({
+      claimed: 17,
+      cap: 100,
+      remaining: 83,
+      source: { baselineClaimed: 17, claimedFromData: 0 },
+    }),
+    listPlanHooks: async () => ({ plan: "v1" }),
+    listFailedJobs: async () => [],
+    listAuditLogs: async () => [],
+    listCustomerAccounts: async () => ([{
+      id: "acct_1",
+      owner_user_id: "owner_1",
+      slug: "acme",
+      name: "Acme",
+      billing_state: "active",
+      enforcement_enabled: true,
+      hard_block_issuance: false,
+      monthly_included_issuances: 20000,
+      created_at: "2026-02-27T12:00:00.000Z",
+      updated_at: "2026-02-27T12:00:00.000Z",
+      is_paid: true,
+      subscription: {
+        provider: "square",
+        provider_customer_id: "cust_1",
+        plan_code: "core_v1",
+        status: "active",
+        current_period_start: "2026-02-01T00:00:00.000Z",
+        current_period_end: "2026-03-01T00:00:00.000Z",
+      },
+      usage: {
+        usage_month: "2026-02-01",
+        issuances_count: 42,
+        overage_count: 0,
+        blocked_count: 0,
+        last_issued_at: "2026-02-27T12:00:00.000Z",
+      },
+    }]),
+  });
+
+  const req = createMockRequest({ method: "GET", url: "/api/admin/accounts" });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body?.ok, true);
+  assert.equal(res.body?.accounts?.[0]?.slug, "acme");
+  assert.equal(res.body?.accounts?.[0]?.is_paid, true);
+});
+
+test("admin updates customer account service settings", async () => {
+  const handler = createAdminHandler({
+    getAccessContext: async () => ({
+      ok: true,
+      context: {
+        user: { id: "support_1" },
+        role: "support_internal",
+        supabase: {},
+      },
+    }),
+    assertInternalSupport: () => ({ ok: true }),
+    updateCustomerAccountService: async (_supabase, actorUserId, _actorRole, body) => ({
+      ok: true,
+      status: 200,
+      account: {
+        id: body.accountId,
+        owner_user_id: "owner_1",
+        billing_state: body.billingState,
+        monthly_included_issuances: body.monthlyIncludedIssuances,
+        enforcement_enabled: body.enforcementEnabled,
+        hard_block_issuance: body.hardBlockIssuance,
+        actorUserId,
+      },
+    }),
+  });
+
+  const req = createMockRequest({
+    method: "POST",
+    url: "/api/admin",
+    headers: { "content-type": "application/json" },
+    body: {
+      action: "account.service.update",
+      accountId: "acct_1",
+      billingState: "active",
+      monthlyIncludedIssuances: 50000,
+      enforcementEnabled: true,
+      hardBlockIssuance: false,
+      reason: "Activate paid customer account",
+    },
+  });
+  const res = createMockResponse();
+  await handler(req, res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body?.ok, true);
+  assert.equal(res.body?.account?.billing_state, "active");
+  assert.equal(res.body?.account?.monthly_included_issuances, 50000);
 });
 
 test("admin returns 503 for retry when admin_jobs is unavailable", async () => {
@@ -473,8 +585,9 @@ test("admin returns 503 for retry when admin_jobs is unavailable", async () => {
 
   const req = createMockRequest({
     method: "POST",
+    url: "/api/admin",
     headers: { "content-type": "application/json" },
-    body: { action: "jobs.retry", jobId: "job_failed_1" },
+    body: { action: "jobs.retry", jobId: "job_failed_1", reason: "Schema patch check" },
   });
   const res = createMockResponse();
   await handler(req, res);

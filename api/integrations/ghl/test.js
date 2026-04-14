@@ -1,13 +1,15 @@
 import { readJsonBodyStrict } from "../../../lib/requestValidation.js";
-import { getAuthenticatedUser, setJsonCors } from "../../../lib/apiAuth.js";
+import { getAuthenticatedUser, rejectDisallowedOrigin, setJsonCors } from "../../../lib/apiAuth.js";
 import {
   getGhlIntegrationByUserId,
+  getWorkspaceGhlIntegrationByAccountId,
   getSupabaseAdmin,
   insertWebhookLog,
   makeIdempotencyKey,
   runGhlIssueFlow,
   updateWebhookLog,
 } from "../../../lib/ghlIntegration.js";
+import { getRequestedAccountId, resolveOrganizationAccess } from "../../../lib/organizationAccess.js";
 
 function normalizeId(value) {
   if (typeof value === "string") return value.trim();
@@ -16,8 +18,11 @@ function normalizeId(value) {
 }
 
 export default async function handler(req, res) {
-  setJsonCors(res, ["POST", "OPTIONS"]);
-  if (req.method === "OPTIONS") return res.status(204).end();
+  const cors = setJsonCors(req, res, ["POST", "OPTIONS"]);
+  if (req.method === "OPTIONS") return cors.originAllowed
+    ? res.status(204).end()
+    : res.status(403).json({ ok: false, error: "Origin not allowed" });
+  if (rejectDisallowedOrigin(res, cors)) return;
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method Not Allowed" });
   }
@@ -38,7 +43,10 @@ export default async function handler(req, res) {
     const payloadEventId = normalizeId(body.eventId);
 
     const supabase = getSupabaseAdmin();
-    const integration = await getGhlIntegrationByUserId(supabase, auth.user.id);
+    const access = await resolveOrganizationAccess(supabase, auth.user, getRequestedAccountId(req));
+    const integration = (access.activeAccount
+      ? await getWorkspaceGhlIntegrationByAccountId(supabase, access.activeAccount.id)
+      : null) || await getGhlIntegrationByUserId(supabase, auth.user.id);
 
     if (!integration) {
       return res.status(400).json({ ok: false, error: "Connect a GHL API key first." });
@@ -54,7 +62,8 @@ export default async function handler(req, res) {
 
     const log = await insertWebhookLog(supabase, {
       user_id: auth.user.id,
-      integration_id: integration.id,
+      account_id: access.activeAccount?.id || null,
+      integration_id: integration.legacy_integration_id || integration.id,
       source: "ghl_test",
       is_test: true,
       idempotency_key: idempotencyKey,
@@ -98,12 +107,12 @@ export default async function handler(req, res) {
       });
 
       await supabase
-        .from("integrations_ghl")
+        .from(access.activeAccount?.id ? "workspace_integrations_ghl" : "integrations_ghl")
         .update({
           last_webhook_at: new Date().toISOString(),
           last_error: result.writeback.ok ? null : result.writeback.error,
         })
-        .eq("id", integration.id);
+        .eq(access.activeAccount?.id ? "account_id" : "id", access.activeAccount?.id || integration.id);
 
       return res.status(200).json({
         ok: true,
@@ -133,9 +142,9 @@ export default async function handler(req, res) {
       });
 
       await supabase
-        .from("integrations_ghl")
+        .from(access.activeAccount?.id ? "workspace_integrations_ghl" : "integrations_ghl")
         .update({ last_error: message })
-        .eq("id", integration.id);
+        .eq(access.activeAccount?.id ? "account_id" : "id", access.activeAccount?.id || integration.id);
 
       return res.status(400).json({
         ok: false,
