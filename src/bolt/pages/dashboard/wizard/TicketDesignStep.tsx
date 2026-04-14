@@ -81,6 +81,16 @@ export default function TicketDesignStep({
   onPublish,
   isPublishing,
 }: TicketDesignStepProps) {
+  const loadFileAsDataUrl = async (file: File | null) => {
+    if (!file) return null;
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(new Error('Failed to read image.'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const update = (field: keyof TicketDesignData, value: string | boolean | null) => {
     onChange({ ...designData, [field]: value });
   };
@@ -122,7 +132,7 @@ export default function TicketDesignStep({
                     type="file"
                     className="hidden"
                     accept="image/*"
-                    onChange={() => update('logoUrl', 'https://images.pexels.com/photos/4065158/pexels-photo-4065158.jpeg?auto=compress&cs=tinysrgb&w=160')}
+                    onChange={async (e) => update('logoUrl', await loadFileAsDataUrl(e.target.files?.[0] || null))}
                   />
                 </label>
               )}
@@ -150,7 +160,7 @@ export default function TicketDesignStep({
                     type="file"
                     className="hidden"
                     accept="image/*"
-                    onChange={() => update('stripUrl', 'https://images.pexels.com/photos/2747449/pexels-photo-2747449.jpeg?auto=compress&cs=tinysrgb&w=600')}
+                    onChange={async (e) => update('stripUrl', await loadFileAsDataUrl(e.target.files?.[0] || null))}
                   />
                 </label>
               )}

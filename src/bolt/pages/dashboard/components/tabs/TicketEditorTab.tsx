@@ -4,6 +4,10 @@ import { EventStatus } from '../EventCard';
 import type { ApiTicketDesign } from '../../../../utils/backendApi';
 
 interface EventData {
+  name?: string;
+  date?: string;
+  time?: string;
+  timezone?: string;
   status: EventStatus;
   ticketPublished: boolean;
 }
@@ -29,6 +33,16 @@ export default function TicketEditorTab({
   const [stripFile, setStripFile] = useState<string | null>(null);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  const loadFileAsDataUrl = async (file: File | null) => {
+    if (!file) return null;
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(new Error('Failed to read image.'));
+      reader.readAsDataURL(file);
+    });
+  };
 
   useEffect(() => {
     if (!ticketDesign) return;
@@ -76,15 +90,15 @@ export default function TicketEditorTab({
   const isPublished = event.ticketPublished;
 
   return (
-    <div className="grid grid-cols-3 gap-6">
-      <div className="col-span-2 space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-6">
         <div className="bg-white rounded-xl border border-gray-100 p-5">
           <div className="flex items-center gap-2 mb-4">
             <Image className="w-4 h-4 text-gray-500" />
             <h3 className="text-sm font-semibold text-gray-900">Visuals</h3>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-2">Logo</label>
               <div className="relative">
@@ -102,7 +116,12 @@ export default function TicketEditorTab({
                   <label className="w-full h-24 rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 bg-gray-50 flex flex-col items-center justify-center cursor-pointer transition-colors">
                     <Upload className="w-5 h-5 text-gray-400 mb-1" />
                     <span className="text-xs text-gray-500">Upload logo</span>
-                    <input type="file" className="hidden" accept="image/*" onChange={() => setLogoFile('/placeholder-logo.png')} />
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => setLogoFile(await loadFileAsDataUrl(e.target.files?.[0] || null))}
+                    />
                   </label>
                 )}
               </div>
@@ -126,7 +145,12 @@ export default function TicketEditorTab({
                   <label className="w-full h-24 rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 bg-gray-50 flex flex-col items-center justify-center cursor-pointer transition-colors">
                     <Upload className="w-5 h-5 text-gray-400 mb-1" />
                     <span className="text-xs text-gray-500">Upload strip</span>
-                    <input type="file" className="hidden" accept="image/*" onChange={() => setStripFile('/placeholder-strip.png')} />
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => setStripFile(await loadFileAsDataUrl(e.target.files?.[0] || null))}
+                    />
                   </label>
                 )}
               </div>
@@ -163,34 +187,29 @@ export default function TicketEditorTab({
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5">Primary Field</label>
-              <input
-                type="text"
-                placeholder="e.g., Event Name or {{attendee_name}}"
-                className="w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gblue/20 focus:border-gblue"
-              />
-              <p className="text-[10px] text-gray-400 mt-1">Appears prominently on the ticket</p>
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+              <p className="text-xs font-medium text-gray-700">Primary field</p>
+              <p className="mt-1 text-sm text-gray-900">{event.name || 'Event name will appear here'}</p>
+              <p className="mt-1 text-[11px] text-gray-500">This is pulled from your event details.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">Location</label>
-                <input
-                  type="text"
-                  placeholder="e.g., Zoom or venue address"
-                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gblue/20 focus:border-gblue"
-                />
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Date</label>
+                <div className="px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
+                  {event.date || 'Date not set'}
+                </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">Date & Time</label>
-                <input
-                  type="text"
-                  placeholder="e.g., Mar 15, 2:00 PM EST"
-                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gblue/20 focus:border-gblue"
-                />
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Time</label>
+                <div className="px-3.5 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
+                  {[event.time, event.timezone].filter(Boolean).join(' ') || 'Time not set'}
+                </div>
               </div>
             </div>
+            <p className="text-[11px] text-gray-500">
+              Need to change the event name or schedule? Update it in the Settings tab and save changes there.
+            </p>
           </div>
         </div>
 
@@ -254,7 +273,7 @@ export default function TicketEditorTab({
         </div>
       </div>
 
-      <div className="col-span-1">
+      <div className="lg:col-span-1">
         <div className="sticky top-6">
           <p className="text-xs font-medium text-gray-500 mb-3">Preview</p>
           <div
@@ -263,29 +282,41 @@ export default function TicketEditorTab({
           >
             <div className="p-4">
               <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-8 bg-white/20 rounded flex items-center justify-center text-[8px] text-white/60">
-                  LOGO
-                </div>
+                {logoFile ? (
+                  <div className="w-12 h-8 bg-white/20 rounded flex items-center justify-center overflow-hidden">
+                    <img src={logoFile} alt="Logo" className="max-h-full max-w-full object-contain" />
+                  </div>
+                ) : (
+                  <div className="w-12 h-8 bg-white/20 rounded flex items-center justify-center text-[8px] text-white/60">
+                    LOGO
+                  </div>
+                )}
                 <span className="text-[10px] text-white/60 font-medium">EVENT TICKET</span>
               </div>
 
-              <div className="bg-white/10 rounded-lg h-20 mb-4 flex items-center justify-center text-[10px] text-white/40">
-                Strip Image
-              </div>
+              {stripFile ? (
+                <div className="rounded-lg h-20 mb-4 overflow-hidden">
+                  <img src={stripFile} alt="Strip" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="bg-white/10 rounded-lg h-20 mb-4 flex items-center justify-center text-[10px] text-white/40">
+                  Strip Image
+                </div>
+              )}
 
               <div className="space-y-2">
                 <div>
                   <p className="text-[10px] text-white/50">EVENT</p>
-                  <p className="text-sm font-semibold text-white">Q1 Revenue Masterclass</p>
+                  <p className="text-sm font-semibold text-white">{event.name || 'Event Name'}</p>
                 </div>
                 <div className="flex gap-4">
                   <div>
                     <p className="text-[10px] text-white/50">DATE</p>
-                    <p className="text-xs text-white">Mar 15, 2026</p>
+                    <p className="text-xs text-white">{event.date || 'Date TBD'}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-white/50">TIME</p>
-                    <p className="text-xs text-white">2:00 PM EST</p>
+                    <p className="text-xs text-white">{[event.time, event.timezone].filter(Boolean).join(' ') || 'Time TBD'}</p>
                   </div>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronRight, Share2, Send, CheckCircle, X } from 'lucide-react';
 import { EventStatus } from './components/EventCard';
 import OverviewTab from './components/tabs/OverviewTab';
@@ -10,6 +10,7 @@ import EventSettingsTab from './components/tabs/EventSettingsTab';
 import Toast from '../../components/Toast';
 import {
   ApiTicketDesign,
+  deleteEvent,
   getEventById,
   getOpsHealthSummary,
   getTicketDesignByEventId,
@@ -24,6 +25,7 @@ interface EventData {
   date?: string;
   time?: string;
   timezone?: string;
+  startsAt?: string | null;
   description?: string;
   status: EventStatus;
   ticketPublished: boolean;
@@ -50,9 +52,11 @@ const statusConfig: Record<EventStatus, { label: string; color: string; bg: stri
 
 export default function EventDetailPage() {
   const { eventId } = useParams();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isNew = searchParams.get('new') === 'true';
   const justPublished = searchParams.get('published') === 'true';
+  const requestedTab = searchParams.get('tab');
 
   const [activeTab, setActiveTab] = useState('overview');
   const [event, setEvent] = useState<EventData | null>(null);
@@ -62,6 +66,13 @@ export default function EventDetailPage() {
   const [opsHealth, setOpsHealth] = useState<OpsHealthSummary | null>(null);
   const [showToast, setShowToast] = useState(isNew || justPublished);
   const [showNextSteps, setShowNextSteps] = useState(justPublished);
+  const [reloadVersion, setReloadVersion] = useState(0);
+
+  useEffect(() => {
+    if (requestedTab && tabs.some((tab) => tab.id === requestedTab)) {
+      setActiveTab(requestedTab);
+    }
+  }, [requestedTab]);
 
   useEffect(() => {
     let mounted = true;
@@ -112,7 +123,7 @@ export default function EventDetailPage() {
     return () => {
       mounted = false;
     };
-  }, [eventId, justPublished]);
+  }, [eventId, justPublished, reloadVersion]);
 
   if (isLoading) {
     return (
@@ -159,6 +170,12 @@ export default function EventDetailPage() {
     await updateEvent(updatedEvent);
   };
 
+  const handleDeleteEvent = async () => {
+    if (!eventId) return;
+    await deleteEvent(eventId);
+    navigate('/dashboard');
+  };
+
   const handleSaveTicketDesign = async (updatedDesign: ApiTicketDesign) => {
     setTicketDesign(updatedDesign);
     await updateTicketDesign(updatedDesign);
@@ -179,11 +196,11 @@ export default function EventDetailPage() {
           />
         );
       case 'issued':
-        return <IssuedTicketsTab eventId={eventId || ''} />;
+        return <IssuedTicketsTab eventId={eventId || ''} onDataChanged={() => setReloadVersion((value) => value + 1)} />;
       case 'distribution':
         return <DistributionTab eventId={eventId || ''} />;
       case 'settings':
-        return <EventSettingsTab event={event} onSave={handleSaveEventSettings} />;
+        return <EventSettingsTab event={event} onSave={handleSaveEventSettings} onDelete={handleDeleteEvent} />;
       default:
         return null;
     }
@@ -250,14 +267,14 @@ export default function EventDetailPage() {
           <span className="text-gray-900 font-medium">{event.name}</span>
         </div>
 
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-4 mb-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
             <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
             <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${status.bg} ${status.color}`}>
               {status.label}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
               <Share2 className="w-4 h-4" />
               Share
@@ -299,8 +316,8 @@ export default function EventDetailPage() {
           </div>
         )}
 
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="flex gap-6">
+        <div className="border-b border-gray-200 mb-6 overflow-x-auto">
+          <nav className="flex gap-6 min-w-max">
             {tabs.map((tab) => (
               <button
                 key={tab.id}

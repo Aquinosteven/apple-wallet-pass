@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, Calendar, Clock, MousePointer, Tag } from 'lucide-react';
 
 export interface EventDetailsData {
@@ -98,6 +98,55 @@ function formatPreviewTime(timeStr: string, tz: string): string {
   return `${hour12}:${minutes} ${ampm} ${tzAbbrs[tz] || ''}`.trim();
 }
 
+function normalizeTimeInput(value: string): string | null {
+  const raw = value.trim().toLowerCase();
+  if (!raw) return '';
+
+  const match = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*([ap]m)?$/i);
+  if (!match) return null;
+
+  const [, hourPart, minutePart = '00', meridiem] = match;
+  const minutes = Number.parseInt(minutePart, 10);
+  if (!Number.isInteger(minutes) || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  let hours = Number.parseInt(hourPart, 10);
+  if (!Number.isInteger(hours)) {
+    return null;
+  }
+
+  if (meridiem) {
+    if (hours < 1 || hours > 12) {
+      return null;
+    }
+    if (meridiem.toLowerCase() === 'pm' && hours < 12) {
+      hours += 12;
+    }
+    if (meridiem.toLowerCase() === 'am' && hours === 12) {
+      hours = 0;
+    }
+  } else if (hours < 0 || hours > 23) {
+    return null;
+  }
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function formatTimeForTextInput(value: string): string {
+  if (!value) return '';
+  const [hoursPart, minutesPart = '00'] = value.split(':');
+  const hours = Number.parseInt(hoursPart, 10);
+  const minutes = Number.parseInt(minutesPart, 10);
+  if (!Number.isInteger(hours) || !Number.isInteger(minutes)) {
+    return value;
+  }
+
+  const meridiem = hours >= 12 ? 'PM' : 'AM';
+  const hour12 = hours % 12 || 12;
+  return `${hour12}:${String(minutes).padStart(2, '0')} ${meridiem}`;
+}
+
 export default function EventDetailsStep({
   data,
   onChange,
@@ -106,9 +155,38 @@ export default function EventDetailsStep({
   onContinue,
 }: EventDetailsStepProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [startTimeInput, setStartTimeInput] = useState(formatTimeForTextInput(data.startTime));
+  const [startTimeError, setStartTimeError] = useState<string | null>(null);
+  const [relevanceTimeInput, setRelevanceTimeInput] = useState(formatTimeForTextInput(data.relevanceCustomTime));
+  const [relevanceTimeError, setRelevanceTimeError] = useState<string | null>(null);
 
   const update = (field: keyof EventDetailsData, value: string | boolean) => {
     onChange({ ...data, [field]: value });
+  };
+
+  useEffect(() => {
+    setStartTimeInput(formatTimeForTextInput(data.startTime));
+  }, [data.startTime]);
+
+  useEffect(() => {
+    setRelevanceTimeInput(formatTimeForTextInput(data.relevanceCustomTime));
+  }, [data.relevanceCustomTime]);
+
+  const commitTimeInput = (
+    value: string,
+    field: 'startTime' | 'relevanceCustomTime',
+    setError: (value: string | null) => void,
+    setInputValue: (value: string) => void,
+  ) => {
+    const normalized = normalizeTimeInput(value);
+    if (normalized === null) {
+      setError('Use a valid time like 10:00 AM or 14:00.');
+      return;
+    }
+
+    setError(null);
+    update(field, normalized);
+    setInputValue(formatTimeForTextInput(normalized));
   };
 
   const isValid = data.name.trim() && data.timezone;
@@ -199,11 +277,21 @@ export default function EventDetailsStep({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Time</label>
                 <input
-                  type="time"
-                  value={data.startTime}
-                  onChange={(e) => update('startTime', e.target.value)}
+                  type="text"
+                  inputMode="numeric"
+                  value={startTimeInput}
+                  onChange={(e) => {
+                    setStartTimeInput(e.target.value);
+                    if (startTimeError) {
+                      setStartTimeError(null);
+                    }
+                  }}
+                  onBlur={(e) => commitTimeInput(e.target.value, 'startTime', setStartTimeError, setStartTimeInput)}
+                  placeholder="10:00 AM"
                   className="w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gblue/20 focus:border-gblue transition-colors"
                 />
+                <p className="mt-1 text-xs text-gray-400">Accepts 10:00 AM or 14:00.</p>
+                {startTimeError ? <p className="mt-1 text-xs text-red-600">{startTimeError}</p> : null}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -370,12 +458,23 @@ export default function EventDetailsStep({
                   <option value="custom">Custom time</option>
                 </select>
                 {data.relevanceTiming === 'custom' && (
-                  <input
-                    type="time"
-                    value={data.relevanceCustomTime}
-                    onChange={(e) => update('relevanceCustomTime', e.target.value)}
-                    className="mt-2 w-full max-w-xs px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gblue/20 focus:border-gblue transition-colors"
-                  />
+                  <>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={relevanceTimeInput}
+                      onChange={(e) => {
+                        setRelevanceTimeInput(e.target.value);
+                        if (relevanceTimeError) {
+                          setRelevanceTimeError(null);
+                        }
+                      }}
+                      onBlur={(e) => commitTimeInput(e.target.value, 'relevanceCustomTime', setRelevanceTimeError, setRelevanceTimeInput)}
+                      placeholder="10:00 AM"
+                      className="mt-2 w-full max-w-xs px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gblue/20 focus:border-gblue transition-colors"
+                    />
+                    {relevanceTimeError ? <p className="mt-1 text-xs text-red-600">{relevanceTimeError}</p> : null}
+                  </>
                 )}
                 <p className="text-xs text-gray-400 mt-1">Controls when the ticket becomes prominent in Apple Wallet</p>
               </div>

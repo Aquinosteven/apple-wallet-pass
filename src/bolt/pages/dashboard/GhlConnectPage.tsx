@@ -27,6 +27,10 @@ const webhookBodyTemplate = {
   eventId: '{{workflow.eventId}}',
 };
 
+const webhookHeaderTemplate = {
+  'x-ghl-secret': '<your GHL_PASS_SECRET>',
+};
+
 function formatDateTime(value: string | null): string {
   if (!value) return 'Never';
   const parsed = new Date(value);
@@ -165,6 +169,11 @@ export default function GhlConnectPage() {
     setCopyStatus(copied ? 'Webhook JSON copied.' : 'Copy failed.');
   }
 
+  async function handleCopyWebhookHeader() {
+    const copied = await copyText(JSON.stringify(webhookHeaderTemplate, null, 2));
+    setCopyStatus(copied ? 'Webhook header copied.' : 'Copy failed.');
+  }
+
   async function handleCopyWebhookUrl() {
     const copied = await copyText(webhookUrl);
     setCopyStatus(copied ? 'Webhook URL copied.' : 'Copy failed.');
@@ -204,7 +213,7 @@ export default function GhlConnectPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Connect GoHighLevel</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Wizard setup for a sub-account Location API key with no marketplace approval.
+          Wizard setup for a sub-account Location API key with no marketplace approval. ShowFi webhook endpoints now require a shared secret header during setup.
         </p>
       </div>
 
@@ -340,8 +349,25 @@ export default function GhlConnectPage() {
               >
                 <Clipboard className="w-3.5 h-3.5" /> Copy JSON body
               </button>
+              <button
+                type="button"
+                onClick={() => void handleCopyWebhookHeader()}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                <Clipboard className="w-3.5 h-3.5" /> Copy header
+              </button>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 mb-3">
+              <p className="text-xs font-semibold text-amber-900 mb-1">Required webhook header</p>
+              <p className="text-xs text-amber-800 mb-2">
+                Add this header in the GHL webhook action or ShowFi will reject the request.
+              </p>
+              <pre className="text-xs text-amber-900 font-mono overflow-auto">{JSON.stringify(webhookHeaderTemplate, null, 2)}</pre>
             </div>
             <pre className="text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-3 overflow-auto">{JSON.stringify(webhookBodyTemplate, null, 2)}</pre>
+            <p className="text-xs text-gray-500 mt-3">
+              Use the same secret value as your server-side <code>GHL_PASS_SECRET</code> environment variable.
+            </p>
             <button
               type="button"
               onClick={() => setActiveStep(5)}
@@ -356,6 +382,9 @@ export default function GhlConnectPage() {
               <TestTube2 className="w-4 h-4 text-gblue" />
               <h2 className="text-sm font-semibold text-gray-900">Step 5: End-to-End Test</h2>
             </div>
+            <p className="text-xs text-gray-500 mb-3">
+              Before running the live test, confirm your workflow webhook includes <code>x-ghl-secret</code> with the same value as <code>GHL_PASS_SECRET</code>.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 value={testContactId}

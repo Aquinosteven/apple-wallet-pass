@@ -8,6 +8,7 @@ interface EventData {
   date?: string;
   time?: string;
   timezone?: string;
+  startsAt?: string | null;
   description?: string;
   status: EventStatus;
   ticketPublished: boolean;
@@ -20,20 +21,36 @@ interface EventData {
 interface EventSettingsTabProps {
   event: EventData;
   onSave: (event: EventData) => Promise<void> | void;
+  onDelete: () => Promise<void> | void;
 }
 
-export default function EventSettingsTab({ event, onSave }: EventSettingsTabProps) {
+function toDateInputValue(startsAt?: string | null): string {
+  if (!startsAt) return '';
+  const parsed = new Date(startsAt);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toISOString().slice(0, 10);
+}
+
+function toTimeInputValue(startsAt?: string | null): string {
+  if (!startsAt) return '';
+  const parsed = new Date(startsAt);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toISOString().slice(11, 16);
+}
+
+export default function EventSettingsTab({ event, onSave, onDelete }: EventSettingsTabProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [name, setName] = useState(event.name);
-  const [date, setDate] = useState(event.date || '');
-  const [time, setTime] = useState(event.time || '');
+  const [date, setDate] = useState(toDateInputValue(event.startsAt));
+  const [time, setTime] = useState(toTimeInputValue(event.startsAt));
   const [description, setDescription] = useState(event.description || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setName(event.name);
-    setDate(event.date || '');
-    setTime(event.time || '');
+    setDate(toDateInputValue(event.startsAt));
+    setTime(toTimeInputValue(event.startsAt));
     setDescription(event.description || '');
   }, [event]);
 
@@ -41,8 +58,17 @@ export default function EventSettingsTab({ event, onSave }: EventSettingsTabProp
     const updatedEvent: EventData = {
       ...event,
       name,
-      date: date || undefined,
-      time: time || undefined,
+      date: date
+        ? new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : undefined,
+      time: time
+        ? new Date(`1970-01-01T${time}:00`).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        })
+        : undefined,
+      startsAt: date ? new Date(`${date}T${time || '00:00'}:00`).toISOString() : null,
       description: description || undefined,
     };
 
@@ -51,6 +77,15 @@ export default function EventSettingsTab({ event, onSave }: EventSettingsTabProp
       await onSave(updatedEvent);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await onDelete();
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -74,23 +109,31 @@ export default function EventSettingsTab({ event, onSave }: EventSettingsTabProp
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Date</label>
               <input
-                type="text"
+                type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                placeholder="Mar 15, 2026"
                 className="w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gblue/20 focus:border-gblue"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">Time</label>
               <input
-                type="text"
+                type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                placeholder="2:00 PM EST"
                 className="w-full px-3.5 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gblue/20 focus:border-gblue"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Timezone</label>
+            <input
+              type="text"
+              value={event.timezone || 'America/Chicago'}
+              disabled
+              className="w-full px-3.5 py-2.5 text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg cursor-not-allowed"
+            />
           </div>
 
           <div>
@@ -145,9 +188,13 @@ export default function EventSettingsTab({ event, onSave }: EventSettingsTabProp
               >
                 Cancel
               </button>
-              <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gred rounded-lg hover:bg-gred-dark transition-colors">
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gred rounded-lg hover:bg-gred-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
                 <Trash2 className="w-4 h-4" />
-                Delete Event
+                {isDeleting ? 'Deleting...' : 'Delete Event'}
               </button>
             </div>
           </div>

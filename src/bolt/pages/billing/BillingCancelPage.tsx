@@ -17,10 +17,10 @@ export default function BillingCancelPage() {
 
         <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
           <Link
-            to={plan ? `/login?plan=${encodeURIComponent(plan)}` : '/login'}
+            to="/login"
             className="px-4 py-2.5 rounded-lg bg-gblue text-white text-sm font-semibold hover:bg-gblue-dark"
           >
-            Return to billing
+            Back to login
           </Link>
           <Link
             to="/"

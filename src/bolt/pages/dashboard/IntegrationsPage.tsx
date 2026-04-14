@@ -16,7 +16,7 @@ const integrations = [
     icon: Zap,
     color: 'bg-orange-500',
     status: 'available',
-    href: '/dashboard/support',
+    href: '/dashboard/help',
   },
   {
     name: 'Webhooks',
@@ -24,7 +24,7 @@ const integrations = [
     icon: Webhook,
     color: 'bg-gblue',
     status: 'available',
-    href: '/dashboard/support',
+    href: '/dashboard/help',
   },
   {
     name: 'Custom API',
@@ -32,7 +32,7 @@ const integrations = [
     icon: Plug,
     color: 'bg-gray-700',
     status: 'available',
-    href: '/dashboard/support',
+    href: '/dashboard/help',
   },
 ];
 
@@ -42,7 +42,7 @@ export default function IntegrationsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Integrations</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Connect PassKit to your existing tools and workflows.
+          Connect ShowFi to your existing tools and workflows. Signed webhook setup is required for external automations.
         </p>
       </div>
 
@@ -65,7 +65,7 @@ export default function IntegrationsPage() {
               to={integration.href}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-gblue bg-gblue/10 rounded-lg hover:bg-gblue/20 transition-colors"
             >
-              {integration.name === 'GoHighLevel' ? 'Configure' : 'Contact support'}
+              {integration.name === 'GoHighLevel' ? 'Configure' : 'View guide'}
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -75,10 +75,10 @@ export default function IntegrationsPage() {
       <div className="mt-8 p-5 bg-gray-50 rounded-xl border border-gray-100">
         <h3 className="text-sm font-semibold text-gray-900 mb-2">Need a custom integration?</h3>
         <p className="text-xs text-gray-500 mb-3">
-          Our API supports any integration. Check the documentation or contact support.
+          ShowFi supports authenticated API issuance, signed webhooks, and partner setup help. Start in the Help Center, then contact support if you need a custom path.
         </p>
-        <Link to="/dashboard/support" className="text-xs font-medium text-gblue hover:underline">
-          View API documentation
+        <Link to="/dashboard/help" className="text-xs font-medium text-gblue hover:underline">
+          Open Help Center
         </Link>
       </div>
     </div>

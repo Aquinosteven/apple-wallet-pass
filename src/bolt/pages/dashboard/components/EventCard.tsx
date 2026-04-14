@@ -28,6 +28,11 @@ interface EventCardProps {
 
 export default function EventCard({ event }: EventCardProps) {
   const status = statusConfig[event.status];
+  const eventHref = `/dashboard/events/${event.id}`;
+
+  const handleShare = async () => {
+    await navigator.clipboard.writeText(`${window.location.origin}${eventHref}`);
+  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-5 hover:border-gray-200 hover:shadow-sm transition-all">
@@ -70,18 +75,26 @@ export default function EventCard({ event }: EventCardProps) {
 
       <div className="flex items-center justify-between">
         <Link
-          to={`/dashboard/events/${event.id}`}
+          to={eventHref}
           className="px-3.5 py-1.5 text-xs font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-colors"
         >
           View Event
         </Link>
         <div className="flex items-center gap-1">
-          <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+          <button
+            onClick={() => void handleShare()}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+            aria-label={`Copy event link for ${event.name}`}
+          >
             <Share2 className="w-4 h-4" />
           </button>
-          <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+          <Link
+            to={`${eventHref}?tab=settings`}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+            aria-label={`Open settings for ${event.name}`}
+          >
             <Settings className="w-4 h-4" />
-          </button>
+          </Link>
         </div>
       </div>
     </div>

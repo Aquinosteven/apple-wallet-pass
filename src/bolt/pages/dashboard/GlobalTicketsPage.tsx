@@ -1,24 +1,7 @@
-import { useState } from 'react';
-import { Search, Filter, Ticket, Wallet, UserCheck, ExternalLink } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Search, Ticket, Wallet, UserCheck, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-interface IssuedTicket {
-  id: string;
-  eventId: string;
-  eventName: string;
-  attendeeName: string;
-  email: string;
-  issuedAt: string;
-  status: 'issued' | 'added' | 'checked_in' | 'expired';
-}
-
-const sampleTickets: IssuedTicket[] = [
-  { id: '1', eventId: '1', eventName: 'Q1 Revenue Masterclass', attendeeName: 'Sarah Chen', email: 'sarah@acme.com', issuedAt: 'Mar 10, 2:34 PM', status: 'added' },
-  { id: '2', eventId: '1', eventName: 'Q1 Revenue Masterclass', attendeeName: 'Mike Johnson', email: 'mike@startup.io', issuedAt: 'Mar 10, 2:30 PM', status: 'checked_in' },
-  { id: '3', eventId: '2', eventName: 'Product Launch Webinar', attendeeName: 'Emily Davis', email: 'emily@company.co', issuedAt: 'Mar 10, 2:25 PM', status: 'added' },
-  { id: '4', eventId: '1', eventName: 'Q1 Revenue Masterclass', attendeeName: 'Alex Rivera', email: 'alex@agency.com', issuedAt: 'Mar 10, 2:20 PM', status: 'issued' },
-  { id: '5', eventId: '4', eventName: 'Annual Sales Conference', attendeeName: 'Jordan Lee', email: 'jordan@tech.io', issuedAt: 'Mar 10, 2:15 PM', status: 'added' },
-];
+import { listRegistrants, type ApiRegistrant } from '../../utils/backendApi';
 
 const statusConfig = {
   issued: { label: 'Issued', color: 'text-gray-500', bg: 'bg-gray-100' },
@@ -29,18 +12,48 @@ const statusConfig = {
 
 export default function GlobalTicketsPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [tickets, setTickets] = useState<ApiRegistrant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const filteredTickets = sampleTickets.filter(
-    (ticket) =>
-      ticket.attendeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ticket.eventName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadTickets() {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+        const loadedTickets = await listRegistrants();
+        if (!mounted) return;
+        setTickets(loadedTickets);
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : 'Failed to load issued tickets.');
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadTickets();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredTickets = useMemo(() => (
+    tickets.filter((ticket) =>
+      ticket.attendeeName.toLowerCase().includes(searchQuery.toLowerCase())
+      || ticket.email.toLowerCase().includes(searchQuery.toLowerCase())
+      || ticket.eventName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  ), [searchQuery, tickets]);
 
   const stats = {
-    total: sampleTickets.length,
-    added: sampleTickets.filter(t => t.status === 'added' || t.status === 'checked_in').length,
-    checkedIn: sampleTickets.filter(t => t.status === 'checked_in').length,
+    total: tickets.length,
+    added: tickets.filter((ticket) => ticket.status === 'added' || ticket.status === 'checked_in').length,
+    checkedIn: tickets.filter((ticket) => ticket.status === 'checked_in').length,
   };
 
   return (
@@ -48,11 +61,11 @@ export default function GlobalTicketsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Issued Tickets</h1>
         <p className="text-sm text-gray-500 mt-1">
-          View all tickets issued across all events.
+          View all attendee passes issued across your events.
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <div className="flex items-center gap-2 mb-1">
             <Ticket className="w-4 h-4 text-gray-400" />
@@ -87,59 +100,69 @@ export default function GlobalTicketsPage() {
             className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gblue/20 focus:border-gblue"
           />
         </div>
-        <button className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <Filter className="w-4 h-4" />
-          Filter
-        </button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Attendee</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Event</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Issued</th>
-              <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTickets.map((ticket) => {
-              const status = statusConfig[ticket.status];
-              return (
-                <tr key={ticket.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
-                  <td className="px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{ticket.attendeeName}</p>
-                      <p className="text-xs text-gray-400">{ticket.email}</p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link
-                      to={`/dashboard/events/${ticket.eventId}`}
-                      className="inline-flex items-center gap-1 text-sm text-gblue hover:underline"
-                    >
-                      {ticket.eventName}
-                      <ExternalLink className="w-3 h-3" />
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs text-gray-400">{ticket.issuedAt}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${status.bg} ${status.color}`}>
-                      {status.label}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-
-        {filteredTickets.length === 0 && (
+        {isLoading ? (
           <div className="text-center py-12">
-            <p className="text-sm text-gray-500">No tickets found.</p>
+            <p className="text-sm text-gray-500">Loading issued tickets...</p>
+          </div>
+        ) : loadError ? (
+          <div className="text-center py-12 px-6">
+            <p className="text-sm font-medium text-gray-900">Issued tickets could not be loaded.</p>
+            <p className="mt-1 text-sm text-gray-500">{loadError}</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px]">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Attendee</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Event</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Issued</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTickets.map((ticket) => {
+                  const status = statusConfig[ticket.status];
+                  return (
+                    <tr key={ticket.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50">
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{ticket.attendeeName}</p>
+                          <p className="text-xs text-gray-400">{ticket.email}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link
+                          to={`/dashboard/events/${ticket.eventId}`}
+                          className="inline-flex items-center gap-1 text-sm text-gblue hover:underline"
+                        >
+                          {ticket.eventName || 'Event'}
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs text-gray-400">{ticket.issuedAtLabel}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${status.bg} ${status.color}`}>
+                          {status.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {!isLoading && !loadError && filteredTickets.length === 0 && (
+          <div className="text-center py-12 px-6">
+            <p className="text-sm font-medium text-gray-900">No tickets found.</p>
+            <p className="mt-1 text-sm text-gray-500">Issue tickets from an event to see them here.</p>
           </div>
         )}
       </div>

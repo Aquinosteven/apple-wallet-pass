@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { createSupportTicket, listSupportTickets, type SupportTicketRow } from '../../utils/backendApi';
 
 const defaultForm = {
@@ -12,6 +13,7 @@ export default function SupportPage() {
   const [tickets, setTickets] = useState<SupportTicketRow[]>([]);
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -33,9 +35,11 @@ export default function SupportPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     try {
-      await createSupportTicket(form);
+      const created = await createSupportTicket(form);
       setForm(defaultForm);
+      setSuccessMessage(`Support ticket created${created.ticket?.id ? `: ${created.ticket.id}` : '.'}`);
       await load();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Failed to submit support ticket');
@@ -47,6 +51,9 @@ export default function SupportPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Support</h1>
         <p className="mt-1 text-sm text-gray-500">Tickets are persisted in DB and routed to hello@showfi.io through the mail provider abstraction.</p>
+        <Link to="/dashboard/help" className="mt-2 inline-flex text-sm font-medium text-gblue hover:underline">
+          Browse setup guides and troubleshooting
+        </Link>
       </div>
 
       <form className="bg-white rounded-xl border border-gray-100 p-4 space-y-3" onSubmit={submit}>
@@ -114,9 +121,10 @@ export default function SupportPage() {
         </table>
       </div>
 
+      {successMessage && <div className="text-sm text-ggreen">{successMessage}</div>}
+
       {error && <div className="text-sm text-red-600">{error}</div>}
       {loading && <div className="text-sm text-gray-500">Loading…</div>}
     </div>
   );
 }
-

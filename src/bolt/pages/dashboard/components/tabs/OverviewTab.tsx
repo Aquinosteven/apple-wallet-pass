@@ -62,7 +62,7 @@ export default function OverviewTab({ event, onPublish }: OverviewTabProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <div className="flex items-center gap-2 mb-2">
             <Ticket className="w-4 h-4 text-gray-400" />

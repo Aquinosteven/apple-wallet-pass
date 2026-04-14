@@ -57,6 +57,8 @@ export default function ReportingPage() {
   }, [load]);
 
   const totals = useMemo(() => metrics?.totals || { passesIssued: 0, walletAdds: 0, reminderSends: 0 }, [metrics]);
+  const metricWarnings = metrics?.ops?.warnings || [];
+  const hasPartialData = metricWarnings.length > 0;
 
   const runExport = async () => {
     setError(null);
@@ -99,6 +101,15 @@ export default function ReportingPage() {
         <h1 className="text-2xl font-bold text-gray-900">Reporting</h1>
         <p className="mt-1 text-sm text-gray-500">v1 dashboard metrics with export history and 30-day re-download.</p>
       </div>
+
+      {hasPartialData && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <h2 className="text-sm font-semibold text-amber-900">Partial reporting data</h2>
+          <p className="mt-1 text-sm text-amber-800">
+            Some supporting tables are missing in this environment, so a few metrics may appear as zero until the latest schema patch is applied.
+          </p>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap items-end gap-3">
         <label className="text-sm text-gray-600">

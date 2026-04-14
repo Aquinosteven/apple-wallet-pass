@@ -15,18 +15,29 @@ const filterOptions: { value: EventStatus | 'all'; label: string }[] = [
 export default function EventsDashboard() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all');
 
   useEffect(() => {
     let mounted = true;
     async function loadEvents() {
-      const loadedEvents = await listEvents();
-      if (!mounted) return;
-      setEvents(loadedEvents);
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+        const loadedEvents = await listEvents();
+        if (!mounted) return;
+        setEvents(loadedEvents);
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : 'Failed to load events.');
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
     }
-    loadEvents();
+    void loadEvents();
     return () => {
       mounted = false;
     };
@@ -61,6 +72,11 @@ export default function EventsDashboard() {
       {isLoading ? (
         <div className="text-center py-12">
           <p className="text-sm text-gray-500">Loading events...</p>
+        </div>
+      ) : loadError ? (
+        <div className="text-center py-12">
+          <p className="text-sm font-medium text-gray-900">Events could not be loaded.</p>
+          <p className="mt-1 text-sm text-gray-500">{loadError}</p>
         </div>
       ) : hasEvents ? (
         <>
