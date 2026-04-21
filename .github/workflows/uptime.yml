@@ -1,0 +1,113 @@
+name: Uptime check
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      HEALTH_URL: https://www.showfi.io/api/health
+      ISSUE_TITLE: "uptime: /api/health failing"
+      ISSUE_LABEL: uptime
+    steps:
+      - name: Ping /api/health
+        id: ping
+        run: |
+          set +e
+          status=0
+          body=""
+          for attempt in 1 2; do
+            response=$(curl -sS -m 15 -w "\n__HTTP_STATUS__%{http_code}" "$HEALTH_URL")
+            status=$?
+            http=$(echo "$response" | awk -F'__HTTP_STATUS__' 'NF>1 { print $2 }')
+            body=$(echo "$response" | sed '$d')
+            if [ "$status" -eq 0 ] && [ "$http" = "200" ] && echo "$body" | grep -q '"ok":true'; then
+              echo "result=ok" >> "$GITHUB_OUTPUT"
+              echo "Attempt $attempt: ok ($http)"
+              exit 0
+            fi
+            echo "Attempt $attempt failed: curl_exit=$status http=$http body=$body"
+            sleep 10
+          done
+          {
+            echo "result=fail"
+            echo "http_status=$http"
+            echo "body<<BODY_EOF"
+            echo "$body"
+            echo "BODY_EOF"
+          } >> "$GITHUB_OUTPUT"
+          exit 1
+
+      - name: Open or update incident issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = process.env.ISSUE_TITLE;
+            const label = process.env.ISSUE_LABEL;
+            const ts = new Date().toISOString();
+            const body = `Health check failed at ${ts}.\n\nURL: ${process.env.HEALTH_URL}\nRun: ${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}\n\nLast response:\n\`\`\`\n${{ steps.ping.outputs.body || '(no body)' }}\n\`\`\``;
+
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: label,
+            });
+            const match = existing.find(i => i.title === title);
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: [label],
+              });
+            }
+
+      - name: Resolve incident on recovery
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = process.env.ISSUE_TITLE;
+            const label = process.env.ISSUE_LABEL;
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: label,
+            });
+            const match = existing.find(i => i.title === title);
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body: `Recovered at ${new Date().toISOString()}. Closing.`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                state: "closed",
+              });
+            }
