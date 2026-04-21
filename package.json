@@ -19,6 +19,7 @@
     "gsc:target-keywords": "node scripts/run-gsc-command.js target-keywords",
     "check:prod-schema": "node scripts/check-prod-schema.js",
     "check:migration-versions": "node scripts/check-migration-versions.js",
+    "check:migration-rls": "node scripts/check-migration-rls.js",
     "test:thread-c:smoke": "node scripts/thread-c-smoke.js",
     "test:thread-c:load": "node scripts/thread-c-load.js",
     "integration:pack": "./scripts/integration-command-pack.sh",
@@ -26,6 +27,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
+    "@sentry/node": "^8.55.1",
     "@supabase/supabase-js": "^2.57.4",
     "@vercel/analytics": "^2.0.1",
     "google-auth-library": "^9.15.1",
