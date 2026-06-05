@@ -82,7 +82,7 @@ export async function buildEventStatsById(supabase, rows) {
 
   const { data: passRows, error: passError } = await supabase
     .from("passes")
-    .select("event_id,created_at,claimed_at,status")
+    .select("id,event_id,registrant_id,created_at,claimed_at,status")
     .in("event_id", eventIds);
 
   if (passError) {
@@ -91,7 +91,7 @@ export async function buildEventStatsById(supabase, rows) {
 
   const { data: walletAddRows, error: walletAddError } = await supabase
     .from("claim_events")
-    .select("event_id,event_type")
+    .select("event_id,event_type,pass_id")
     .in("event_id", eventIds)
     .in("event_type", WALLET_ADD_EVENT_TYPES);
 
@@ -103,9 +103,12 @@ export async function buildEventStatsById(supabase, rows) {
     eventId,
     {
       ticketsIssued: 0,
+      claimedPasses: 0,
       walletAdds: 0,
       checkIns: 0,
       lastIssuedAt: null,
+      issuedRegistrantIds: new Set(),
+      claimedPassIds: new Set(),
     },
   ]));
 
@@ -113,17 +116,39 @@ export async function buildEventStatsById(supabase, rows) {
     const current = statsById.get(passRow.event_id);
     if (!current) continue;
 
-    current.ticketsIssued += 1;
+    const registrantId = String(passRow.registrant_id || "").trim();
+    if (registrantId) {
+      current.issuedRegistrantIds.add(registrantId);
+      current.ticketsIssued = current.issuedRegistrantIds.size;
+    }
+    const passId = String(passRow.id || "").trim();
+    if (passId && passRow.claimed_at) {
+      current.claimedPassIds.add(passId);
+      current.claimedPasses = current.claimedPassIds.size;
+    }
     if (String(passRow.status || "").toLowerCase() === "checked_in") current.checkIns += 1;
     if (!current.lastIssuedAt || new Date(passRow.created_at).getTime() > new Date(current.lastIssuedAt).getTime()) {
       current.lastIssuedAt = passRow.created_at;
     }
   }
 
+  const walletAddPassesByEventId = new Map(eventIds.map((eventId) => [eventId, new Set()]));
   for (const eventRow of walletAddRows || []) {
     const current = statsById.get(eventRow.event_id);
     if (!current) continue;
-    current.walletAdds += 1;
+    const passId = String(eventRow.pass_id || "").trim();
+    if (!passId) continue;
+    walletAddPassesByEventId.get(eventRow.event_id)?.add(passId);
+  }
+
+  for (const [eventId, passIds] of walletAddPassesByEventId) {
+    const current = statsById.get(eventId);
+    if (current) current.walletAdds = passIds.size;
+  }
+
+  for (const stats of statsById.values()) {
+    delete stats.issuedRegistrantIds;
+    delete stats.claimedPassIds;
   }
 
   return statsById;
@@ -134,6 +159,7 @@ function mapEventRowToApi(row, statsById = new Map()) {
   const status = row.status === "published" ? "published" : "draft";
   const stats = statsById.get(row.id) || {
     ticketsIssued: 0,
+    claimedPasses: 0,
     walletAdds: 0,
     checkIns: 0,
     lastIssuedAt: null,
@@ -149,6 +175,7 @@ function mapEventRowToApi(row, statsById = new Map()) {
     status,
     ticketPublished: status === "published",
     ticketsIssued: stats.ticketsIssued,
+    claimedPasses: stats.claimedPasses,
     walletAdds: stats.walletAdds,
     checkIns: stats.checkIns,
     lastIssuedAt: formatLastIssuedAt(stats.lastIssuedAt, row.timezone),

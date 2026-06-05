@@ -56,6 +56,7 @@ function buildByDayMap(startIso, endIso) {
     out[cursor.toISOString().slice(0, 10)] = {
       date: cursor.toISOString().slice(0, 10),
       passesIssued: 0,
+      claimedPasses: 0,
       walletAdds: 0,
       reminderSends: 0,
     };
@@ -98,9 +99,10 @@ async function collectMetrics({ supabase, ownerUserId, startIso, endIso }) {
 
   let passQuery = supabase
     .from("passes")
-    .select("id,event_id,created_at")
+    .select("id,event_id,registrant_id,created_at,claimed_at")
     .gte("created_at", startIso)
-    .lte("created_at", endIso);
+    .lte("created_at", endIso)
+    .order("created_at", { ascending: true });
   if (Array.isArray(eventIds)) {
     if (!eventIds.length) {
       passQuery = null;
@@ -115,10 +117,11 @@ async function collectMetrics({ supabase, ownerUserId, startIso, endIso }) {
 
   let walletQuery = supabase
     .from("claim_events")
-    .select("id,event_type,created_at,user_id")
+    .select("id,event_type,created_at,user_id,pass_id")
     .in("event_type", WALLET_ADD_EVENT_TYPES)
     .gte("created_at", startIso)
-    .lte("created_at", endIso);
+    .lte("created_at", endIso)
+    .order("created_at", { ascending: true });
   if (ownerUserId) {
     walletQuery = walletQuery.eq("user_id", ownerUserId);
   }
@@ -176,11 +179,27 @@ async function collectMetrics({ supabase, ownerUserId, startIso, endIso }) {
   }
   const supportTicketRows = await safeSelectRows(supportTicketsQuery, "support tickets", warnings);
 
+  const issuedRegistrantSeen = new Set();
+  const claimedPassSeen = new Set();
   for (const row of passRows) {
+    const registrantId = String(row.registrant_id || "").trim();
     const key = keyForCreatedAt(row.created_at);
-    if (byDay[key]) byDay[key].passesIssued += 1;
+    if (registrantId && !issuedRegistrantSeen.has(registrantId)) {
+      issuedRegistrantSeen.add(registrantId);
+      if (byDay[key]) byDay[key].passesIssued += 1;
+    }
+    const passId = String(row.id || "").trim();
+    if (passId && row.claimed_at && !claimedPassSeen.has(passId)) {
+      claimedPassSeen.add(passId);
+      const claimedKey = keyForCreatedAt(row.claimed_at);
+      if (byDay[claimedKey]) byDay[claimedKey].claimedPasses += 1;
+    }
   }
+  const walletPassSeen = new Set();
   for (const row of walletRows) {
+    const passId = String(row.pass_id || "").trim();
+    if (!passId || walletPassSeen.has(passId)) continue;
+    walletPassSeen.add(passId);
     const key = keyForCreatedAt(row.created_at);
     if (byDay[key]) byDay[key].walletAdds += 1;
   }
@@ -198,6 +217,7 @@ async function collectMetrics({ supabase, ownerUserId, startIso, endIso }) {
     range: { start: startIso, end: endIso, defaultWindow: "last_7_days" },
     totals: {
       passesIssued: series.reduce((sum, item) => sum + item.passesIssued, 0),
+      claimedPasses: series.reduce((sum, item) => sum + item.claimedPasses, 0),
       walletAdds: series.reduce((sum, item) => sum + item.walletAdds, 0),
       reminderSends: series.reduce((sum, item) => sum + item.reminderSends, 0),
       claimThroughput: claimThroughputRows.length,

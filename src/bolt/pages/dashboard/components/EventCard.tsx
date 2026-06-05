@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Share2, Settings, Ticket, Wallet, UserCheck } from 'lucide-react';
+import { getTicketToPhoneAddPerformance } from '../../../utils/performanceMetrics';
 
 export type EventStatus = 'draft' | 'ready' | 'active' | 'ended';
 
@@ -11,6 +12,7 @@ export interface Event {
   timezone?: string;
   status: EventStatus;
   ticketsIssued: number;
+  claimedPasses: number;
   walletAdds: number;
   checkIns: number;
 }
@@ -29,6 +31,7 @@ interface EventCardProps {
 export default function EventCard({ event }: EventCardProps) {
   const status = statusConfig[event.status];
   const eventHref = `/dashboard/events/${event.id}`;
+  const phoneAddPerformance = getTicketToPhoneAddPerformance(event.walletAdds, event.ticketsIssued);
 
   const handleShare = async () => {
     await navigator.clipboard.writeText(`${window.location.origin}${eventHref}`);
@@ -52,11 +55,20 @@ export default function EventCard({ event }: EventCardProps) {
         </span>
       </div>
 
-      <div className="flex items-center gap-4 py-3 border-t border-b border-gray-50 mb-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3 border-t border-b border-gray-50 mb-4">
+        <div className="flex items-center gap-1.5">
+          <Wallet className="w-3.5 h-3.5 text-gray-400" />
+          <span className="text-xs text-gray-600">
+            <span className={`font-semibold ${phoneAddPerformance.textClassName}`}>{phoneAddPerformance.formattedRate}</span> phone
+          </span>
+          <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full whitespace-nowrap ${phoneAddPerformance.badgeClassName}`}>
+            {phoneAddPerformance.label}
+          </span>
+        </div>
         <div className="flex items-center gap-1.5">
           <Ticket className="w-3.5 h-3.5 text-gray-400" />
           <span className="text-xs text-gray-600">
-            <span className="font-semibold text-gray-900">{event.ticketsIssued}</span> issued
+            <span className="font-semibold text-gray-900">{event.ticketsIssued}</span> generated
           </span>
         </div>
         <div className="flex items-center gap-1.5">

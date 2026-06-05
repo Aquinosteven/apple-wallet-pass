@@ -14,6 +14,7 @@ export interface ApiEvent {
   status: EventStatus;
   ticketPublished: boolean;
   ticketsIssued: number;
+  claimedPasses: number;
   walletAdds: number;
   checkIns: number;
   lastIssuedAt?: string;
@@ -145,6 +146,7 @@ export interface OpsErrorItem {
 export interface DashboardMetricPoint {
   date: string;
   passesIssued: number;
+  claimedPasses: number;
   walletAdds: number;
   reminderSends: number;
 }
@@ -157,6 +159,7 @@ export interface DashboardMetrics {
   };
   totals: {
     passesIssued: number;
+    claimedPasses: number;
     walletAdds: number;
     reminderSends: number;
   };
@@ -662,6 +665,7 @@ export function mapEventForApi(
     status: deriveStatus(eventDetails, Boolean(options?.isPublished)),
     ticketPublished: Boolean(options?.isPublished),
     ticketsIssued: 0,
+    claimedPasses: 0,
     walletAdds: 0,
     checkIns: 0,
     lastIssuedAt: undefined,

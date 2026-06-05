@@ -243,6 +243,14 @@ npm run gsc:sites
 npm run gsc:top-queries
 ```
 
+5. Export the 90-day SEO baseline used for planning:
+
+```bash
+npm run gsc:baseline -- --site-url sc-domain:showfi.io --days 90 --row-limit 250
+```
+
+The baseline export writes a JSON file to `traffic/` with top queries, top pages, and query-by-page rows.
+
 JSON output is also supported:
 
 ```bash

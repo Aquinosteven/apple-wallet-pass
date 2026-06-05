@@ -213,12 +213,119 @@ export function getSeoConfig(pathname: string): SeoConfig {
     };
   }
 
+  if (pathname === '/zoom-webinar-reminders') {
+    return {
+      title: 'Zoom Webinar Reminders with Wallet Pass Fallbacks | ShowFi.io',
+      description:
+        'Add Apple Wallet and Google Wallet fallback reminders to Zoom webinar registration flows so missed confirmation emails, join links, and late-start recovery are easier on mobile.',
+      path: '/zoom-webinar-reminders',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'Zoom Webinar Reminders',
+        url: absoluteUrl('/zoom-webinar-reminders'),
+      },
+    };
+  }
+
+  if (pathname === '/reduce-webinar-no-shows') {
+    return {
+      title: 'Reduce Webinar No-Shows with Wallet Pass Reminders | ShowFi.io',
+      description:
+        'Reduce webinar no-show risk by adding wallet pass reminders after registration, alongside email, SMS, calendar, and Zoom follow-up.',
+      path: '/reduce-webinar-no-shows',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'Reduce Webinar No-Shows',
+        url: absoluteUrl('/reduce-webinar-no-shows'),
+      },
+    };
+  }
+
+  if (pathname === '/webinar-reminder-sequence-template') {
+    return {
+      title: 'Webinar Reminder Sequence Template | Email, SMS & Wallet',
+      description:
+        'Use this webinar reminder sequence template to coordinate email, SMS, calendar, and wallet pass reminders before the live session.',
+      path: '/webinar-reminder-sequence-template',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'Webinar Reminder Sequence Template',
+        url: absoluteUrl('/webinar-reminder-sequence-template'),
+      },
+    };
+  }
+
+  if (pathname === '/why-webinar-reminders-fail') {
+    return {
+      title: 'Why Webinar Reminders Fail When the Inbox Gets Crowded',
+      description:
+        'Learn why email-only webinar reminders fail, how Zoom confirmation gaps happen, and how SMS, calendar, and wallet passes support final-hour join recovery.',
+      path: '/why-webinar-reminders-fail',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: 'Why Webinar Reminders Fail When the Inbox Gets Crowded',
+        url: absoluteUrl('/why-webinar-reminders-fail'),
+      },
+    };
+  }
+
+  if (pathname === '/wallet-pass-marketing') {
+    return {
+      title: 'Wallet Pass Marketing for Events, Webinars & Calls | ShowFi.io',
+      description:
+        'Use Apple Wallet and Google Wallet passes as a mobile reminder and retrieval channel for events, webinars, booked calls, and campaigns.',
+      path: '/wallet-pass-marketing',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'Wallet Pass Marketing',
+        url: absoluteUrl('/wallet-pass-marketing'),
+      },
+    };
+  }
+
+  if (pathname === '/webinar-show-up-rate-calculator') {
+    return {
+      title: 'Webinar Show-Up Rate Calculator | ShowFi.io',
+      description:
+        'Estimate the revenue impact of webinar no-shows and see how many extra attendees better reminder retrieval could recover.',
+      path: '/webinar-show-up-rate-calculator',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'Webinar Show-Up Rate Calculator',
+        url: absoluteUrl('/webinar-show-up-rate-calculator'),
+        applicationCategory: 'BusinessApplication',
+      },
+    };
+  }
+
   if (pathname === '/event-reminder-software') {
     return {
       title: 'Event Reminder Software | ShowFi.io',
       description:
         'ShowFi.io is event reminder software for live attendance, helping teams keep tickets and event details visible through Apple Wallet and Google Wallet.',
       path: '/event-reminder-software',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'SoftwareApplication',
+        name: 'ShowFi.io',
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+      },
+    };
+  }
+
+  if (pathname === '/gohighlevel-appointment-reminders') {
+    return {
+      title: 'GoHighLevel Appointment Reminders with Wallet Passes',
+      description:
+        'ShowFi.io adds Apple Wallet and Google Wallet delivery to GoHighLevel appointment reminders, GHL ghosting workflows, booked-call no-shows, webinars, and agency events.',
+      path: '/gohighlevel-appointment-reminders',
       schema: {
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
@@ -257,6 +364,23 @@ export function getSeoConfig(pathname: string): SeoConfig {
         name: 'ShowFi.io',
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
+      },
+    };
+  }
+
+  if (pathname === '/plan') {
+    return {
+      title: 'SEO Plan | ShowFi.io Growth Roadmap',
+      description:
+        'Review the ShowFi.io SEO status scan and 90-day plan for improving organic visibility, topic authority, internal links, and measurement.',
+      path: '/plan',
+      schema: {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: 'ShowFi.io SEO Plan',
+        url: absoluteUrl('/plan'),
+        description:
+          'A practical SEO plan for improving ShowFi.io organic visibility across wallet pass, webinar reminder, event reminder, and booked-call reminder search intents.',
       },
     };
   }

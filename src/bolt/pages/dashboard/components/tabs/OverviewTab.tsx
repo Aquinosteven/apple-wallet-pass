@@ -1,10 +1,16 @@
 import { Ticket, Wallet, UserCheck, Clock, CheckCircle2, Circle } from 'lucide-react';
 import { EventStatus } from '../EventCard';
+import {
+  getClaimToPhoneAddPerformance,
+  getTicketToClaimPerformance,
+  getTicketToPhoneAddPerformance,
+} from '../../../../utils/performanceMetrics';
 
 interface EventData {
   status: EventStatus;
   ticketPublished: boolean;
   ticketsIssued: number;
+  claimedPasses: number;
   walletAdds: number;
   checkIns: number;
   lastIssuedAt?: string;
@@ -40,6 +46,9 @@ const statusMessages: Record<EventStatus, { title: string; description: string; 
 
 export default function OverviewTab({ event, onPublish }: OverviewTabProps) {
   const statusInfo = statusMessages[event.status];
+  const phoneAddPerformance = getTicketToPhoneAddPerformance(event.walletAdds, event.ticketsIssued);
+  const claimPerformance = getTicketToClaimPerformance(event.claimedPasses, event.ticketsIssued);
+  const claimToSavePerformance = getClaimToPhoneAddPerformance(event.walletAdds, event.claimedPasses);
 
   const steps = [
     { label: 'Create Event', done: true },
@@ -62,13 +71,59 @@ export default function OverviewTab({ event, onPublish }: OverviewTabProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Wallet className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-xs text-gray-500 truncate">Phone Add Rate</span>
+            </div>
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${phoneAddPerformance.badgeClassName}`}>
+              {phoneAddPerformance.label}
+            </span>
+          </div>
+          <p className={`text-2xl font-bold ${phoneAddPerformance.textClassName}`}>{phoneAddPerformance.formattedRate}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Ticket className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-xs text-gray-500 truncate">Ticket to Claim</span>
+            </div>
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${claimPerformance.badgeClassName}`}>
+              {claimPerformance.label}
+            </span>
+          </div>
+          <p className={`text-2xl font-bold ${claimPerformance.textClassName}`}>{claimPerformance.formattedRate}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Wallet className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-xs text-gray-500 truncate">Claim to Save</span>
+            </div>
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${claimToSavePerformance.badgeClassName}`}>
+              {claimToSavePerformance.label}
+            </span>
+          </div>
+          <p className={`text-2xl font-bold ${claimToSavePerformance.textClassName}`}>{claimToSavePerformance.formattedRate}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <div className="flex items-center gap-2 mb-2">
             <Ticket className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-500">Tickets Issued</span>
+            <span className="text-xs text-gray-500">Tickets Generated</span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{event.ticketsIssued}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Ticket className="w-4 h-4 text-gray-400" />
+            <span className="text-xs text-gray-500">Pass Claims</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{event.claimedPasses}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <div className="flex items-center gap-2 mb-2">

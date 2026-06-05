@@ -34,8 +34,9 @@ import GoogleWalletSoftwarePage from './bolt/pages/landing/GoogleWalletSoftwareP
 import WalletPassSoftwarePage from './bolt/pages/landing/WalletPassSoftwarePage';
 import WebinarReminderSoftwarePage from './bolt/pages/landing/WebinarReminderSoftwarePage';
 import EventReminderSoftwarePage from './bolt/pages/landing/EventReminderSoftwarePage';
-import GohighlevelWalletPassPage from './bolt/pages/landing/GohighlevelWalletPassPage';
 import BookedCallRemindersPage from './bolt/pages/landing/BookedCallRemindersPage';
+import SeoContentPage, { getSeoContentPage } from './bolt/pages/landing/SeoContentPage';
+import SeoPlanPage from './bolt/pages/plan/SeoPlanPage';
 import PricingPage from './bolt/pages/pricing/PricingPage';
 import ClaimPage from './bolt/pages/claim/ClaimPage';
 import TermsPage from './bolt/pages/legal/TermsPage';
@@ -127,6 +128,19 @@ function MarketingLayout({ children }: { children: ReactNode }) {
       <main>{children}</main>
       <Footer />
     </>
+  );
+}
+
+function SeoContentRoute({ path }: { path: string }) {
+  const config = getSeoContentPage(path);
+  if (!config) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <MarketingLayout>
+      <SeoContentPage config={config} />
+    </MarketingLayout>
   );
 }
 
@@ -379,17 +393,37 @@ export default function AppRoutes() {
         />
         <Route
           path="/gohighlevel-wallet-pass"
-          element={
-            <MarketingLayout>
-              <GohighlevelWalletPassPage />
-            </MarketingLayout>
-          }
+          element={<Navigate to="/gohighlevel-appointment-reminders" replace />}
+        />
+        <Route path="/zoom-webinar-reminders" element={<SeoContentRoute path="/zoom-webinar-reminders" />} />
+        <Route path="/reduce-webinar-no-shows" element={<SeoContentRoute path="/reduce-webinar-no-shows" />} />
+        <Route
+          path="/webinar-reminder-sequence-template"
+          element={<SeoContentRoute path="/webinar-reminder-sequence-template" />}
+        />
+        <Route path="/why-webinar-reminders-fail" element={<SeoContentRoute path="/why-webinar-reminders-fail" />} />
+        <Route path="/wallet-pass-marketing" element={<SeoContentRoute path="/wallet-pass-marketing" />} />
+        <Route
+          path="/webinar-show-up-rate-calculator"
+          element={<SeoContentRoute path="/webinar-show-up-rate-calculator" />}
+        />
+        <Route
+          path="/gohighlevel-appointment-reminders"
+          element={<SeoContentRoute path="/gohighlevel-appointment-reminders" />}
         />
         <Route
           path="/booked-call-reminders"
           element={
             <MarketingLayout>
               <BookedCallRemindersPage />
+            </MarketingLayout>
+          }
+        />
+        <Route
+          path="/plan"
+          element={
+            <MarketingLayout>
+              <SeoPlanPage />
             </MarketingLayout>
           }
         />

@@ -10,6 +10,18 @@
       "includeFiles": "event-ticket.pass/**"
     }
   },
+  "redirects": [
+    {
+      "source": "/gohighlevel-wallet-pass",
+      "destination": "/gohighlevel-appointment-reminders",
+      "permanent": true
+    },
+    {
+      "source": "/gohighlevel-wallet-pass/",
+      "destination": "/gohighlevel-appointment-reminders",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/login",
@@ -76,6 +88,54 @@
       "destination": "/webinar-reminder-software/index.html"
     },
     {
+      "source": "/zoom-webinar-reminders",
+      "destination": "/zoom-webinar-reminders/index.html"
+    },
+    {
+      "source": "/zoom-webinar-reminders/",
+      "destination": "/zoom-webinar-reminders/index.html"
+    },
+    {
+      "source": "/reduce-webinar-no-shows",
+      "destination": "/reduce-webinar-no-shows/index.html"
+    },
+    {
+      "source": "/reduce-webinar-no-shows/",
+      "destination": "/reduce-webinar-no-shows/index.html"
+    },
+    {
+      "source": "/webinar-reminder-sequence-template",
+      "destination": "/webinar-reminder-sequence-template/index.html"
+    },
+    {
+      "source": "/webinar-reminder-sequence-template/",
+      "destination": "/webinar-reminder-sequence-template/index.html"
+    },
+    {
+      "source": "/why-webinar-reminders-fail",
+      "destination": "/why-webinar-reminders-fail/index.html"
+    },
+    {
+      "source": "/why-webinar-reminders-fail/",
+      "destination": "/why-webinar-reminders-fail/index.html"
+    },
+    {
+      "source": "/wallet-pass-marketing",
+      "destination": "/wallet-pass-marketing/index.html"
+    },
+    {
+      "source": "/wallet-pass-marketing/",
+      "destination": "/wallet-pass-marketing/index.html"
+    },
+    {
+      "source": "/webinar-show-up-rate-calculator",
+      "destination": "/webinar-show-up-rate-calculator/index.html"
+    },
+    {
+      "source": "/webinar-show-up-rate-calculator/",
+      "destination": "/webinar-show-up-rate-calculator/index.html"
+    },
+    {
       "source": "/event-reminder-software",
       "destination": "/event-reminder-software/index.html"
     },
@@ -84,12 +144,12 @@
       "destination": "/event-reminder-software/index.html"
     },
     {
-      "source": "/gohighlevel-wallet-pass",
-      "destination": "/gohighlevel-wallet-pass/index.html"
+      "source": "/gohighlevel-appointment-reminders",
+      "destination": "/gohighlevel-appointment-reminders/index.html"
     },
     {
-      "source": "/gohighlevel-wallet-pass/",
-      "destination": "/gohighlevel-wallet-pass/index.html"
+      "source": "/gohighlevel-appointment-reminders/",
+      "destination": "/gohighlevel-appointment-reminders/index.html"
     },
     {
       "source": "/booked-call-reminders",
@@ -98,6 +158,14 @@
     {
       "source": "/booked-call-reminders/",
       "destination": "/booked-call-reminders/index.html"
+    },
+    {
+      "source": "/plan",
+      "destination": "/plan/index.html"
+    },
+    {
+      "source": "/plan/",
+      "destination": "/plan/index.html"
     },
     {
       "source": "/demo",

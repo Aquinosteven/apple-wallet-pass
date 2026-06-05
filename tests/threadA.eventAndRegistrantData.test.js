@@ -7,7 +7,7 @@ import {
   mapPassStatusToTicketStatus,
 } from '../api/registrants.js';
 
-test('buildEventStatsById aggregates issued, claimed, and checked-in counts', async () => {
+test('buildEventStatsById counts generated tickets by unique registrant and wallet adds by unique pass', async () => {
   const statsById = await buildEventStatsById({
     from(table) {
       if (table === 'passes') {
@@ -17,13 +17,25 @@ test('buildEventStatsById aggregates issued, claimed, and checked-in counts', as
               in: async () => ({
                 data: [
                   {
+                    id: 'pass-1',
                     event_id: 'event-1',
+                    registrant_id: 'registrant-1',
                     created_at: '2026-04-03T15:00:00.000Z',
                     claimed_at: null,
                     status: 'issued',
                   },
                   {
+                    id: 'pass-1b',
                     event_id: 'event-1',
+                    registrant_id: 'registrant-1',
+                    created_at: '2026-04-03T15:30:00.000Z',
+                    claimed_at: null,
+                    status: 'issued',
+                  },
+                  {
+                    id: 'pass-2',
+                    event_id: 'event-1',
+                    registrant_id: 'registrant-2',
                     created_at: '2026-04-03T16:00:00.000Z',
                     claimed_at: '2026-04-03T17:00:00.000Z',
                     status: 'checked_in',
@@ -43,7 +55,11 @@ test('buildEventStatsById aggregates issued, claimed, and checked-in counts', as
               in() {
                 return {
                   in: async () => ({
-                    data: [{ event_id: 'event-1', event_type: 'apple_wallet_added' }],
+                    data: [
+                      { event_id: 'event-1', event_type: 'apple_wallet_added', pass_id: 'pass-1' },
+                      { event_id: 'event-1', event_type: 'google_wallet_saved', pass_id: 'pass-1' },
+                      { event_id: 'event-1', event_type: 'apple_wallet_added', pass_id: 'pass-2' },
+                    ],
                     error: null,
                   }),
                 };
@@ -59,7 +75,8 @@ test('buildEventStatsById aggregates issued, claimed, and checked-in counts', as
 
   assert.deepEqual(statsById.get('event-1'), {
     ticketsIssued: 2,
-    walletAdds: 1,
+    claimedPasses: 1,
+    walletAdds: 2,
     checkIns: 1,
     lastIssuedAt: '2026-04-03T16:00:00.000Z',
   });

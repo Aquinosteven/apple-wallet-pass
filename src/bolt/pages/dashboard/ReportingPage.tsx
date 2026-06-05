@@ -7,6 +7,11 @@ import {
   type DashboardMetrics,
   type DataExportHistoryItem,
 } from '../../utils/backendApi';
+import {
+  getClaimToPhoneAddPerformance,
+  getTicketToClaimPerformance,
+  getTicketToPhoneAddPerformance,
+} from '../../utils/performanceMetrics';
 
 function defaultDateWindow() {
   const end = new Date();
@@ -56,7 +61,22 @@ export default function ReportingPage() {
     void load();
   }, [load]);
 
-  const totals = useMemo(() => metrics?.totals || { passesIssued: 0, walletAdds: 0, reminderSends: 0 }, [metrics]);
+  const totals = useMemo(
+    () => metrics?.totals || { passesIssued: 0, claimedPasses: 0, walletAdds: 0, reminderSends: 0 },
+    [metrics],
+  );
+  const phoneAddPerformance = useMemo(
+    () => getTicketToPhoneAddPerformance(totals.walletAdds, totals.passesIssued),
+    [totals.passesIssued, totals.walletAdds],
+  );
+  const claimPerformance = useMemo(
+    () => getTicketToClaimPerformance(totals.claimedPasses, totals.passesIssued),
+    [totals.claimedPasses, totals.passesIssued],
+  );
+  const claimToSavePerformance = useMemo(
+    () => getClaimToPhoneAddPerformance(totals.walletAdds, totals.claimedPasses),
+    [totals.claimedPasses, totals.walletAdds],
+  );
   const metricWarnings = metrics?.ops?.warnings || [];
   const hasPartialData = metricWarnings.length > 0;
 
@@ -141,8 +161,42 @@ export default function ReportingPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 p-4">
-          <div className="text-xs text-gray-500">Passes Issued</div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xs text-gray-500">Phone Add Rate</div>
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${phoneAddPerformance.badgeClassName}`}>
+              {phoneAddPerformance.label}
+            </span>
+          </div>
+          <div className={`mt-1 text-2xl font-bold ${phoneAddPerformance.textClassName}`}>{phoneAddPerformance.formattedRate}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xs text-gray-500">Ticket to Claim</div>
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${claimPerformance.badgeClassName}`}>
+              {claimPerformance.label}
+            </span>
+          </div>
+          <div className={`mt-1 text-2xl font-bold ${claimPerformance.textClassName}`}>{claimPerformance.formattedRate}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xs text-gray-500">Claim to Save</div>
+            <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full whitespace-nowrap ${claimToSavePerformance.badgeClassName}`}>
+              {claimToSavePerformance.label}
+            </span>
+          </div>
+          <div className={`mt-1 text-2xl font-bold ${claimToSavePerformance.textClassName}`}>{claimToSavePerformance.formattedRate}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="text-xs text-gray-500">Tickets Generated</div>
           <div className="text-2xl font-bold text-gray-900">{totals.passesIssued}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-4">
+          <div className="text-xs text-gray-500">Pass Claims</div>
+          <div className="text-2xl font-bold text-gray-900">{totals.claimedPasses}</div>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <div className="text-xs text-gray-500">Wallet Adds</div>

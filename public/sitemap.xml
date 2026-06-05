@@ -31,12 +31,42 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.showfi.io/zoom-webinar-reminders</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/reduce-webinar-no-shows</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/webinar-reminder-sequence-template</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/why-webinar-reminders-fail</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/wallet-pass-marketing</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/webinar-show-up-rate-calculator</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://www.showfi.io/event-reminder-software</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.showfi.io/gohighlevel-wallet-pass</loc>
+    <loc>https://www.showfi.io/gohighlevel-appointment-reminders</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -44,5 +74,10 @@
     <loc>https://www.showfi.io/booked-call-reminders</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.showfi.io/plan</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
   </url>
 </urlset>

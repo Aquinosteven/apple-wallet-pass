@@ -17,6 +17,7 @@
     "gsc:sites": "node scripts/run-gsc-command.js sites",
     "gsc:top-queries": "node scripts/run-gsc-command.js top-queries",
     "gsc:target-keywords": "node scripts/run-gsc-command.js target-keywords",
+    "gsc:baseline": "node scripts/run-gsc-command.js baseline",
     "check:prod-schema": "node scripts/check-prod-schema.js",
     "check:migration-versions": "node scripts/check-migration-versions.js",
     "check:migration-rls": "node scripts/check-migration-rls.js",

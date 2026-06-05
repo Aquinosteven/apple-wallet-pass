@@ -13,6 +13,7 @@ interface EventData {
   status: EventStatus;
   ticketPublished: boolean;
   ticketsIssued: number;
+  claimedPasses: number;
   walletAdds: number;
   checkIns: number;
   lastIssuedAt?: string;

@@ -13,6 +13,7 @@ const GSC_ENTRYPOINTS = new Map([
   ["sites", "gsc-sites.js"],
   ["top-queries", "gsc-top-queries.js"],
   ["target-keywords", "gsc-target-keywords.js"],
+  ["baseline", "gsc-baseline.js"],
 ]);
 
 function getNpmCommand() {
