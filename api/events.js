@@ -107,7 +107,6 @@ export async function buildEventStatsById(supabase, rows) {
       walletAdds: 0,
       checkIns: 0,
       lastIssuedAt: null,
-      issuedRegistrantIds: new Set(),
       claimedPassIds: new Set(),
     },
   ]));
@@ -116,11 +115,7 @@ export async function buildEventStatsById(supabase, rows) {
     const current = statsById.get(passRow.event_id);
     if (!current) continue;
 
-    const registrantId = String(passRow.registrant_id || "").trim();
-    if (registrantId) {
-      current.issuedRegistrantIds.add(registrantId);
-      current.ticketsIssued = current.issuedRegistrantIds.size;
-    }
+    current.ticketsIssued += 1;
     const passId = String(passRow.id || "").trim();
     if (passId && passRow.claimed_at) {
       current.claimedPassIds.add(passId);
@@ -147,7 +142,6 @@ export async function buildEventStatsById(supabase, rows) {
   }
 
   for (const stats of statsById.values()) {
-    delete stats.issuedRegistrantIds;
     delete stats.claimedPassIds;
   }
 

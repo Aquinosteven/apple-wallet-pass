@@ -179,15 +179,10 @@ async function collectMetrics({ supabase, ownerUserId, startIso, endIso }) {
   }
   const supportTicketRows = await safeSelectRows(supportTicketsQuery, "support tickets", warnings);
 
-  const issuedRegistrantSeen = new Set();
   const claimedPassSeen = new Set();
   for (const row of passRows) {
-    const registrantId = String(row.registrant_id || "").trim();
     const key = keyForCreatedAt(row.created_at);
-    if (registrantId && !issuedRegistrantSeen.has(registrantId)) {
-      issuedRegistrantSeen.add(registrantId);
-      if (byDay[key]) byDay[key].passesIssued += 1;
-    }
+    if (byDay[key]) byDay[key].passesIssued += 1;
     const passId = String(row.id || "").trim();
     if (passId && row.claimed_at && !claimedPassSeen.has(passId)) {
       claimedPassSeen.add(passId);

@@ -70,6 +70,68 @@ export function buildRegistrantResponse(registrant, pass, eventNameById = new Ma
   };
 }
 
+function applyEventFilter(query, eventIds) {
+  if (eventIds.length === 1) return query.eq("event_id", eventIds[0]);
+  return query.in("event_id", eventIds);
+}
+
+function buildIssuedPassResponse(pass, registrant, eventNameById = new Map()) {
+  return {
+    id: pass.id,
+    eventId: pass.event_id,
+    eventName: eventNameById.get(pass.event_id) || "",
+    attendeeName: registrant?.name || "",
+    email: registrant?.email || "",
+    phone: registrant?.phone || null,
+    source: registrant?.source || null,
+    issuedAt: pass.created_at,
+    issuedAtLabel: formatIssuedAtLabel(pass.created_at),
+    status: mapPassStatusToTicketStatus(pass),
+    passId: pass.id,
+    claimToken: pass.claim_token || null,
+    claimedAt: pass.claimed_at || null,
+    passStatus: pass.status || null,
+  };
+}
+
+export async function loadRegistrantResponsesForEvents(supabase, ownedEvents) {
+  const eventIds = (ownedEvents || []).map((event) => event.id);
+  if (!eventIds.length) return [];
+
+  const eventNameById = new Map((ownedEvents || []).map((event) => [event.id, event.name]));
+
+  let passQuery = supabase
+    .from("passes")
+    .select("id,event_id,registrant_id,claim_token,claimed_at,created_at");
+  passQuery = applyEventFilter(passQuery, eventIds);
+  passQuery = passQuery.order("created_at", { ascending: false });
+
+  const { data: passes, error: passesError } = await passQuery;
+
+  if (passesError) {
+    throw new Error(passesError.message || "Failed to load passes");
+  }
+  if (!(passes || []).length) return [];
+
+  let registrantsQuery = supabase
+    .from("registrants")
+    .select("id,event_id,name,email,created_at");
+  registrantsQuery = applyEventFilter(registrantsQuery, eventIds);
+  registrantsQuery = registrantsQuery.order("created_at", { ascending: false });
+
+  const { data: registrants, error: registrantsError } = await registrantsQuery;
+
+  if (registrantsError) {
+    throw new Error(registrantsError.message || "Failed to load registrants");
+  }
+
+  const registrantById = new Map((registrants || []).map((row) => [row.id, row]));
+
+  return (passes || []).map((pass) =>
+    buildIssuedPassResponse(pass, registrantById.get(pass.registrant_id), eventNameById)
+  );
+}
+
 export default async function handler(req, res) {
   const cors = setJsonCors(req, res, ["GET", "POST", "PATCH", "OPTIONS"]);
 
@@ -119,41 +181,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, registrants: [] });
       }
 
-      const eventNameById = new Map((ownedEvents || []).map((event) => [event.id, event.name]));
-      const { data: registrants, error: registrantsError } = await supabase
-        .from("registrants")
-        .select("id,event_id,name,email,phone,source,created_at")
-        .in("event_id", eventIds)
-        .order("created_at", { ascending: false });
-
-      if (registrantsError) {
-        return res.status(500).json({ ok: false, error: registrantsError.message });
-      }
-
-      const registrantIds = (registrants || []).map((row) => row.id);
-      let passByRegistrantId = new Map();
-      if (registrantIds.length) {
-        const { data: passes, error: passesError } = await supabase
-          .from("passes")
-          .select("id,event_id,registrant_id,claim_token,claimed_at,status,created_at")
-          .in("registrant_id", registrantIds)
-          .order("created_at", { ascending: false });
-
-        if (passesError) {
-          return res.status(500).json({ ok: false, error: passesError.message });
-        }
-
-        passByRegistrantId = new Map();
-        for (const pass of passes || []) {
-          if (!passByRegistrantId.has(pass.registrant_id)) {
-            passByRegistrantId.set(pass.registrant_id, pass);
-          }
-        }
-      }
-
-      const payload = (registrants || []).map((registrant) =>
-        buildRegistrantResponse(registrant, passByRegistrantId.get(registrant.id), eventNameById)
-      );
+      const payload = await loadRegistrantResponsesForEvents(supabase, ownedEvents || []);
 
       return res.status(200).json({ ok: true, registrants: payload });
     }
