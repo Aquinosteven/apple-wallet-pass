@@ -155,9 +155,9 @@ export function getSeoConfig(pathname: string): SeoConfig {
 
   if (pathname === '/wallet-pass-software') {
     return {
-      title: 'Wallet Pass Software | ShowFi.io',
+      title: 'Solutions | ShowFi.io Wallet Pass Reminders',
       description:
-        'ShowFi.io is wallet pass software for events, webinars, booked calls, and attendance-focused campaigns across Apple Wallet and Google Wallet.',
+        'Explore ShowFi.io solutions for webinar attendance, booked call reminders, live events, agencies, sales teams, and attendance-focused campaigns.',
       path: '/wallet-pass-software',
       schema: {
         '@context': 'https://schema.org',
@@ -166,10 +166,10 @@ export function getSeoConfig(pathname: string): SeoConfig {
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
         featureList: [
-          'Wallet pass delivery',
-          'Apple Wallet support',
-          'Google Wallet support',
-          'Attendance reminders',
+          'Webinar attendance reminders',
+          'Booked call reminders',
+          'Live event wallet passes',
+          'Apple Wallet and Google Wallet support',
         ],
       },
     };
