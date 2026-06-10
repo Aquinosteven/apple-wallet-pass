@@ -10,12 +10,10 @@ import {
   Flame,
   Mail,
   MessageSquare,
-  Plane,
   Phone,
   Send,
   ShieldCheck,
   Smartphone,
-  Star,
   Users,
   Video,
   Wallet,
@@ -161,106 +159,15 @@ const pages = [
 
 function IPhoneMockup() {
   return (
-    <div className="relative mx-auto flex w-full max-w-[520px] justify-center lg:justify-end">
-      <div className="absolute left-1/2 top-10 h-56 w-56 -translate-x-[70%] rounded-full bg-gblue/10 blur-3xl" />
-      <div className="absolute bottom-8 left-1/2 h-48 w-48 translate-x-[12%] rounded-full bg-ggreen/10 blur-3xl" />
-
-      <div className="relative rotate-[2deg] rounded-[44px] bg-[#0d1320] p-3 shadow-[0_36px_90px_rgba(15,23,42,0.22)] ring-1 ring-black/10">
-        <div className="absolute left-1/2 top-3 z-20 h-6 w-28 -translate-x-1/2 rounded-full bg-black" />
-        <div className="relative h-[560px] w-[286px] overflow-hidden rounded-[34px] bg-[#f5f8fc] px-4 pt-14">
-          <div className="absolute left-0 top-0 h-28 w-full bg-[linear-gradient(180deg,#ffffff_0%,rgba(255,255,255,0)_100%)]" />
-          <div className="absolute left-5 top-5 z-10 text-[11px] font-semibold text-gray-900">9:41</div>
-          <div className="absolute right-5 top-5 z-10 flex items-center gap-1">
-            <div className="h-2 w-3 rounded-[2px] bg-gray-900" />
-            <div className="h-2 w-4 rounded-sm border border-gray-900">
-              <div className="h-full w-3 rounded-[1px] bg-gray-900" />
-            </div>
-          </div>
-
-          <div className="relative mx-auto h-[470px] w-full">
-            <div className="absolute left-1/2 top-0 w-[246px] -translate-x-1/2 rounded-[22px] bg-[#0f7a53] px-4 py-3 text-white shadow-[0_14px_28px_rgba(15,23,42,0.16)]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/18">
-                    <Star className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-semibold leading-tight">Coffee Rewards</p>
-                    <p className="text-[9px] text-white/65">Daily cup</p>
-                  </div>
-                </div>
-                <p className="text-[10px] font-semibold text-white/75">123 pts</p>
-              </div>
-            </div>
-
-            <div className="absolute left-1/2 top-[54px] w-[246px] -translate-x-1/2 rounded-[22px] bg-[#9f311f] px-4 py-3 text-white shadow-[0_14px_28px_rgba(15,23,42,0.16)]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[12px] font-semibold leading-tight">Burrito Rewards</p>
-                  <p className="text-[9px] text-white/65">Lunch pass</p>
-                </div>
-                <p className="text-[10px] font-semibold text-white/75">250 pts</p>
-              </div>
-            </div>
-
-            <div className="absolute left-1/2 top-[108px] w-[246px] -translate-x-1/2 rounded-[22px] bg-[#111827] px-4 py-3 text-white shadow-[0_14px_28px_rgba(15,23,42,0.18)]">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Plane className="h-4 w-4 text-white/75" />
-                  <div>
-                    <p className="text-[12px] font-semibold leading-tight">Boarding Pass</p>
-                    <p className="text-[9px] text-white/60">SFO to LAX</p>
-                  </div>
-                </div>
-                <p className="text-[10px] font-semibold text-white/70">A12</p>
-              </div>
-            </div>
-
-            <div className="absolute left-1/2 top-[162px] w-[258px] -translate-x-1/2 rounded-[26px] bg-[linear-gradient(145deg,#0d2f68_0%,#175bd8_100%)] p-4 text-white shadow-[0_22px_45px_rgba(23,91,216,0.30)] ring-1 ring-white/20">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/16">
-                      <Wallet className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-semibold leading-tight">Northstar</p>
-                      <p className="text-[10px] leading-tight text-white/68">Growth Lab</p>
-                    </div>
-                  </div>
-                </div>
-                <span className="rounded-full bg-[#FBBC05] px-2 py-1 text-[9px] font-semibold text-[#172033]">
-                  Starting soon
-                </span>
-              </div>
-
-              <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8cc6ff]">Webinar</p>
-              <h3 className="mt-2 text-[30px] font-bold leading-[0.98] tracking-tight">
-                Pipeline Sprint
-                <span className="block">Webinar</span>
-              </h3>
-              <p className="mt-3 text-[12px] text-white/72">
-                Hosted by <span className="font-semibold text-white">Maya Reed</span>
-              </p>
-
-              <div className="mt-8 grid grid-cols-2 gap-2.5">
-                <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/42">Time</p>
-                  <p className="mt-1 text-[13px] font-semibold leading-tight">Today</p>
-                  <p className="text-[13px] font-semibold leading-tight">2:00 PM</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-                  <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/42">Reminder</p>
-                  <p className="mt-1 text-[12px] font-semibold leading-tight">Wallet reminder</p>
-                  <p className="text-[12px] font-semibold leading-tight">active</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute bottom-4 left-1/2 h-1 w-28 -translate-x-1/2 rounded-full bg-gray-900/80" />
-        </div>
-      </div>
+    <div className="relative mx-auto flex w-full max-w-[660px] justify-center lg:justify-end">
+      <div className="absolute left-1/2 top-16 h-64 w-64 -translate-x-[70%] rounded-full bg-gblue/10 blur-3xl" />
+      <div className="absolute bottom-10 left-1/2 h-56 w-56 translate-x-[10%] rounded-full bg-ggreen/10 blur-3xl" />
+      <img
+        src="/showfi-hero-wallet-phone-cutout.png"
+        alt="Phone showing a branded webinar wallet pass stacked with coffee rewards, burrito rewards, and a boarding pass"
+        className="relative h-auto w-full max-w-[620px] object-contain drop-shadow-[0_34px_58px_rgba(15,23,42,0.22)]"
+        loading="eager"
+      />
     </div>
   );
 }
