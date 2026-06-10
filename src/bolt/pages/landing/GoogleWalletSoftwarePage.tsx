@@ -1,5 +1,6 @@
 import { ArrowRight, CheckCircle2, Smartphone } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getCheckoutHref } from '../../utils/checkoutLinks';
 
 const highlights = [
   'Google Wallet pass delivery for Android users and mixed-device audiences',
@@ -14,6 +15,8 @@ const reasons = [
 ];
 
 export default function GoogleWalletSoftwarePage() {
+  const checkoutHref = getCheckoutHref();
+
   return (
     <div className="bg-white">
       <section className="pt-24 pb-12 lg:pt-28 lg:pb-16 bg-gradient-to-b from-ggreen/[0.06] via-white to-white">
@@ -39,10 +42,10 @@ export default function GoogleWalletSoftwarePage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-                to="/waitlist"
+                to={checkoutHref}
                 className="inline-flex items-center rounded-lg border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-50 transition-colors"
               >
-                Join waitlist
+                Start checkout
               </Link>
             </div>
           </div>

@@ -50,7 +50,7 @@ const priorities = [
   {
     label: 'Measure',
     title: 'Rebuild reporting around Search Console',
-    body: 'Track branded demand, non-branded category terms, query clusters, indexed pages, click-through rate, and page-level conversion to waitlist or pricing.',
+    body: 'Track branded demand, non-branded category terms, query clusters, indexed pages, click-through rate, and page-level conversion to checkout or pricing.',
   },
 ];
 
@@ -103,7 +103,7 @@ const measurementPlan = [
   'Impressions for pages published or refreshed in the last 30 days.',
   'Average position movement for target queries before and after internal-link updates.',
   'Click-through rate for pages with rewritten titles and descriptions.',
-  'Waitlist, pricing, and demo intent events attributed to organic landing pages.',
+  'Checkout, pricing, and demo intent events attributed to organic landing pages.',
 ];
 
 export default function SeoPlanPage() {

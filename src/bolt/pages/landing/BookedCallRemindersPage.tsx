@@ -25,7 +25,7 @@ export default function BookedCallRemindersPage() {
         'Pair booked call flows with GoHighLevel-friendly wallet delivery',
       ]}
       relatedLinks={[
-        { to: '/gohighlevel-wallet-pass', label: 'GoHighLevel wallet pass' },
+        { to: '/gohighlevel-appointment-reminders', label: 'GoHighLevel appointment reminders' },
         { to: '/wallet-pass-software', label: 'Wallet pass software' },
         { to: '/webinar-reminder-software', label: 'Webinar reminder software' },
         { to: '/event-reminder-software', label: 'Event reminder software' },

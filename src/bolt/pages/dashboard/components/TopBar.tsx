@@ -14,7 +14,7 @@ export default function TopBar({
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/login', { replace: true });
+    navigate('/login?mode=signin', { replace: true });
   };
 
   return (

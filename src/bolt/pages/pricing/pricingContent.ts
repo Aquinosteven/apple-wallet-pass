@@ -1,3 +1,5 @@
+import { getCheckoutHref } from '../../utils/checkoutLinks';
+
 export type BillingInterval = 'monthly' | 'yearly';
 
 export interface PricingValue {
@@ -77,8 +79,8 @@ export const planTiers: PlanTier[] = [
       'Claim flow, attendee tracking, and dashboard reporting',
       'Email support and launch guidance',
     ],
-    ctaHref: '/waitlist',
-    ctaLabel: 'Join Waitlist',
+    ctaHref: getCheckoutHref('solo_monthly_v1'),
+    ctaLabel: 'Start Checkout',
     secondaryHref: 'mailto:hello@showfi.io?subject=ShowFi%20solo%20plan',
     secondaryLabel: 'Questions about solo?',
   },
@@ -113,8 +115,8 @@ export const planTiers: PlanTier[] = [
       'Pooled billing and internal workspace soft-cap tracking',
       'Agency-ready onboarding and priority sales support',
     ],
-    ctaHref: '/waitlist',
-    ctaLabel: 'Book Agency Demo',
+    ctaHref: getCheckoutHref('agency_monthly_v1'),
+    ctaLabel: 'Start Checkout',
     secondaryHref: 'mailto:hello@showfi.io?subject=ShowFi%20agency%20plan',
     secondaryLabel: 'Talk to sales',
     featured: true,
@@ -167,7 +169,7 @@ export const faqs: FaqItem[] = [
   },
   {
     question: 'Do you offer a free trial?',
-    answer: 'Not right now. New activations are paused temporarily, so join the waitlist and we will reach out when onboarding reopens.',
+    answer: 'Not right now. Choose a plan and complete checkout to activate your ShowFi.io account.',
   },
   {
     question: 'Do agency plans include unlimited client workspaces?',
@@ -184,7 +186,7 @@ export const faqs: FaqItem[] = [
 ];
 
 export const ctaTargets = {
-  getStarted: '/waitlist',
-  waitlist: '/waitlist',
+  getStarted: getCheckoutHref(),
+  checkout: getCheckoutHref(),
   contactSales: 'mailto:hello@showfi.io?subject=ShowFi%20sales%20inquiry',
 };

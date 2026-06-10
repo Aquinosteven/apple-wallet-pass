@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Wallet, Menu, X } from 'lucide-react';
 import { trackSalesEvent, trackSalesSignupIntent } from '../../../lib/googleAnalytics';
+import { getCheckoutHref } from '../../utils/checkoutLinks';
 
 export default function Navbar() {
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const loginHref = '/login?mode=signin';
+  const checkoutHref = getCheckoutHref();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 8);
@@ -46,7 +49,6 @@ export default function Navbar() {
               { to: '/', label: 'Home' },
               { to: '/pricing', label: 'Pricing' },
               { to: '/wallet-pass-software', label: 'Solutions' },
-              { to: '/dashboard', label: 'Dashboard' },
             ].map(({ to, label }) => (
               <Link
                 key={to}
@@ -73,18 +75,18 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link
-              to="/login"
+              to={loginHref}
               onClick={() =>
                 {
                   trackSalesEvent('sales_nav_click', {
                     nav_label: 'Log in',
-                    destination: '/login',
+                    destination: loginHref,
                     nav_location: 'desktop_utility',
                   });
                   trackSalesSignupIntent({
                     intent_type: 'login',
                     intent_location: 'navbar_desktop',
-                    destination: '/login',
+                    destination: loginHref,
                   });
                 }
               }
@@ -93,24 +95,24 @@ export default function Navbar() {
               Log in
             </Link>
             <Link
-              to="/waitlist"
+              to={checkoutHref}
               onClick={() =>
                 {
                   trackSalesEvent('sales_cta_click', {
-                    cta_name: 'join_waitlist',
+                    cta_name: 'start_checkout',
                     cta_location: 'navbar_desktop',
-                    destination: '/waitlist',
+                    destination: checkoutHref,
                   });
                   trackSalesSignupIntent({
-                    intent_type: 'waitlist',
+                    intent_type: 'checkout',
                     intent_location: 'navbar_desktop',
-                    destination: '/waitlist',
+                    destination: checkoutHref,
                   });
                 }
               }
               className="px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark shadow-sm hover:shadow-md transition-all"
             >
-              Join Waitlist
+              Start Checkout
             </Link>
           </div>
 
@@ -131,8 +133,7 @@ export default function Navbar() {
               { to: '/', label: 'Home' },
               { to: '/pricing', label: 'Pricing' },
               { to: '/wallet-pass-software', label: 'Solutions' },
-              { to: '/dashboard', label: 'Dashboard' },
-              { to: '/login', label: 'Log in' },
+              { to: loginHref, label: 'Log in' },
             ].map(({ to, label }) => (
               <Link
                 key={to}
@@ -157,24 +158,24 @@ export default function Navbar() {
             ))}
             <div className="pt-2 pb-1">
               <Link
-                to="/waitlist"
+                to={checkoutHref}
                 onClick={() =>
                   {
                     trackSalesEvent('sales_cta_click', {
-                      cta_name: 'join_waitlist',
+                      cta_name: 'start_checkout',
                       cta_location: 'navbar_mobile',
-                      destination: '/waitlist',
+                      destination: checkoutHref,
                     });
                     trackSalesSignupIntent({
-                      intent_type: 'waitlist',
+                      intent_type: 'checkout',
                       intent_location: 'navbar_mobile',
-                      destination: '/waitlist',
+                      destination: checkoutHref,
                     });
                   }
                 }
                 className="block w-full text-center px-4 py-2.5 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-all"
               >
-                Join Waitlist
+                Start Checkout
               </Link>
             </div>
           </div>

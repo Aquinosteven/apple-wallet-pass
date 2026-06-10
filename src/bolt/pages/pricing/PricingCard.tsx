@@ -2,6 +2,7 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BillingInterval, planTiers } from './pricingContent';
 import { trackSalesEvent, trackSalesSignupIntent } from '../../../lib/googleAnalytics';
+import { getCheckoutHref, type CheckoutPlanCode } from '../../utils/checkoutLinks';
 
 interface PricingCardProps {
   interval: BillingInterval;
@@ -14,6 +15,8 @@ export default function PricingCard({ interval }: PricingCardProps) {
         <div id="pricing-plan-panel" role="tabpanel" aria-labelledby={`pricing-tab-${interval}`} className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {planTiers.map((tier) => {
             const price = tier.values[interval];
+            const checkoutPlanCode = `${tier.code}_${interval}_v1` as CheckoutPlanCode;
+            const checkoutHref = getCheckoutHref(checkoutPlanCode);
             return (
               <div
                 key={tier.code}
@@ -45,18 +48,18 @@ export default function PricingCard({ interval }: PricingCardProps) {
 
                     <div className="mt-6 flex flex-wrap items-center gap-3">
                       <Link
-                        to={tier.ctaHref}
+                        to={checkoutHref}
                         onClick={() => {
                           trackSalesEvent('sales_cta_click', {
-                            cta_name: tier.code === 'agency' ? 'book_agency_demo' : 'join_waitlist',
+                            cta_name: 'start_checkout',
                             cta_location: `pricing_${tier.code}_primary`,
-                            destination: tier.ctaHref,
+                            destination: checkoutHref,
                             billing_interval: interval,
                           });
                           trackSalesSignupIntent({
-                            intent_type: tier.code === 'agency' ? 'agency_demo' : 'waitlist',
+                            intent_type: 'checkout',
                             intent_location: `pricing_${tier.code}_primary`,
-                            destination: tier.ctaHref,
+                            destination: checkoutHref,
                             billing_interval: interval,
                           });
                         }}

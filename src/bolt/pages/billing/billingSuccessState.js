@@ -6,7 +6,7 @@ export function getBillingSuccessViewModel({
 }) {
   const normalizedPlan = typeof plan === "string" && plan ? plan : "solo_monthly_v1";
   const billingHref = `/login?plan=${encodeURIComponent(normalizedPlan)}`;
-  const signInHref = "/login";
+  const signInHref = "/login?mode=signin";
   const showBillingCta = statusResolved && !canAccessDashboard;
   const showDashboardCta = statusResolved && canAccessDashboard;
 

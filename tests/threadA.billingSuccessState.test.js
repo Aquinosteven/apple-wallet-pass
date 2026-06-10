@@ -25,7 +25,7 @@ test("billing success shows sign-in CTA when status resolves without a session",
   });
 
   assert.equal(view.primaryLabel, "Sign in to continue");
-  assert.equal(view.primaryHref, "/login");
+  assert.equal(view.primaryHref, "/login?mode=signin");
   assert.equal(view.secondaryLabel, "Back to billing");
   assert.equal(view.secondaryHref, "/login?plan=core_monthly_v1");
 });
@@ -53,7 +53,7 @@ test("billing success defaults to safe sign-in CTA before status resolves", () =
   });
 
   assert.equal(view.primaryLabel, "Sign in to continue");
-  assert.equal(view.primaryHref, "/login");
+  assert.equal(view.primaryHref, "/login?mode=signin");
   assert.equal(view.secondaryLabel, "Back to billing");
   assert.equal(view.secondaryHref, "/login?plan=core_monthly_v1");
 });

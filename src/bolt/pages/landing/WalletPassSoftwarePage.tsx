@@ -113,6 +113,43 @@ const channelLinks = [
   },
 ];
 
+const whenToUse = [
+  'You already have registrations, bookings, or ticket sales, but people still miss the live moment.',
+  'Email and calendar reminders are present, but attendees still ask where to find the join link or event details.',
+  'The audience is mobile-first and needs a faster retrieval path than searching an inbox.',
+  'Show-up rate, pass claims, or no-show follow-up need to be measured by campaign.',
+];
+
+const retrievalComparison = [
+  'Email is best for confirmation copy, value reminders, and longer instructions.',
+  'SMS is best for short final-hour nudges when consent is already clear.',
+  'Calendar is best for reserving the time before a webinar, call, or event gets forgotten.',
+  'Wallet passes are best for mobile retrieval when someone needs the join path, time, or event details quickly.',
+];
+
+const faqs = [
+  {
+    question: 'What is wallet pass software?',
+    answer:
+      'Wallet pass software creates Apple Wallet and Google Wallet passes for webinars, booked calls, events, and other attendance moments.',
+  },
+  {
+    question: 'When should a wallet pass be sent?',
+    answer:
+      'Send it immediately after registration, booking, or purchase so the attendee saves the pass before reminder timing becomes urgent.',
+  },
+  {
+    question: 'Does this replace email or SMS reminders?',
+    answer:
+      'No. Wallet passes work best alongside email, SMS, and calendar reminders by giving the attendee a more visible mobile retrieval layer.',
+  },
+  {
+    question: 'Which teams benefit most from wallet reminders?',
+    answer:
+      'Teams running webinars, booked calls, live events, workshops, and launch campaigns benefit when attendance directly affects revenue.',
+  },
+];
+
 function SolutionGrid({ items }: { items: SolutionCard[] }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -217,6 +254,46 @@ export default function WalletPassSoftwarePage() {
 
       <section className="py-14">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900">When to use wallet pass reminders</h2>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
+                Wallet passes are most useful after intent is already clear and the main problem is getting someone
+                back to the webinar, call, or event at the right time.
+              </p>
+              <ul className="mt-5 grid gap-3">
+                {whenToUse.map((item) => (
+                  <li key={item} className="flex gap-3 text-sm leading-relaxed text-gray-700">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-gblue" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+                Wallet passes vs email, SMS, and calendar
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
+                The goal is not to make every channel do the same job. A strong attendance stack gives each channel a
+                clear role.
+              </p>
+              <ul className="mt-5 grid gap-3">
+                {retrievalComparison.map((item) => (
+                  <li key={item} className="flex gap-3 text-sm leading-relaxed text-gray-700">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-ggreen" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-gray-500">By function</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
@@ -277,6 +354,25 @@ export default function WalletPassSoftwarePage() {
                 </Link>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-gray-100 bg-[#fbfdff] py-14">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Frequently asked questions</h2>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
+              Practical answers for comparing wallet pass software to the rest of the reminder stack.
+            </p>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {faqs.map((faq) => (
+              <div key={faq.question} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <h3 className="text-base font-semibold text-gray-900">{faq.question}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{faq.answer}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

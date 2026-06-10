@@ -18,12 +18,12 @@ export default function PricingCta() {
             onClick={() =>
               {
                 trackSalesEvent('sales_cta_click', {
-                  cta_name: 'join_waitlist',
+                  cta_name: 'start_checkout',
                   cta_location: 'pricing_footer_cta',
                   destination: ctaTargets.getStarted,
                 });
                 trackSalesSignupIntent({
-                  intent_type: 'waitlist',
+                  intent_type: 'checkout',
                   intent_location: 'pricing_footer_cta',
                   destination: ctaTargets.getStarted,
                 });
@@ -31,7 +31,7 @@ export default function PricingCta() {
             }
             className="mt-7 inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold text-white bg-gblue hover:bg-gblue-dark shadow-sm transition-colors"
           >
-            Join Waitlist
+            Start Checkout
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

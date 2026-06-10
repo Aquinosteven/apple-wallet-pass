@@ -17,7 +17,7 @@ export default function BillingCancelPage() {
 
         <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
           <Link
-            to="/login"
+            to="/login?mode=signin"
             className="px-4 py-2.5 rounded-lg bg-gblue text-white text-sm font-semibold hover:bg-gblue-dark"
           >
             Back to login

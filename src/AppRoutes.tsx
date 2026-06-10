@@ -41,10 +41,10 @@ import PricingPage from './bolt/pages/pricing/PricingPage';
 import ClaimPage from './bolt/pages/claim/ClaimPage';
 import TermsPage from './bolt/pages/legal/TermsPage';
 import PrivacyPage from './bolt/pages/legal/PrivacyPage';
-import WaitlistPage from './bolt/pages/waitlist/WaitlistPage';
 import PassGeneratorPage from './App';
 import { getSession, onAuthStateChange } from './lib/auth';
 import { hasGoogleAnalytics, trackPageView } from './lib/googleAnalytics';
+import { getCheckoutHref } from './bolt/utils/checkoutLinks';
 
 const ONBOARDING_PENDING_KEY = 'showfi_onboarding_pending';
 
@@ -83,11 +83,11 @@ function RequireAuth({
   }
 
   if (!isAuthed) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/login?mode=signin" replace state={{ from: location.pathname }} />;
   }
 
   if (!canAccessDashboard) {
-    return <Navigate to="/login" replace state={{ from: location.pathname, billingRequired: true }} />;
+    return <Navigate to="/login?mode=signin" replace state={{ from: location.pathname, billingRequired: true }} />;
   }
 
   return children;
@@ -153,6 +153,10 @@ export default function AppRoutes() {
   const [adminRole, setAdminRole] = useState<'owner' | 'support_read' | 'support_write' | 'admin_super'>('owner');
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const seo = getSeoConfig(location.pathname);
+  const loginSearchParams = new URLSearchParams(location.search);
+  const isExplicitCheckoutSignup = location.pathname === '/login'
+    && loginSearchParams.get('mode') === 'signup'
+    && Boolean(loginSearchParams.get('plan'));
 
   const fetchBillingGateStatus = useCallback(async (accessToken: string): Promise<boolean> => {
     try {
@@ -329,11 +333,7 @@ export default function AppRoutes() {
         />
         <Route
           path="/waitlist"
-          element={
-            <MarketingLayout>
-              <WaitlistPage />
-            </MarketingLayout>
-          }
+          element={<Navigate to={getCheckoutHref()} replace />}
         />
         <Route
           path="/terms"
@@ -429,7 +429,7 @@ export default function AppRoutes() {
         />
         <Route
           path="/login"
-          element={isAuthed && canAccessDashboard && !onboardingPending ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+          element={isAuthed && canAccessDashboard && !onboardingPending && !isExplicitCheckoutSignup ? <Navigate to="/dashboard" replace /> : <LoginPage />}
         />
         <Route
           path="/demo"

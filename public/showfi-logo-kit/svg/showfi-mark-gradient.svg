@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">ShowFi gradient mark</title>
+  <desc id="desc">ShowFi phone and pass mark reversed on a blue gradient.</desc>
+  <defs>
+    <linearGradient id="showfi-gradient" x1="48" y1="24" x2="480" y2="496" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#061A3A" />
+      <stop offset="0.46" stop-color="#116BFF" />
+      <stop offset="1" stop-color="#24C8FF" />
+    </linearGradient>
+    <mask id="ticket-cutouts">
+      <rect width="512" height="512" fill="#FFFFFF" />
+      <circle cx="0" cy="192" r="25" fill="#000000" />
+      <circle cx="290" cy="192" r="25" fill="#000000" />
+      <path d="M94 174h112M94 217h62" stroke="#000000" stroke-width="20" stroke-linecap="round" />
+    </mask>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#showfi-gradient)" />
+  <g transform="translate(111 70)">
+    <rect x="43" y="0" width="204" height="360" rx="70" fill="none" stroke="#FFFFFF" stroke-width="28" />
+    <path d="M110 0h70v22c0 10-8 18-18 18h-34c-10 0-18-8-18-18V0Z" fill="#FFFFFF" />
+    <path d="M0 128h290v128H0V128Z" fill="#FFFFFF" mask="url(#ticket-cutouts)" />
+    <rect x="112" y="309" width="66" height="16" rx="8" fill="#FFFFFF" opacity="0.82" />
+  </g>
+</svg>

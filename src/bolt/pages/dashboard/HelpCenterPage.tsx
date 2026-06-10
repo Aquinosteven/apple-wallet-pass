@@ -176,7 +176,7 @@ const faqs = [
   {
     question: 'Do you offer a free trial?',
     answer:
-      'Not currently. New activations are paused temporarily, so join the waitlist if onboarding is not open yet.',
+      'Not currently. Choose a plan and complete checkout to activate your ShowFi.io account.',
   },
 ];
 

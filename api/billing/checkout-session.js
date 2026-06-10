@@ -45,7 +45,6 @@ export default async function handler(req, res) {
       return res.status(409).json({
         ok: false,
         error: getBillingCheckoutPauseMessage(),
-        waitlistUrl: `${baseUrl}/waitlist`,
       });
     }
 

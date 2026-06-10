@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { trackSalesEvent, trackSalesSignupIntent } from '../../../lib/googleAnalytics';
+import { getCheckoutHref } from '../../utils/checkoutLinks';
 
 export default function CtaBlock() {
+  const checkoutHref = getCheckoutHref();
+
   return (
     <section className="bg-gblue">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
@@ -16,29 +19,29 @@ export default function CtaBlock() {
           </p>
           <div className="mt-8">
             <Link
-              to="/waitlist"
+              to={checkoutHref}
               onClick={() =>
                 {
                   trackSalesEvent('sales_cta_click', {
-                    cta_name: 'join_waitlist',
+                    cta_name: 'start_checkout',
                     cta_location: 'home_footer_cta',
-                    destination: '/waitlist',
+                    destination: checkoutHref,
                   });
                   trackSalesSignupIntent({
-                    intent_type: 'waitlist',
+                    intent_type: 'checkout',
                     intent_location: 'home_footer_cta',
-                    destination: '/waitlist',
+                    destination: checkoutHref,
                   });
                 }
               }
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-gblue bg-white rounded-lg hover:bg-gray-50 shadow-lg shadow-black/10 transition-all"
             >
-              Join Waitlist
+              Start Checkout
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           <p className="mt-5 text-[11px] text-white/40">
-            No credit card. No Apple developer account.
+            Secure checkout. No Apple developer account.
           </p>
         </div>
       </div>

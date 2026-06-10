@@ -1,9 +1,21 @@
 import { ArrowRight, CheckCircle2, LucideIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getCheckoutHref } from '../../utils/checkoutLinks';
 
 interface RelatedLink {
   to: string;
   label: string;
+}
+
+interface DetailSection {
+  title: string;
+  description: string;
+  items: string[];
+}
+
+interface FaqItem {
+  question: string;
+  answer: string;
 }
 
 interface LandingPageTemplateProps {
@@ -20,6 +32,9 @@ interface LandingPageTemplateProps {
   reasonsDescription: string;
   reasons: string[];
   relatedLinks: RelatedLink[];
+  whenToUse?: DetailSection;
+  retrievalComparison?: DetailSection;
+  faqs?: FaqItem[];
 }
 
 export default function LandingPageTemplate({
@@ -36,7 +51,13 @@ export default function LandingPageTemplate({
   reasonsDescription,
   reasons,
   relatedLinks,
+  whenToUse,
+  retrievalComparison,
+  faqs = [],
 }: LandingPageTemplateProps) {
+  const detailSections = [whenToUse, retrievalComparison].filter(Boolean) as DetailSection[];
+  const checkoutHref = getCheckoutHref();
+
   return (
     <div className="bg-white">
       <section className={`pt-24 pb-12 lg:pt-28 lg:pb-16 bg-gradient-to-b ${accentClassName} via-white to-white`}>
@@ -63,10 +84,10 @@ export default function LandingPageTemplate({
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-                to="/waitlist"
+                to={checkoutHref}
                 className="inline-flex items-center rounded-lg border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-50 transition-colors"
               >
-                Join waitlist
+                Start checkout
               </Link>
             </div>
           </div>
@@ -103,6 +124,50 @@ export default function LandingPageTemplate({
           </div>
         </div>
       </section>
+
+      {detailSections.length > 0 && (
+        <section className="pb-12">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-5 lg:grid-cols-2">
+              {detailSections.map((section) => (
+                <div key={section.title} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{section.title}</h2>
+                  <p className="mt-3 text-sm sm:text-base text-gray-600 leading-relaxed">{section.description}</p>
+                  <ul className="mt-5 grid gap-3">
+                    {section.items.map((item) => (
+                      <li key={item} className="flex gap-3 text-sm leading-relaxed text-gray-700">
+                        <CheckCircle2 className={`mt-0.5 h-4 w-4 flex-shrink-0 ${badgeTextClassName}`} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {faqs.length > 0 && (
+        <section className="pb-12">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Frequently asked questions</h2>
+              <p className="mt-3 text-sm sm:text-base text-gray-600 leading-relaxed">
+                Practical answers for choosing the right reminder layer for high-intent attendance moments.
+              </p>
+            </div>
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {faqs.map((faq) => (
+                <div key={faq.question} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-gray-900">{faq.question}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">{faq.answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

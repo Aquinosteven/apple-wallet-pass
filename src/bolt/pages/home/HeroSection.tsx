@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { trackSalesEvent, trackSalesSignupIntent } from '../../../lib/googleAnalytics';
+import { getCheckoutHref } from '../../utils/checkoutLinks';
 
 interface PassCardProps {
   title: string;
@@ -61,6 +62,8 @@ function PassStack() {
 }
 
 export default function HeroSection() {
+  const checkoutHref = getCheckoutHref();
+
   return (
     <section className="pt-20 pb-10 lg:pt-24 lg:pb-14 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -81,24 +84,24 @@ export default function HeroSection() {
 
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <Link
-                to="/waitlist"
+                to={checkoutHref}
                 onClick={() =>
                   {
                     trackSalesEvent('sales_cta_click', {
-                      cta_name: 'join_waitlist',
+                      cta_name: 'start_checkout',
                       cta_location: 'home_hero_primary',
-                      destination: '/waitlist',
+                      destination: checkoutHref,
                     });
                     trackSalesSignupIntent({
-                      intent_type: 'waitlist',
+                      intent_type: 'checkout',
                       intent_location: 'home_hero_primary',
-                      destination: '/waitlist',
+                      destination: checkoutHref,
                     });
                   }
                 }
                 className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-gblue rounded-lg hover:bg-gblue-dark shadow-md shadow-gblue/25 transition-all"
               >
-                Join Waitlist
+                Start Checkout
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a
@@ -142,8 +145,8 @@ export default function HeroSection() {
               <Link to="/webinar-reminder-software" className="hover:text-gray-900 transition-colors">
                 Webinar reminder software
               </Link>
-              <Link to="/gohighlevel-wallet-pass" className="hover:text-gray-900 transition-colors">
-                GoHighLevel wallet pass
+              <Link to="/gohighlevel-appointment-reminders" className="hover:text-gray-900 transition-colors">
+                GoHighLevel appointment reminders
               </Link>
             </div>
           </div>

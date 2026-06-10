@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Loader2, Lock, Wallet } from 'lucide-react';
-import { signIn, signOut, signUp, updateUserMetadata, verifyDemoAccess } from '../../lib/auth';
+import { getSession, signIn, signOut, signUp, updateUserMetadata, verifyDemoAccess } from '../../lib/auth';
 import { createBillingCheckoutSession, createBillingPayment, getBillingStatus, type CheckoutSessionResponse } from '../utils/backendApi';
 import { centsToAmountString, loadSquareScript, type SquareCard } from '../utils/squareWebPayments';
 import { trackBackendEvent } from '../../lib/googleAnalytics';
@@ -154,8 +154,11 @@ export default function LoginPage({ variant = 'default' }: { variant?: 'default'
   const [searchParams] = useSearchParams();
   const isFreeSignupFlow = variant === 'free';
   const demoStorageKey = 'showfi_demo_access_granted';
+  const requestedMode = searchParams.get('mode');
 
-  const [mode, setMode] = useState<AuthMode>('signup');
+  const [mode, setMode] = useState<AuthMode>(() => (
+    !isFreeSignupFlow && requestedMode === 'signin' ? 'signin' : 'signup'
+  ));
   const [step, setStep] = useState<SignupStep>('auth');
 
   const [email, setEmail] = useState('');
@@ -199,6 +202,61 @@ export default function LoginPage({ variant = 'default' }: { variant?: 'default'
       setDemoUnlocked(false);
     }
   }, [isFreeSignupFlow]);
+
+  useEffect(() => {
+    if (isFreeSignupFlow) {
+      return;
+    }
+
+    if (requestedMode === 'signin') {
+      setMode('signin');
+      setStep('auth');
+      setError(null);
+      setMessage(null);
+      return;
+    }
+
+    if (requestedMode === 'signup') {
+      setMode('signup');
+      setStep('auth');
+      setError(null);
+      setMessage(null);
+    }
+  }, [isFreeSignupFlow, requestedMode]);
+
+  useEffect(() => {
+    if (isFreeSignupFlow || requestedMode !== 'signup') {
+      return;
+    }
+
+    const requestedPlan = searchParams.get('plan');
+    if (
+      requestedPlan !== 'solo_monthly_v1'
+      && requestedPlan !== 'solo_yearly_v1'
+      && requestedPlan !== 'agency_monthly_v1'
+      && requestedPlan !== 'agency_yearly_v1'
+    ) {
+      return;
+    }
+
+    let active = true;
+    getSession()
+      .then((session) => {
+        if (!active || !session) return;
+        setMode('signup');
+        setSelectedPlan(requestedPlan);
+        setStep('plan');
+        setError(null);
+        setMessage('Select a plan to continue.');
+      })
+      .catch(() => {
+        // Anonymous visitors should continue through normal signup.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isFreeSignupFlow, requestedMode, searchParams]);
 
   useEffect(() => {
     if (isFreeSignupFlow) {
@@ -401,8 +459,10 @@ export default function LoginPage({ variant = 'default' }: { variant?: 'default'
         return;
       }
 
+      setOnboardingPending(true);
       const { error: postSignupSignInError } = await signIn(cleanEmail, password);
       if (postSignupSignInError) {
+        setOnboardingPending(false);
         setError(postSignupSignInError.message || 'Account created, but automatic sign-in failed.');
         return;
       }
@@ -412,7 +472,6 @@ export default function LoginPage({ variant = 'default' }: { variant?: 'default'
         flow_type: isFreeSignupFlow ? 'free' : 'paid',
       });
 
-      setOnboardingPending(true);
       setStep('persona');
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : 'Authentication failed.');
@@ -504,6 +563,18 @@ export default function LoginPage({ variant = 'default' }: { variant?: 'default'
 
       if (!session.live) {
         throw new Error(session.error || 'Checkout is currently unavailable.');
+      }
+
+      if (session.checkoutMode === 'redirect' && session.checkoutUrl) {
+        persistPendingCheckout({
+          planCode: selectedPlan,
+          sessionId: session.sessionId,
+          checkoutUrl: session.checkoutUrl,
+          createdAt: new Date().toISOString(),
+        });
+        setStep('redirecting');
+        window.location.assign(session.checkoutUrl);
+        return;
       }
 
       setCheckoutSession(session);
@@ -787,7 +858,7 @@ export default function LoginPage({ variant = 'default' }: { variant?: 'default'
                 </div>
 
                 {isFreeSignupFlow ? (
-                  <a href="/login" className="block w-full text-center text-sm text-gray-600 hover:text-gray-900">
+                  <a href="/login?mode=signin" className="block w-full text-center text-sm text-gray-600 hover:text-gray-900">
                     Already have an account? Sign in on the main login page
                   </a>
                 ) : (

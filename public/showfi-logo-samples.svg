@@ -1,0 +1,466 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 2500" role="img" aria-labelledby="title desc">
+  <title id="title">ShowFi logo variation board</title>
+  <desc id="desc">Thirty ShowFi logo variations grouped into six icon families with centered phone and pass marks above the wordmark.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f6f8fb; }
+      .card { fill: #fff; stroke: #d9e1ea; stroke-width: 1.4; }
+      .label { fill: #64748b; font: 650 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .group { fill: #0b1f3b; font: 760 25px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .name { fill: #0b1f3b; font: 760 38px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .word { fill: #0b1f3b; font: 800 43px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: -0.7px; }
+      .small { fill: #64748b; font: 500 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .navy { fill: #0b1f3b; }
+      .blue { fill: #4285f4; }
+      .green { fill: #34a853; }
+      .yellow { fill: #fbbc05; }
+      .screen { fill: #eef5ff; }
+      .white { fill: #fff; }
+      .none { fill: none; }
+    </style>
+    <linearGradient id="blueGreen" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#4285f4" />
+      <stop offset="1" stop-color="#34a853" />
+    </linearGradient>
+    <linearGradient id="navyBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#0b1f3b" />
+      <stop offset="1" stop-color="#3367d6" />
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0b1f3b" flood-opacity="0.09" />
+    </filter>
+
+    <symbol id="wordmark" viewBox="0 0 170 60">
+      <text x="0" y="44" class="word">ShowFi</text>
+    </symbol>
+
+    <symbol id="phoneBase" viewBox="0 0 100 128">
+      <rect x="15" y="0" width="70" height="116" rx="22" class="navy" />
+      <rect x="24" y="12" width="52" height="92" rx="14" class="screen" />
+      <circle cx="50" cy="110" r="3.5" fill="#fff" opacity="0.65" />
+    </symbol>
+
+    <symbol id="icon01a" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="33" y="38" width="34" height="39" rx="8" class="blue" />
+      <circle cx="33" cy="57.5" r="5.5" class="screen" />
+      <circle cx="67" cy="57.5" r="5.5" class="screen" />
+      <path d="M42 50h17M42 62h11" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon01b" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="31" y="33" width="38" height="48" rx="10" class="blue" />
+      <path d="M38 47h24M38 60h14" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+      <circle cx="69" cy="57" r="6" class="screen" />
+    </symbol>
+    <symbol id="icon01c" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <path d="M30 38h40v42H30z" class="green" />
+      <circle cx="30" cy="59" r="6" class="screen" />
+      <circle cx="70" cy="59" r="6" class="screen" />
+      <path d="M40 52h20M40 65h12" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon01d" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="31" y="35" width="38" height="44" rx="10" fill="url(#blueGreen)" />
+      <circle cx="31" cy="57" r="5.5" class="screen" />
+      <circle cx="69" cy="57" r="5.5" class="screen" />
+      <path d="M41 51h18M41 63h10" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon01e" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="29" y="32" width="42" height="50" rx="11" fill="#fff" stroke="#4285f4" stroke-width="6" />
+      <circle cx="29" cy="57" r="5.5" class="screen" />
+      <circle cx="71" cy="57" r="5.5" class="screen" />
+      <path d="M40 50h20M40 63h12" stroke="#34a853" stroke-width="4.3" stroke-linecap="round" />
+    </symbol>
+
+    <symbol id="icon05a" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="34" y="55" width="45" height="31" rx="9" class="green" />
+      <rect x="25" y="39" width="45" height="31" rx="9" class="blue" />
+      <rect x="34" y="49" width="25" height="4.5" rx="2.25" fill="#fff" />
+      <rect x="43" y="66" width="22" height="4.5" rx="2.25" fill="#fff" />
+    </symbol>
+    <symbol id="icon05b" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="25" y="46" width="50" height="34" rx="10" class="green" opacity="0.95" />
+      <rect x="25" y="31" width="50" height="34" rx="10" class="blue" />
+      <path d="M36 42h26M36 57h14" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon05c" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="28" y="57" width="46" height="28" rx="8" class="green" />
+      <rect x="28" y="43" width="46" height="28" rx="8" class="yellow" />
+      <rect x="28" y="29" width="46" height="28" rx="8" class="blue" />
+      <path d="M39 42h22" stroke="#fff" stroke-width="4.3" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon05d" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="20" y="41" width="56" height="34" rx="10" class="blue" />
+      <rect x="32" y="50" width="50" height="34" rx="10" class="green" />
+      <path d="M32 53h23M44 64h18" stroke="#fff" stroke-width="4.3" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon05e" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="25" y="35" width="50" height="52" rx="13" fill="#fff" stroke="#4285f4" stroke-width="6" />
+      <rect x="33" y="48" width="34" height="9" rx="4.5" class="green" />
+      <rect x="33" y="63" width="22" height="7" rx="3.5" class="blue" />
+    </symbol>
+
+    <symbol id="icon06a" viewBox="0 0 120 128">
+      <rect x="5" y="8" width="110" height="110" rx="28" fill="url(#blueGreen)" />
+      <rect x="34" y="18" width="52" height="90" rx="18" fill="#0b1f3b" />
+      <rect x="42" y="39" width="36" height="44" rx="10" fill="#fff" />
+      <path d="M50 53h20M50 66h12" stroke="#4285f4" stroke-width="4.8" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon06b" viewBox="0 0 120 128">
+      <rect x="9" y="10" width="102" height="106" rx="32" class="navy" />
+      <rect x="35" y="20" width="50" height="88" rx="17" class="screen" />
+      <rect x="43" y="43" width="34" height="40" rx="9" class="blue" />
+      <circle cx="43" cy="63" r="5.5" class="screen" />
+      <circle cx="77" cy="63" r="5.5" class="screen" />
+    </symbol>
+    <symbol id="icon06c" viewBox="0 0 120 128">
+      <rect x="7" y="10" width="106" height="106" rx="30" fill="#eef5ff" />
+      <rect x="35" y="19" width="50" height="90" rx="17" class="navy" />
+      <rect x="43" y="42" width="34" height="41" rx="9" class="green" />
+      <path d="M51 55h18M51 67h10" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon06d" viewBox="0 0 120 128">
+      <rect x="5" y="8" width="110" height="110" rx="28" fill="url(#navyBlue)" />
+      <rect x="35" y="18" width="50" height="90" rx="17" fill="#fff" opacity="0.95" />
+      <rect x="43" y="42" width="34" height="40" rx="9" class="blue" />
+      <path d="M51 55h18M51 67h10" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+      <circle cx="82" cy="34" r="8" class="green" />
+    </symbol>
+    <symbol id="icon06e" viewBox="0 0 120 128">
+      <rect x="5" y="8" width="110" height="110" rx="34" fill="#fff" stroke="#0b1f3b" stroke-width="8" />
+      <rect x="35" y="20" width="50" height="88" rx="17" class="navy" />
+      <path d="M43 44h34v39H43z" class="blue" />
+      <circle cx="43" cy="63.5" r="5.5" class="navy" />
+      <circle cx="77" cy="63.5" r="5.5" class="navy" />
+    </symbol>
+
+    <symbol id="icon08a" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="33" y="36" width="34" height="41" rx="9" class="blue" />
+      <path d="M41 56l6 6 14-18" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      <circle cx="77" cy="31" r="10" class="green" />
+    </symbol>
+    <symbol id="icon08b" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="32" y="34" width="36" height="46" rx="10" class="green" />
+      <path d="M41 56l6 6 14-18" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      <circle cx="72" cy="35" r="8" class="yellow" />
+    </symbol>
+    <symbol id="icon08c" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="29" y="34" width="42" height="47" rx="10" fill="#fff" />
+      <path d="M39 58l7 7 16-20" stroke="#4285f4" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      <circle cx="70" cy="32" r="9" class="green" />
+    </symbol>
+    <symbol id="icon08d" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <path d="M30 35h40v45H30z" class="blue" />
+      <circle cx="30" cy="57.5" r="6" class="screen" />
+      <circle cx="70" cy="57.5" r="6" class="screen" />
+      <path d="M41 59l6 6 14-18" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    </symbol>
+    <symbol id="icon08e" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <rect x="31" y="35" width="38" height="44" rx="10" fill="url(#blueGreen)" />
+      <path d="M41 57l6 6 13-17" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+      <path d="M71 25c7 2 11 7 12 14" stroke="#fbbc05" stroke-width="5.5" stroke-linecap="round" fill="none" />
+    </symbol>
+
+    <symbol id="icon11a" viewBox="0 0 100 128">
+      <rect x="14" y="0" width="72" height="116" rx="24" fill="url(#navyBlue)" />
+      <path d="M28 35h44v48H28z" fill="#fff" />
+      <circle cx="28" cy="59" r="7" fill="#3367d6" />
+      <circle cx="72" cy="59" r="7" fill="#3367d6" />
+      <path d="M39 52h16M39 65h10" stroke="#0b1f3b" stroke-width="4.5" stroke-linecap="round" />
+      <rect x="41" y="93" width="18" height="4" rx="2" fill="#fff" opacity="0.6" />
+    </symbol>
+    <symbol id="icon11b" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <path d="M28 34h44v50H28z" class="blue" />
+      <circle cx="28" cy="59" r="7" class="screen" />
+      <circle cx="72" cy="59" r="7" class="screen" />
+      <path d="M39 52h18M39 65h11" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon11c" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <path d="M26 35h48v48H26z" fill="#fff" stroke="#34a853" stroke-width="6" />
+      <circle cx="26" cy="59" r="7" class="screen" />
+      <circle cx="74" cy="59" r="7" class="screen" />
+      <path d="M39 53h18M39 66h10" stroke="#4285f4" stroke-width="4.5" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon11d" viewBox="0 0 100 128">
+      <rect x="16" y="0" width="68" height="116" rx="24" class="navy" />
+      <path d="M25 39h50v42H25z" fill="#fff" />
+      <circle cx="25" cy="60" r="7" class="navy" />
+      <circle cx="75" cy="60" r="7" class="navy" />
+      <path d="M39 53h20M39 65h13" stroke="#4285f4" stroke-width="4.5" stroke-linecap="round" />
+      <circle cx="76" cy="34" r="8" class="yellow" />
+    </symbol>
+    <symbol id="icon11e" viewBox="0 0 100 128">
+      <use href="#phoneBase" />
+      <path d="M25 35h50v49H25z" fill="url(#blueGreen)" />
+      <circle cx="25" cy="59.5" r="7" class="screen" />
+      <circle cx="75" cy="59.5" r="7" class="screen" />
+      <path d="M40 53h19M40 66h11" stroke="#fff" stroke-width="4.5" stroke-linecap="round" />
+    </symbol>
+
+    <symbol id="icon12a" viewBox="0 0 110 128">
+      <rect x="33" y="0" width="66" height="116" rx="24" class="navy" />
+      <rect x="42" y="11" width="48" height="94" rx="15" fill="#fff" />
+      <path d="M7 43h83v47H7z" fill="#4285f4" />
+      <circle cx="7" cy="66.5" r="7" fill="#fff" />
+      <circle cx="90" cy="66.5" r="7" fill="#fff" />
+      <path d="M29 59h31M29 73h16" stroke="#fff" stroke-width="4.7" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon12b" viewBox="0 0 110 128">
+      <rect x="26" y="0" width="66" height="116" rx="24" class="navy" />
+      <rect x="35" y="11" width="48" height="94" rx="15" fill="#fff" />
+      <rect x="8" y="38" width="78" height="50" rx="12" class="green" />
+      <circle cx="8" cy="63" r="7" fill="#fff" />
+      <circle cx="86" cy="63" r="7" fill="#fff" />
+      <path d="M29 56h29M29 70h15" stroke="#fff" stroke-width="4.7" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon12c" viewBox="0 0 110 128">
+      <rect x="31" y="0" width="66" height="116" rx="24" fill="url(#navyBlue)" />
+      <rect x="40" y="11" width="48" height="94" rx="15" fill="#fff" />
+      <path d="M1 44h85v46H1z" fill="url(#blueGreen)" />
+      <circle cx="1" cy="67" r="7" fill="#fff" />
+      <circle cx="86" cy="67" r="7" fill="#fff" />
+      <path d="M24 60h31M24 73h16" stroke="#fff" stroke-width="4.7" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon12d" viewBox="0 0 110 128">
+      <use href="#phoneBase" x="5" />
+      <path d="M0 40h86v52H0z" fill="#fff" stroke="#4285f4" stroke-width="7" />
+      <circle cx="0" cy="66" r="7" fill="#eef5ff" />
+      <circle cx="86" cy="66" r="7" fill="#eef5ff" />
+      <path d="M25 58h30M25 72h17" stroke="#34a853" stroke-width="4.7" stroke-linecap="round" />
+    </symbol>
+    <symbol id="icon12e" viewBox="0 0 110 128">
+      <rect x="33" y="0" width="66" height="116" rx="24" class="navy" />
+      <rect x="42" y="11" width="48" height="94" rx="15" fill="#fff" />
+      <path d="M13 39h75v52H13z" class="blue" />
+      <circle cx="13" cy="65" r="7" fill="#fff" />
+      <circle cx="88" cy="65" r="7" fill="#fff" />
+      <path d="M33 58h29M33 72h15" stroke="#fff" stroke-width="4.7" stroke-linecap="round" />
+      <path d="M87 30c7 2 12 7 13 14" stroke="#fbbc05" stroke-width="6" stroke-linecap="round" fill="none" />
+    </symbol>
+  </defs>
+
+  <rect class="bg" width="1800" height="2500" />
+  <text x="70" y="82" class="name">ShowFi variation board</text>
+  <text x="70" y="122" class="small">Five variations of each selected family. Family 1 keeps the phone silhouette you liked as the baseline.</text>
+
+  <g transform="translate(70 165)">
+    <g transform="translate(0 0)">
+      <text x="0" y="0" class="group">01 Phone Pass</text>
+      <g transform="translate(0 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">01-A</text>
+        <use href="#icon01a" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(335 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">01-B</text>
+        <use href="#icon01b" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(670 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">01-C</text>
+        <use href="#icon01c" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1005 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">01-D</text>
+        <use href="#icon01d" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1340 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">01-E</text>
+        <use href="#icon01e" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+    </g>
+
+    <g transform="translate(0 390)">
+      <text x="0" y="0" class="group">05 Wallet Stack Phone</text>
+      <g transform="translate(0 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">05-A</text>
+        <use href="#icon05a" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(335 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">05-B</text>
+        <use href="#icon05b" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(670 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">05-C</text>
+        <use href="#icon05c" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1005 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">05-D</text>
+        <use href="#icon05d" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1340 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">05-E</text>
+        <use href="#icon05e" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+    </g>
+
+    <g transform="translate(0 780)">
+      <text x="0" y="0" class="group">06 Rounded Badge</text>
+      <g transform="translate(0 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">06-A</text>
+        <use href="#icon06a" x="90" y="54" width="120" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(335 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">06-B</text>
+        <use href="#icon06b" x="90" y="54" width="120" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(670 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">06-C</text>
+        <use href="#icon06c" x="90" y="54" width="120" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1005 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">06-D</text>
+        <use href="#icon06d" x="90" y="54" width="120" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1340 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">06-E</text>
+        <use href="#icon06e" x="90" y="54" width="120" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+    </g>
+
+    <g transform="translate(0 1170)">
+      <text x="0" y="0" class="group">08 Check-In Pass</text>
+      <g transform="translate(0 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">08-A</text>
+        <use href="#icon08a" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(335 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">08-B</text>
+        <use href="#icon08b" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(670 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">08-C</text>
+        <use href="#icon08c" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1005 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">08-D</text>
+        <use href="#icon08d" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1340 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">08-E</text>
+        <use href="#icon08e" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+    </g>
+
+    <g transform="translate(0 1560)">
+      <text x="0" y="0" class="group">11 Phone Ticket Cut</text>
+      <g transform="translate(0 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">11-A</text>
+        <use href="#icon11a" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(335 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">11-B</text>
+        <use href="#icon11b" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(670 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">11-C</text>
+        <use href="#icon11c" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1005 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">11-D</text>
+        <use href="#icon11d" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1340 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">11-E</text>
+        <use href="#icon11e" x="100" y="54" width="100" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+    </g>
+
+    <g transform="translate(0 1950)">
+      <text x="0" y="0" class="group">12 Pass Surface</text>
+      <g transform="translate(0 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">12-A</text>
+        <use href="#icon12a" x="95" y="54" width="110" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(335 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">12-B</text>
+        <use href="#icon12b" x="95" y="54" width="110" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(670 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">12-C</text>
+        <use href="#icon12c" x="95" y="54" width="110" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1005 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">12-D</text>
+        <use href="#icon12d" x="95" y="54" width="110" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+      <g transform="translate(1340 30)">
+        <rect class="card" width="300" height="305" rx="22" filter="url(#softShadow)" />
+        <text x="22" y="36" class="label">12-E</text>
+        <use href="#icon12e" x="95" y="54" width="110" height="128" />
+        <use href="#wordmark" x="68" y="206" width="170" height="60" />
+      </g>
+    </g>
+  </g>
+</svg>

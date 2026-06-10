@@ -56,7 +56,7 @@ ShowFi lets businesses create wallet passes and distribute them through campaign
 
 ### Is there a free trial?
 
-Not currently. The pricing FAQ says new activations are paused temporarily and users should join the waitlist to be contacted when onboarding reopens.
+Not currently. The pricing FAQ says customers should choose a plan and complete checkout to activate a ShowFi.io account.
 
 ### How long does setup take?
 

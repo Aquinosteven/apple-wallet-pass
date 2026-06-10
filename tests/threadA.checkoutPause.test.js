@@ -16,5 +16,5 @@ test("billing checkout can be explicitly enabled", () => {
 
 test("billing checkout pause message is stable", () => {
   assert.match(getBillingCheckoutPauseMessage(), /Checkout is temporarily paused/i);
-  assert.match(getBillingCheckoutPauseMessage(), /waitlist/i);
+  assert.doesNotMatch(getBillingCheckoutPauseMessage(), /waitlist/i);
 });

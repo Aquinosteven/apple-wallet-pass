@@ -19,6 +19,7 @@ import {
   Wallet,
   Zap,
 } from 'lucide-react';
+import { getCheckoutHref } from '../../utils/checkoutLinks';
 
 const stats = [
   { value: '12,000+', label: 'passes delivered' },
@@ -143,8 +144,8 @@ const pages = [
       'Built around live events, event-day retrieval, and wallet-based visibility near check-in.',
   },
   {
-    to: '/gohighlevel-wallet-pass',
-    title: 'GoHighLevel wallet pass',
+    to: '/gohighlevel-appointment-reminders',
+    title: 'GoHighLevel appointment reminders',
     description:
       'Explains how ShowFi.io fits into GoHighLevel reminder and booked-call workflows.',
   },
@@ -158,85 +159,14 @@ const pages = [
 
 function IPhoneMockup() {
   return (
-    <div className="relative mx-auto flex w-full max-w-[540px] justify-center">
-      <div className="absolute left-1/2 top-8 h-48 w-48 -translate-x-[130%] rounded-full bg-gblue/12 blur-3xl" />
-      <div className="absolute bottom-8 left-1/2 h-48 w-48 translate-x-[20%] rounded-full bg-ggreen/12 blur-3xl" />
-
-      <div className="relative rounded-[42px] bg-[#0f172a] p-3 shadow-[0_40px_100px_rgba(15,23,42,0.22)]">
-        <div className="absolute left-1/2 top-3 h-6 w-32 -translate-x-1/2 rounded-full bg-black/70" />
-        <div className="w-[300px] overflow-hidden rounded-[32px] bg-[linear-gradient(180deg,#eef5ff_0%,#ffffff_52%,#f4fbf6_100%)] p-4 sm:w-[340px]">
-          <div className="rounded-[26px] bg-[linear-gradient(135deg,#12284d_0%,#1a4ea1_58%,#1b8a72_100%)] p-5 text-white shadow-[0_18px_40px_rgba(26,78,161,0.22)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.26em] text-white/60">Apple Wallet Pass</p>
-                <h3 className="mt-3 text-[28px] font-semibold leading-none tracking-tight">Strategy Call</h3>
-                <p className="mt-2 text-sm text-white/78">with Alex Chen</p>
-              </div>
-              <div className="rounded-2xl border border-white/15 bg-white/10 p-3">
-                <Wallet className="h-5 w-5" />
-              </div>
-            </div>
-
-            <div className="mt-8 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/8 p-3">
-                <p className="text-[11px] text-white/52">Start time</p>
-                <p className="mt-1 text-sm font-medium">Today 2:00 PM</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/8 p-3">
-                <p className="text-[11px] text-white/52">Status</p>
-                <p className="mt-1 text-sm font-medium">Upcoming</p>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-white/10 bg-white/8 p-3">
-              <p className="text-[11px] uppercase tracking-[0.22em] text-white/50">Reminder behavior</p>
-              <p className="mt-2 text-sm leading-relaxed text-white/78">
-                ShowFi.io surfaces automatically. No inbox required.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3">
-            <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-500">Why it works</p>
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center justify-between rounded-2xl bg-[#f6f8fc] px-3 py-2.5 text-sm">
-                  <span className="text-gray-500">Email</span>
-                  <span className="text-xs text-gray-400">Buried</span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl bg-[#f6f8fc] px-3 py-2.5 text-sm">
-                  <span className="text-gray-500">SMS</span>
-                  <span className="text-xs text-gray-400">Muted</span>
-                </div>
-                <div className="flex items-center justify-between rounded-2xl bg-[#ecfbf1] px-3 py-2.5 text-sm ring-1 ring-ggreen/20">
-                  <span className="font-medium text-gray-900">Wallet pass</span>
-                  <span className="text-xs font-semibold text-ggreen">Visible</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-500">Fits your funnel</p>
-              <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-                <span className="rounded-full bg-[#f6f8fc] px-3 py-1.5">Opt-in</span>
-                <ChevronRightIcon />
-                <span className="rounded-full bg-[#f6f8fc] px-3 py-1.5">Wallet</span>
-                <ChevronRightIcon />
-                <span className="rounded-full bg-[#f6f8fc] px-3 py-1.5">Show up</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="relative mx-auto flex w-full max-w-[560px] justify-center lg:justify-end">
+      <img
+        src="/showfi-hero-webinar-wallet-pass.png"
+        alt="Phone showing a branded webinar wallet pass stack for Northstar Growth Lab"
+        className="h-auto w-full max-w-[520px] object-contain"
+        loading="eager"
+      />
     </div>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg className="h-4 w-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
   );
 }
 
@@ -257,6 +187,8 @@ function StepMiniPass({ active }: { active?: boolean }) {
 }
 
 export default function HomePage() {
+  const checkoutHref = getCheckoutHref();
+
   return (
     <div className="bg-white text-gray-900">
       <section className="overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(66,133,244,0.10),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(52,168,83,0.08),_transparent_26%),linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] pt-20 pb-12 lg:pt-24 lg:pb-16">
@@ -280,10 +212,10 @@ export default function HomePage() {
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <Link
-                  to="/waitlist"
+                  to={checkoutHref}
                   className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
                 >
-                  Join Waitlist
+                  Start Checkout
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
@@ -313,8 +245,8 @@ export default function HomePage() {
                 <Link to="/webinar-reminder-software" className="hover:text-gray-900 transition-colors">
                   Webinar reminder software
                 </Link>
-                <Link to="/gohighlevel-wallet-pass" className="hover:text-gray-900 transition-colors">
-                  GoHighLevel wallet pass
+                <Link to="/gohighlevel-appointment-reminders" className="hover:text-gray-900 transition-colors">
+                  GoHighLevel appointment reminders
                 </Link>
               </div>
             </div>
@@ -543,15 +475,15 @@ export default function HomePage() {
               </p>
               <div className="mt-8">
                 <Link
-                  to="/waitlist"
+                  to={checkoutHref}
                   className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50"
                 >
-                  Join Waitlist
+                  Start Checkout
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
               <p className="mt-5 text-[11px] text-white/45">
-                No credit card. No Apple developer account.
+                Secure checkout. No Apple developer account.
               </p>
             </div>
           </div>
