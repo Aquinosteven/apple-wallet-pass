@@ -142,8 +142,8 @@ export default function HeroSection() {
               <Link to="/webinar-reminder-software" className="hover:text-gray-900 transition-colors">
                 Webinar reminder software
               </Link>
-              <Link to="/gohighlevel-wallet-pass" className="hover:text-gray-900 transition-colors">
-                GoHighLevel wallet pass
+              <Link to="/gohighlevel-appointment-reminders" className="hover:text-gray-900 transition-colors">
+                GoHighLevel appointment reminders
               </Link>
             </div>
           </div>

@@ -15,12 +15,30 @@ interface SeoContentPageConfig {
     to: string;
     label: string;
   }>;
+  whenToUse?: {
+    title: string;
+    description: string;
+    items: string[];
+  };
+  retrievalComparison?: {
+    title: string;
+    description: string;
+    items: string[];
+  };
+  faqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
   icon: LucideIcon;
 }
 
 const sharedRelatedLinks = [
   { to: '/webinar-reminder-software', label: 'Webinar reminder software' },
+  { to: '/zoom-webinar-reminders', label: 'Zoom webinar reminders' },
   { to: '/reduce-webinar-no-shows', label: 'Reduce webinar no-shows' },
+  { to: '/webinar-reminder-sequence-template', label: 'Webinar reminder sequence' },
+  { to: '/why-webinar-reminders-fail', label: 'Why webinar reminders fail' },
+  { to: '/webinar-show-up-rate-calculator', label: 'Webinar show-up calculator' },
   { to: '/wallet-pass-software', label: 'Wallet pass software' },
   { to: '/booked-call-reminders', label: 'Booked call reminders' },
 ];
@@ -51,7 +69,59 @@ export const seoContentPages: Record<string, SeoContentPageConfig> = {
       'Send final-hour reminders through more than one channel.',
       'Measure who claims the pass and who still misses the session.',
     ],
-    relatedLinks: sharedRelatedLinks,
+    whenToUse: {
+      title: 'When Zoom reminders need a fallback',
+      description:
+        'Use a fallback layer when Zoom registration works but the confirmation email, calendar event, or join path is fragile close to start time.',
+      items: [
+        'CSV-uploaded registrants are not reliably seeing confirmation emails.',
+        'Your team gets support messages asking for the join link near start time.',
+        'You need a short late-join rescue path for people who miss the first few minutes.',
+        'The webinar audience is mobile-heavy and needs a fast way to recover session details.',
+      ],
+    },
+    retrievalComparison: {
+      title: 'Zoom email vs wallet retrieval',
+      description:
+        'Zoom email is still useful, but wallet passes solve a different attendance problem: finding the session quickly from a phone.',
+      items: [
+        'Use Zoom email for native registration confirmation and official session details.',
+        'Use calendar links to block time before the webinar gets forgotten.',
+        'Use SMS sparingly for short reminders where consent is clear.',
+        'Use wallet passes when final-hour visibility matters more than another inbox message.',
+      ],
+    },
+    faqs: [
+      {
+        question: 'Should Zoom webinar reminders be replaced?',
+        answer:
+          'No. Keep native Zoom reminders enabled, then add calendar, SMS, or wallet fallback where attendance risk is high.',
+      },
+      {
+        question: 'Why add wallet passes to Zoom webinars?',
+        answer:
+          'Wallet passes make the webinar easier to recover from mobile when a registrant misses or cannot find the confirmation email.',
+      },
+      {
+        question: 'When should the wallet pass be offered?',
+        answer:
+          'Offer it immediately after registration, not five minutes before start, so the registrant has already saved the event.',
+      },
+      {
+        question: 'What should be measured?',
+        answer:
+          'Measure registrations, pass claims, reminder engagement, attendance, late joins, and no-shows by webinar.',
+      },
+    ],
+    relatedLinks: [
+      { to: '/webinar-reminder-software', label: 'Webinar reminder software' },
+      { to: '/reduce-webinar-no-shows', label: 'Reduce webinar no-shows' },
+      { to: '/webinar-reminder-sequence-template', label: 'Webinar reminder sequence' },
+      { to: '/why-webinar-reminders-fail', label: 'Why webinar reminders fail' },
+      { to: '/webinar-show-up-rate-calculator', label: 'Webinar show-up calculator' },
+      { to: '/wallet-pass-software', label: 'Wallet pass software' },
+      { to: '/gohighlevel-appointment-reminders', label: 'GoHighLevel appointment reminders' },
+    ],
     icon: CalendarClock,
   },
   '/reduce-webinar-no-shows': {
@@ -79,7 +149,59 @@ export const seoContentPages: Record<string, SeoContentPageConfig> = {
       'Use final-hour reminders for retrieval rather than more promotional copy.',
       'Segment attendees, no-shows, and wallet claimers after the event.',
     ],
-    relatedLinks: sharedRelatedLinks,
+    whenToUse: {
+      title: 'When no-show reduction needs more than reminders',
+      description:
+        'Use a more visible reminder stack when acquisition is working, but registered people still fail to make it into the live room.',
+      items: [
+        'The webinar gets registrations but show-up rate is flat or declining.',
+        'Reminder emails are sent but the join link is still hard to find.',
+        'No-show follow-up is treated as a nurture problem instead of an attendance signal.',
+        'The revenue gap from missed attendance is large enough to justify better retrieval.',
+      ],
+    },
+    retrievalComparison: {
+      title: 'Reduce no-shows by assigning each channel a job',
+      description:
+        'No-show reduction improves when the reminder system is built around retrieval, not just message volume.',
+      items: [
+        'Email carries the full confirmation and value reminder.',
+        'SMS handles short urgency and last-mile nudges.',
+        'Calendar prevents the time slot from disappearing.',
+        'Wallet passes keep the session visible and recoverable from mobile.',
+      ],
+    },
+    faqs: [
+      {
+        question: 'What is a good webinar show-up rate?',
+        answer:
+          'It depends on audience and offer, but the useful benchmark is your own registration-to-attendance trend before and after reminder changes.',
+      },
+      {
+        question: 'What causes webinar no-shows?',
+        answer:
+          'Common causes include weak confirmation, buried join links, calendar friction, reminder fatigue, and mobile retrieval problems near start time.',
+      },
+      {
+        question: 'Can wallet passes reduce no-shows by themselves?',
+        answer:
+          'They should be used as part of a stack with email, calendar, and SMS rather than as the only no-show reduction tactic.',
+      },
+      {
+        question: 'Which page should teams read next?',
+        answer:
+          'Start with the webinar reminder software hub, then use the sequence template and show-up calculator to plan the reminder flow.',
+      },
+    ],
+    relatedLinks: [
+      { to: '/webinar-reminder-software', label: 'Webinar reminder software' },
+      { to: '/zoom-webinar-reminders', label: 'Zoom webinar reminders' },
+      { to: '/webinar-reminder-sequence-template', label: 'Webinar reminder sequence' },
+      { to: '/why-webinar-reminders-fail', label: 'Why webinar reminders fail' },
+      { to: '/webinar-show-up-rate-calculator', label: 'Webinar show-up calculator' },
+      { to: '/wallet-pass-software', label: 'Wallet pass software' },
+      { to: '/booked-call-reminders', label: 'Booked call reminders' },
+    ],
     icon: BarChart3,
   },
   '/webinar-reminder-sequence-template': {
@@ -240,6 +362,11 @@ export function getSeoContentPage(pathname: string) {
 
 export default function SeoContentPage({ config }: { config: SeoContentPageConfig }) {
   const BadgeIcon = config.icon;
+  const detailSections = [config.whenToUse, config.retrievalComparison].filter(Boolean) as Array<{
+    title: string;
+    description: string;
+    items: string[];
+  }>;
 
   return (
     <div className="bg-white text-gray-900">
@@ -286,6 +413,27 @@ export default function SeoContentPage({ config }: { config: SeoContentPageConfi
         </div>
       </section>
 
+      {detailSections.length > 0 && (
+        <section className="pb-12 lg:pb-16">
+          <div className="mx-auto grid max-w-6xl gap-5 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+            {detailSections.map((section) => (
+              <div key={section.title} className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 className="text-2xl font-bold tracking-tight text-gray-900">{section.title}</h2>
+                <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">{section.description}</p>
+                <ul className="mt-5 grid gap-3">
+                  {section.items.map((item) => (
+                    <li key={item} className="flex gap-3 text-sm leading-relaxed text-gray-700">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-ggreen" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="border-y border-gray-100 bg-[#fbfdff] py-12 lg:py-16">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
           <div>
@@ -305,6 +453,27 @@ export default function SeoContentPage({ config }: { config: SeoContentPageConfi
           </ul>
         </div>
       </section>
+
+      {config.faqs && config.faqs.length > 0 && (
+        <section className="py-12 lg:py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <h2 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Frequently asked questions</h2>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
+                Practical answers for teams improving webinar reminders, no-show reduction, and wallet-based retrieval.
+              </p>
+            </div>
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {config.faqs.map((faq) => (
+                <div key={faq.question} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                  <h3 className="text-base font-semibold text-gray-900">{faq.question}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-gray-600">{faq.answer}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-12 lg:py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">

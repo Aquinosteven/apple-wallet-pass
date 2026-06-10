@@ -69,9 +69,9 @@ export function absoluteUrl(path: string) {
 export function getSeoConfig(pathname: string): SeoConfig {
   if (pathname === '/') {
     return {
-      title: 'ShowFi.io | Wallet Pass Software for Events, Webinars, and Calls',
+      title: 'ShowFi.io | Wallet Pass Reminders for Webinars, Events & Calls',
       description:
-        'ShowFi.io helps agencies and marketers increase show rates with wallet pass software for booked calls, webinars, challenges, and live events across Apple Wallet and Google Wallet.',
+        'Add Apple Wallet and Google Wallet reminders for webinars, booked calls, events, and attendance-focused campaigns.',
       path: '/',
       schema: [
         {

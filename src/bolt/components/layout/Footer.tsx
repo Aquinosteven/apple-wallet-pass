@@ -7,7 +7,7 @@ const links = [
   { to: '/wallet-pass-software', label: 'Wallet Pass Software' },
   { to: '/webinar-reminder-software', label: 'Webinar Reminders' },
   { to: '/event-reminder-software', label: 'Event Reminders' },
-  { to: '/gohighlevel-wallet-pass', label: 'GoHighLevel' },
+  { to: '/gohighlevel-appointment-reminders', label: 'GoHighLevel' },
   { to: '/apple-wallet-pass-software', label: 'Apple Wallet' },
   { to: '/google-wallet-pass-software', label: 'Google Wallet' },
   { to: '/dashboard', label: 'Dashboard' },
@@ -28,7 +28,7 @@ export default function Footer() {
             <span className="text-sm font-semibold text-gray-900 tracking-tight">ShowFi.io</span>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             {links.map(({ to, label }) => (
               <Link
                 key={to}

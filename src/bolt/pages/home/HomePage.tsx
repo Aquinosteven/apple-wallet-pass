@@ -143,8 +143,8 @@ const pages = [
       'Built around live events, event-day retrieval, and wallet-based visibility near check-in.',
   },
   {
-    to: '/gohighlevel-wallet-pass',
-    title: 'GoHighLevel wallet pass',
+    to: '/gohighlevel-appointment-reminders',
+    title: 'GoHighLevel appointment reminders',
     description:
       'Explains how ShowFi.io fits into GoHighLevel reminder and booked-call workflows.',
   },
@@ -313,8 +313,8 @@ export default function HomePage() {
                 <Link to="/webinar-reminder-software" className="hover:text-gray-900 transition-colors">
                   Webinar reminder software
                 </Link>
-                <Link to="/gohighlevel-wallet-pass" className="hover:text-gray-900 transition-colors">
-                  GoHighLevel wallet pass
+                <Link to="/gohighlevel-appointment-reminders" className="hover:text-gray-900 transition-colors">
+                  GoHighLevel appointment reminders
                 </Link>
               </div>
             </div>
