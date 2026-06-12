@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Loader2, Lock, Wallet } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, Lock } from 'lucide-react';
 import { getSession, signIn, signOut, signUp, updateUserMetadata, verifyDemoAccess } from '../../lib/auth';
 import { createBillingCheckoutSession, createBillingPayment, getBillingStatus, type CheckoutSessionResponse } from '../utils/backendApi';
 import { centsToAmountString, loadSquareScript, type SquareCard } from '../utils/squareWebPayments';
 import { trackBackendEvent } from '../../lib/googleAnalytics';
+import ShowfiBrand from '../components/ShowfiBrand';
 
 type AuthMode = 'signup' | 'signin';
 type SignupStep = 'auth' | 'persona' | 'plan' | 'redirecting';
@@ -565,18 +566,6 @@ export default function LoginPage({ variant = 'default' }: { variant?: 'default'
         throw new Error(session.error || 'Checkout is currently unavailable.');
       }
 
-      if (session.checkoutMode === 'redirect' && session.checkoutUrl) {
-        persistPendingCheckout({
-          planCode: selectedPlan,
-          sessionId: session.sessionId,
-          checkoutUrl: session.checkoutUrl,
-          createdAt: new Date().toISOString(),
-        });
-        setStep('redirecting');
-        window.location.assign(session.checkoutUrl);
-        return;
-      }
-
       setCheckoutSession(session);
       setCardConsent(false);
       setMessage('Secure payment form loaded below.');
@@ -678,9 +667,11 @@ export default function LoginPage({ variant = 'default' }: { variant?: 'default'
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/40 px-4 py-8 sm:py-10">
       <div className="mx-auto max-w-5xl grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8 items-start">
         <section className="lg:col-span-2 bg-[#0B172A] text-white rounded-2xl p-6 sm:p-8 shadow-xl">
-          <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6">
-            <Wallet className="w-6 h-6" />
-          </div>
+          <ShowfiBrand
+            variant="gradient"
+            showText={false}
+            markClassName="mb-6 h-12 w-12"
+          />
           <h1 className="text-2xl sm:text-3xl font-semibold leading-tight">
             {isFreeSignupFlow ? 'Activate your complimentary ShowFi account' : 'Scale your outreach and pass operations faster'}
           </h1>
@@ -1051,7 +1042,7 @@ export default function LoginPage({ variant = 'default' }: { variant?: 'default'
                   className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-gblue text-sm font-semibold text-white hover:bg-gblue-dark disabled:opacity-70 inline-flex items-center justify-center gap-2"
                 >
                   {checkoutLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  {checkoutSession?.live ? 'Reload checkout form' : 'Load checkout form'}
+                  {checkoutSession?.live ? 'Refresh secure payment' : 'Continue to Secure Payment'}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

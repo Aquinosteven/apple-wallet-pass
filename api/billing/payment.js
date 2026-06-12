@@ -20,6 +20,7 @@ function normalizeText(value) {
 function mapPaymentStatusToSubscriptionStatus(status) {
   const normalized = normalizeText(status).toLowerCase();
   if (normalized === "active") return "active";
+  if (normalized === "completed") return "active";
   if (normalized === "pending") return "inactive";
   if (normalized === "failed") return "past_due";
   if (normalized === "canceled" || normalized === "cancelled") return "canceled";
@@ -99,6 +100,8 @@ export default async function handler(req, res) {
         || normalizeText(auth.user.email),
       existingCustomerId: subscription.provider_customer_id || null,
       verificationToken: normalizeText(body.verificationToken),
+      amountCents: plan.amountCents,
+      planLabel: plan.label,
     });
 
     if (!payment.live || !payment.subscriptionId) {
@@ -139,6 +142,9 @@ export default async function handler(req, res) {
           pending_checkout_payment_link_id: null,
           pending_checkout_order_id: null,
           pending_checkout_plan_code: null,
+          last_square_payment_id: payment.paymentId || payment.subscriptionId || null,
+          last_square_order_id: payment.orderId || null,
+          last_square_receipt_url: payment.receiptUrl || null,
         },
       })
       .eq("id", subscription.id);
@@ -162,9 +168,9 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       provider: payment.provider,
-      paymentId: payment.subscriptionId,
-      orderId: null,
-      receiptUrl: null,
+      paymentId: payment.paymentId || payment.subscriptionId,
+      orderId: payment.orderId || null,
+      receiptUrl: payment.receiptUrl || null,
       status: payment.status || null,
       accountId: account.id,
       planCode: plan.code,

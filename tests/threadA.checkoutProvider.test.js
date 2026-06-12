@@ -33,7 +33,7 @@ test("stub provider returns non-live checkout session", async () => {
   assert.equal(session.checkoutMode, "embedded");
 });
 
-function mockSquarePaymentLinkResponse(assertRequest) {
+function mockSquarePaymentResponse(assertRequest) {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
     assertRequest?.(String(url), options);
@@ -42,13 +42,11 @@ function mockSquarePaymentLinkResponse(assertRequest) {
       status: 200,
       async json() {
         return {
-          payment_link: {
-            id: "plink_123",
-            url: "https://square.link/u/showfi-test",
+          payment: {
+            id: "pay_123",
             order_id: "order_123",
-          },
-          related_resources: {
-            orders: [{ id: "order_123" }],
+            receipt_url: "https://squareup.com/receipt/pay_123",
+            status: "COMPLETED",
           },
         };
       },
@@ -71,12 +69,7 @@ test("square provider returns seam-not-configured response without live credenti
   assert.equal(session.live, false);
 });
 
-test("square provider returns hosted checkout payment link when square credentials are present", async () => {
-  let requestBody = null;
-  const restoreFetch = mockSquarePaymentLinkResponse((url, options) => {
-    assert.match(url, /\/v2\/online-checkout\/payment-links$/);
-    requestBody = JSON.parse(options.body);
-  });
+test("square provider returns embedded checkout config when sdk credentials are present", async () => {
   const provider = createCheckoutProvider({
     env: {
       CHECKOUT_PROVIDER: "square",
@@ -87,30 +80,28 @@ test("square provider returns hosted checkout payment link when square credentia
       SQUARE_PLAN_VARIATION_ID_CORE_MONTHLY_V1: "planvar-monthly",
     },
   });
-  try {
-    const session = await provider.createCheckoutSession({
-      accountId: "acct_1",
-      planCode: "core_monthly_v1",
-      planLabel: "Core Monthly",
-      amountCents: 9700,
-      successUrl: "https://example.com/billing/success",
-    });
+  const session = await provider.createCheckoutSession({
+    accountId: "acct_1",
+    planCode: "core_monthly_v1",
+    planLabel: "Core Monthly",
+    amountCents: 9700,
+    successUrl: "https://example.com/billing/success",
+  });
 
-    assert.equal(session.live, true);
-    assert.equal(session.checkoutMode, "redirect");
-    assert.equal(session.checkoutUrl, "https://square.link/u/showfi-test");
-    assert.equal(session.paymentLinkId, "plink_123");
-    assert.equal(session.orderId, "order_123");
-    assert.equal(session.squareApplicationId, null);
-    assert.equal(session.squareLocationId, null);
-    assert.equal(requestBody.quick_pay.price_money.amount, 9700);
-    assert.equal(requestBody.checkout_options.redirect_url, "https://example.com/billing/success");
-  } finally {
-    restoreFetch();
-  }
+  assert.equal(session.live, true);
+  assert.equal(session.checkoutMode, "embedded");
+  assert.equal(session.checkoutUrl, null);
+  assert.equal(session.squareApplicationId, "sq-app");
+  assert.equal(session.squareLocationId, "loc-123");
+  assert.equal(session.amountCents, 9700);
 });
 
-test("square provider requires plan variation id for embedded subscription checkout", async () => {
+test("square provider creates onsite payment when plan variation id is not configured", async () => {
+  let requestBody = null;
+  const restoreFetch = mockSquarePaymentResponse((url, options) => {
+    assert.match(url, /\/v2\/payments$/);
+    requestBody = JSON.parse(options.body);
+  });
   const provider = createCheckoutProvider({
     env: {
       CHECKOUT_PROVIDER: "square",
@@ -120,12 +111,25 @@ test("square provider requires plan variation id for embedded subscription check
       SQUARE_ENVIRONMENT: "sandbox",
     },
   });
-  const payment = await provider.createPayment({
-    accountId: "acct_1",
-    planCode: "core_monthly_v1",
-    sourceId: "cnon:card-nonce-ok",
-  });
+  try {
+    const payment = await provider.createPayment({
+      accountId: "acct_1",
+      planCode: "core_monthly_v1",
+      sourceId: "cnon:card-nonce-ok",
+      buyerEmailAddress: "buyer@example.com",
+      amountCents: 9700,
+      planLabel: "Core Monthly",
+    });
 
-  assert.equal(payment.live, false);
-  assert.equal(payment.error, "SQUARE_PLAN_VARIATION_NOT_CONFIGURED");
+    assert.equal(payment.live, true);
+    assert.equal(payment.subscriptionId, "pay_123");
+    assert.equal(payment.paymentId, "pay_123");
+    assert.equal(payment.orderId, "order_123");
+    assert.equal(payment.receiptUrl, "https://squareup.com/receipt/pay_123");
+    assert.equal(payment.status, "COMPLETED");
+    assert.equal(requestBody.amount_money.amount, 9700);
+    assert.equal(requestBody.source_id, "cnon:card-nonce-ok");
+  } finally {
+    restoreFetch();
+  }
 });

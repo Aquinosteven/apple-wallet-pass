@@ -229,7 +229,7 @@ export default function WalletPassSoftwarePage() {
                   to={checkoutHref}
                   className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
                 >
-                  Start checkout
+                  Get Started
                 </Link>
               </div>
             </div>
@@ -393,7 +393,7 @@ export default function WalletPassSoftwarePage() {
                 to={checkoutHref}
                 className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50"
               >
-                Start checkout
+                Get Started
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

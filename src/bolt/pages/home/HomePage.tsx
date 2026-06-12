@@ -217,7 +217,7 @@ export default function HomePage() {
                   to={checkoutHref}
                   className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-800"
                 >
-                  Start Checkout
+                  Get Started
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
@@ -480,7 +480,7 @@ export default function HomePage() {
                   to={checkoutHref}
                   className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50"
                 >
-                  Start Checkout
+                  Get Started
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>

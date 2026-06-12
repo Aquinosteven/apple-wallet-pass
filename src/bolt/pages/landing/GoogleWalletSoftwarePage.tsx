@@ -45,7 +45,7 @@ export default function GoogleWalletSoftwarePage() {
                 to={checkoutHref}
                 className="inline-flex items-center rounded-lg border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-50 transition-colors"
               >
-                Start checkout
+                Get Started
               </Link>
             </div>
           </div>

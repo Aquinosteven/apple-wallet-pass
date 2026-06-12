@@ -31,7 +31,7 @@ export default function PricingCta() {
             }
             className="mt-7 inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold text-white bg-gblue hover:bg-gblue-dark shadow-sm transition-colors"
           >
-            Start Checkout
+            Get Started
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

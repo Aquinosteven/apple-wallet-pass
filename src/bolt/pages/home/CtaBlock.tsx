@@ -36,7 +36,7 @@ export default function CtaBlock() {
               }
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-gblue bg-white rounded-lg hover:bg-gray-50 shadow-lg shadow-black/10 transition-all"
             >
-              Start Checkout
+              Get Started
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

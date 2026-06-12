@@ -123,7 +123,7 @@ export function getSeoConfig(pathname: string): SeoConfig {
 
   if (pathname === '/waitlist') {
     return {
-      title: 'Start Checkout | ShowFi.io',
+      title: 'Get Started | ShowFi.io',
       description:
         'Start ShowFi.io checkout to activate wallet pass software for attendance-driven campaigns and events.',
       path: '/waitlist',

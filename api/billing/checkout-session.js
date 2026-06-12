@@ -108,7 +108,13 @@ export default async function handler(req, res) {
       metadata: mergedMetadata,
     };
 
-    if (checkoutSession.live && checkoutSession.checkoutUrl) {
+    if (
+      checkoutSession.live
+      && (
+        checkoutSession.checkoutUrl
+        || checkoutSession.checkoutMode === "embedded"
+      )
+    ) {
       await supabase
         .from("account_subscriptions")
         .update(updatePayload)

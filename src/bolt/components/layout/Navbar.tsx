@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Wallet, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { trackSalesEvent, trackSalesSignupIntent } from '../../../lib/googleAnalytics';
 import { getCheckoutHref } from '../../utils/checkoutLinks';
+import ShowfiBrand from '../ShowfiBrand';
 
 export default function Navbar() {
   const location = useLocation();
@@ -36,12 +37,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-              <Wallet className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-[15px] font-semibold text-gray-900 tracking-tight">
-              ShowFi
-            </span>
+            <ShowfiBrand variant="reverse" />
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -112,7 +108,7 @@ export default function Navbar() {
               }
               className="px-4 py-2 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark shadow-sm hover:shadow-md transition-all"
             >
-              Start Checkout
+              Get Started
             </Link>
           </div>
 
@@ -175,7 +171,7 @@ export default function Navbar() {
                 }
                 className="block w-full text-center px-4 py-2.5 text-sm font-medium text-white bg-gblue rounded-lg hover:bg-gblue-dark transition-all"
               >
-                Start Checkout
+                Get Started
               </Link>
             </div>
           </div>
