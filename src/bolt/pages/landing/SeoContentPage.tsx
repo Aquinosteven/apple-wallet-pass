@@ -62,6 +62,10 @@ export const seoContentPages: Record<string, SeoContentPageConfig> = {
         title: 'Use it as a fallback, not a replacement',
         body: 'The strongest reminder stack keeps Zoom, email, SMS, calendar, and wallet working together instead of betting attendance on one channel.',
       },
+      {
+        title: 'Zoom CSV upload confirmation failure checklist',
+        body: 'If CSV-uploaded registrants are not receiving confirmation emails, verify that registrants are approved, webinar confirmation emails are enabled, unsubscribe and suppression lists are clean, sender trust issues are ruled out, and every uploaded contact still has a calendar or wallet fallback for the join path.',
+      },
     ],
     checklist: [
       'Trigger wallet pass delivery immediately after registration.',
